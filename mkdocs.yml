@@ -1,0 +1,408 @@
+# Copyright 2026 Julien Bombled
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# -- Project Information -------------------------------------------------------
+site_name: WinOpsLab
+site_url: https://winopslab.local
+site_author: Julien Bombled
+site_description: >-
+  Base de connaissances Windows Server - Parcours d'apprentissage.
+
+# -- Copyright -----------------------------------------------------------------
+copyright: Copyright &copy; 2026 Julien Bombled
+
+# -- Theme Configuration -------------------------------------------------------
+theme:
+  name: material
+  language: fr
+  features:
+    - content.action.copy
+    - content.code.annotate
+    - content.code.copy
+    - content.tabs.link
+    - content.tooltips
+    - header.autohide
+    - navigation.expand
+    - navigation.footer
+    - navigation.indexes
+    - navigation.instant
+    - navigation.instant.prefetch
+    - navigation.instant.progress
+    - navigation.path
+    - navigation.sections
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.top
+    - navigation.tracking
+    - search.highlight
+    - search.share
+    - search.suggest
+    - toc.follow
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: blue
+      accent: light blue
+      toggle:
+        icon: material/brightness-7
+        name: Passer au mode sombre
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: blue
+      accent: light blue
+      toggle:
+        icon: material/brightness-4
+        name: Passer au mode clair
+  font:
+    text: Inter
+    code: JetBrains Mono
+  icon:
+    logo: material/server
+    admonition:
+      note: fontawesome/solid/note-sticky
+      abstract: fontawesome/solid/book
+      info: fontawesome/solid/circle-info
+      tip: fontawesome/solid/lightbulb
+      success: fontawesome/solid/check
+      question: fontawesome/solid/circle-question
+      warning: fontawesome/solid/triangle-exclamation
+      failure: fontawesome/solid/xmark
+      danger: fontawesome/solid/skull
+      bug: fontawesome/solid/bug
+      example: fontawesome/solid/flask
+      quote: fontawesome/solid/quote-left
+
+# -- Plugins -------------------------------------------------------------------
+plugins:
+  - search:
+      lang: fr
+      separator: '[\s\-\.]+'
+  - git-revision-date-localized:
+      enable_creation_date: true
+      type: timeago
+      locale: fr
+      fallback_to_build_date: true
+  - minify:
+      minify_html: true
+  - glightbox:
+      touchNavigation: true
+      loop: false
+      effect: zoom
+      slide_effect: slide
+      width: 100%
+      height: auto
+      zoomable: true
+      draggable: true
+
+# -- Markdown Extensions -------------------------------------------------------
+markdown_extensions:
+  - abbr
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+      toc_depth: 3
+  - pymdownx.betterem:
+      smart_enable: all
+  - pymdownx.caret
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.mark
+  - pymdownx.smartsymbols
+  - pymdownx.snippets
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.tilde
+
+# -- Extra Configuration -------------------------------------------------------
+extra:
+  generator: false
+  status:
+    new: Nouveau
+    deprecated: Obsolete
+
+extra_css:
+  - stylesheets/extra.css
+
+# -- Navigation ----------------------------------------------------------------
+nav:
+  - Accueil: index.md
+  - Fondamentaux:
+      - fondamentaux/index.md
+      - Installation et configuration:
+          - fondamentaux/installation/index.md
+          - fondamentaux/installation/editions-et-licences.md
+          - fondamentaux/installation/installation-server.md
+          - fondamentaux/installation/configuration-initiale.md
+          - fondamentaux/installation/server-core-vs-gui.md
+      - Console de gestion:
+          - fondamentaux/console/index.md
+          - fondamentaux/console/server-manager.md
+          - fondamentaux/console/mmc-snap-ins.md
+          - fondamentaux/console/rsat.md
+      - PowerShell - Les bases:
+          - fondamentaux/powershell/index.md
+          - fondamentaux/powershell/premiers-pas.md
+          - fondamentaux/powershell/cmdlets-essentielles.md
+          - fondamentaux/powershell/pipeline-et-objets.md
+          - fondamentaux/powershell/aide-et-decouverte.md
+      - Roles et fonctionnalites:
+          - fondamentaux/roles/index.md
+          - fondamentaux/roles/comprendre-les-roles.md
+          - fondamentaux/roles/ajout-suppression.md
+  - Active Directory:
+      - active-directory/index.md
+      - AD DS:
+          - active-directory/adds/index.md
+          - active-directory/adds/concepts-fondamentaux.md
+          - active-directory/adds/installer-premier-dc.md
+          - active-directory/adds/structure-ou.md
+          - active-directory/adds/utilisateurs-et-groupes.md
+          - active-directory/adds/comptes-ordinateurs.md
+          - active-directory/adds/sites-et-replication.md
+          - active-directory/adds/niveaux-fonctionnels.md
+      - DNS:
+          - active-directory/dns/index.md
+          - active-directory/dns/concepts-dns.md
+          - active-directory/dns/zones-integrees-ad.md
+          - active-directory/dns/enregistrements.md
+          - active-directory/dns/resolution-conditionnelle.md
+          - active-directory/dns/depannage-dns.md
+      - DHCP:
+          - active-directory/dhcp/index.md
+          - active-directory/dhcp/concepts-dhcp.md
+          - active-directory/dhcp/installation-configuration.md
+          - active-directory/dhcp/etendues-et-options.md
+          - active-directory/dhcp/reservations.md
+          - active-directory/dhcp/basculement-dhcp.md
+      - Strategie de groupe (GPO):
+          - active-directory/gpo/index.md
+          - active-directory/gpo/concepts-gpo.md
+          - active-directory/gpo/creer-et-lier.md
+          - active-directory/gpo/filtrage-et-heritage.md
+          - active-directory/gpo/preferences-vs-policies.md
+          - active-directory/gpo/gpresult-et-depannage.md
+          - active-directory/gpo/modeles-admx.md
+  - Reseau:
+      - reseau/index.md
+      - TCP/IP:
+          - reseau/tcpip/index.md
+          - reseau/tcpip/adressage-ipv4.md
+          - reseau/tcpip/sous-reseaux.md
+          - reseau/tcpip/ipv6-fondamentaux.md
+          - reseau/tcpip/configuration-interfaces.md
+      - Pare-feu Windows:
+          - reseau/pare-feu/index.md
+          - reseau/pare-feu/wfas-concepts.md
+          - reseau/pare-feu/regles-entrantes-sortantes.md
+          - reseau/pare-feu/profils-reseau.md
+          - reseau/pare-feu/gestion-powershell.md
+      - Acces distant:
+          - reseau/acces-distant/index.md
+          - reseau/acces-distant/vpn-server.md
+          - reseau/acces-distant/directaccess.md
+          - reseau/acces-distant/nps-radius.md
+          - reseau/acces-distant/always-on-vpn.md
+      - Services reseau avances:
+          - reseau/avances/index.md
+          - reseau/avances/nic-teaming.md
+          - reseau/avances/ipam.md
+          - reseau/avances/routage.md
+  - Stockage:
+      - stockage/index.md
+      - Gestion des disques:
+          - stockage/disques/index.md
+          - stockage/disques/types-de-disques.md
+          - stockage/disques/volumes-et-partitions.md
+          - stockage/disques/iscsi.md
+      - Storage Spaces:
+          - stockage/storage-spaces/index.md
+          - stockage/storage-spaces/concepts.md
+          - stockage/storage-spaces/creation-pool.md
+          - stockage/storage-spaces/storage-spaces-direct.md
+      - DFS:
+          - stockage/dfs/index.md
+          - stockage/dfs/dfs-namespaces.md
+          - stockage/dfs/dfs-replication.md
+      - Partage de fichiers:
+          - stockage/partage/index.md
+          - stockage/partage/permissions-ntfs.md
+          - stockage/partage/permissions-partage.md
+          - stockage/partage/quotas-et-filtrage.md
+          - stockage/partage/branchcache.md
+  - Securite:
+      - securite/index.md
+      - Durcissement:
+          - securite/durcissement/index.md
+          - securite/durcissement/bonnes-pratiques.md
+          - securite/durcissement/security-baselines.md
+          - securite/durcissement/comptes-privilegies.md
+          - securite/durcissement/laps.md
+      - Certificats (PKI):
+          - securite/pki/index.md
+          - securite/pki/concepts-pki.md
+          - securite/pki/installer-ca.md
+          - securite/pki/modeles-certificats.md
+          - securite/pki/inscription-automatique.md
+      - Audit et conformite:
+          - securite/audit/index.md
+          - securite/audit/politique-audit.md
+          - securite/audit/journaux-evenements.md
+          - securite/audit/audit-avance.md
+      - Protection des donnees:
+          - securite/protection/index.md
+          - securite/protection/bitlocker.md
+          - securite/protection/efs.md
+  - Virtualisation:
+      - virtualisation/index.md
+      - Hyper-V:
+          - virtualisation/hyper-v/index.md
+          - virtualisation/hyper-v/installation-role.md
+          - virtualisation/hyper-v/creer-vm.md
+          - virtualisation/hyper-v/reseaux-virtuels.md
+          - virtualisation/hyper-v/stockage-virtuel.md
+          - virtualisation/hyper-v/checkpoints.md
+          - virtualisation/hyper-v/live-migration.md
+          - virtualisation/hyper-v/replica.md
+      - Conteneurs:
+          - virtualisation/conteneurs/index.md
+          - virtualisation/conteneurs/windows-containers.md
+          - virtualisation/conteneurs/docker-sur-windows.md
+  - Haute disponibilite:
+      - haute-disponibilite/index.md
+      - Cluster de basculement:
+          - haute-disponibilite/cluster/index.md
+          - haute-disponibilite/cluster/concepts-cluster.md
+          - haute-disponibilite/cluster/prerequis-et-validation.md
+          - haute-disponibilite/cluster/creation-cluster.md
+          - haute-disponibilite/cluster/quorum.md
+          - haute-disponibilite/cluster/roles-cluster.md
+      - Sauvegarde et restauration:
+          - haute-disponibilite/backup/index.md
+          - haute-disponibilite/backup/windows-server-backup.md
+          - haute-disponibilite/backup/strategie-sauvegarde.md
+          - haute-disponibilite/backup/restauration-systeme.md
+          - haute-disponibilite/backup/ad-recycle-bin.md
+      - Equilibrage de charge:
+          - haute-disponibilite/nlb/index.md
+          - haute-disponibilite/nlb/concepts-nlb.md
+          - haute-disponibilite/nlb/configuration.md
+  - Automatisation:
+      - automatisation/index.md
+      - PowerShell avance:
+          - automatisation/powershell-avance/index.md
+          - automatisation/powershell-avance/scripting-structure.md
+          - automatisation/powershell-avance/fonctions-avancees.md
+          - automatisation/powershell-avance/modules.md
+          - automatisation/powershell-avance/gestion-erreurs.md
+          - automatisation/powershell-avance/remoting.md
+          - automatisation/powershell-avance/jea.md
+      - DSC (Desired State Configuration):
+          - automatisation/dsc/index.md
+          - automatisation/dsc/concepts-dsc.md
+          - automatisation/dsc/ressources-dsc.md
+          - automatisation/dsc/configuration-push-pull.md
+      - Taches planifiees:
+          - automatisation/taches-planifiees/index.md
+          - automatisation/taches-planifiees/task-scheduler.md
+          - automatisation/taches-planifiees/gestion-powershell.md
+      - Infrastructure as Code:
+          - automatisation/iac/index.md
+          - automatisation/iac/templates-arm-bicep.md
+          - automatisation/iac/packer-images.md
+  - Supervision:
+      - supervision/index.md
+      - Surveillance systeme:
+          - supervision/surveillance/index.md
+          - supervision/surveillance/performance-monitor.md
+          - supervision/surveillance/resource-monitor.md
+          - supervision/surveillance/event-viewer.md
+          - supervision/surveillance/data-collector-sets.md
+      - Depannage:
+          - supervision/depannage/index.md
+          - supervision/depannage/methodologie.md
+          - supervision/depannage/outils-reseau.md
+          - supervision/depannage/outils-systeme.md
+          - supervision/depannage/blue-screen.md
+      - Centralisation des logs:
+          - supervision/logs/index.md
+          - supervision/logs/wef-wec.md
+          - supervision/logs/syslog.md
+  - Gestion moderne:
+      - gestion-moderne/index.md
+      - Windows Admin Center:
+          - gestion-moderne/wac/index.md
+          - gestion-moderne/wac/installation.md
+          - gestion-moderne/wac/gestion-serveurs.md
+          - gestion-moderne/wac/extensions.md
+      - Azure Hybrid:
+          - gestion-moderne/azure-hybrid/index.md
+          - gestion-moderne/azure-hybrid/azure-arc.md
+          - gestion-moderne/azure-hybrid/azure-ad-connect.md
+          - gestion-moderne/azure-hybrid/azure-backup.md
+          - gestion-moderne/azure-hybrid/azure-monitor.md
+      - IIS:
+          - gestion-moderne/iis/index.md
+          - gestion-moderne/iis/installation-iis.md
+          - gestion-moderne/iis/sites-et-applications.md
+          - gestion-moderne/iis/certificats-ssl.md
+  - Labs:
+      - labs/index.md
+      - Environnement de lab:
+          - labs/environnement/index.md
+          - labs/environnement/prerequis-materiel.md
+          - labs/environnement/architecture-lab.md
+          - labs/environnement/creation-vms.md
+      - Exercices pratiques:
+          - labs/exercices/index.md
+          - labs/exercices/lab-01-installation.md
+          - labs/exercices/lab-02-ad-ds-premier-domaine.md
+          - labs/exercices/lab-03-dns-dhcp.md
+          - labs/exercices/lab-04-gpo.md
+          - labs/exercices/lab-05-partage-fichiers.md
+          - labs/exercices/lab-06-hyper-v.md
+          - labs/exercices/lab-07-cluster.md
+          - labs/exercices/lab-08-pki.md
+          - labs/exercices/lab-09-automatisation.md
+          - labs/exercices/lab-10-supervision.md
+      - Projets de synthese:
+          - labs/projets/index.md
+          - labs/projets/projet-pme-complete.md
+          - labs/projets/projet-migration-ad.md
+          - labs/projets/projet-plan-reprise.md
+  - Ressources:
+      - ressources/index.md
+      - ressources/glossaire.md
+      - ressources/commandes-essentielles.md
+      - ressources/liens-utiles.md
+      - ressources/certifications.md

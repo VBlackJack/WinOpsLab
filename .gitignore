@@ -1,0 +1,21 @@
+# Python virtual environment
+.venv/
+
+# MkDocs build output
+site/
+
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+Thumbs.db
+Desktop.ini
+.DS_Store

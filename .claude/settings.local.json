@@ -14,7 +14,10 @@
       "Bash(powershell.exe:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(git config:*)"
+      "Bash(git config:*)",
+      "Bash(\"G:\\\\_dev\\\\WinOpsLab\\\\.venv\\\\Scripts\\\\python.exe\" -m mkdocs build:*)",
+      "Bash(\"G:\\\\_dev\\\\WinOpsLab\\\\.venv\\\\Scripts\\\\python.exe\" -m mkdocs serve:*)",
+      "Bash(.venv/Scripts/python.exe -m mkdocs:*)"
     ]
   }
 }

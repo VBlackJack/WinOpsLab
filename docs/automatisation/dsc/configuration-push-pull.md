@@ -1,10 +1,330 @@
 ---
-title: Configuration Push Pull
-description: A completer.
+title: "Configuration Push et Pull"
+description: "Comprendre et configurer les modes Push et Pull de DSC : application directe, serveur Pull, configurations partielles et bonnes pratiques."
+tags:
+  - automatisation
+  - dsc
+  - push
+  - pull
+  - windows-server
 ---
 
-# Configuration Push Pull
+# Configuration Push et Pull
 
-!!! warning "En cours de redaction"
+!!! info "Niveau : avance | Temps estime : 50 minutes"
 
-    Cette page est en cours de redaction. Le contenu sera ajoute prochainement.
+## Introduction
+
+DSC propose deux modeles de distribution des configurations vers les noeuds cibles : le mode **Push** (envoi direct) et le mode **Pull** (recuperation a la demande). Le choix entre ces deux modes depend de la taille de l'environnement et du niveau d'automatisation souhaite.
+
+## Mode Push
+
+### Principe
+
+En mode Push, l'administrateur **envoie** la configuration directement au noeud cible. C'est le mode le plus simple et le point de depart pour la plupart des implementations DSC.
+
+```mermaid
+flowchart LR
+    A["Administrateur<br/>(poste de gestion)"] -->|"Start-DscConfiguration<br/>(Push)"| B["Noeud cible<br/>(LCM)"]
+    B --> C["Applique la<br/>configuration"]
+```
+
+### Mise en oeuvre
+
+```powershell
+# Step 1: Write the configuration
+Configuration WebServer {
+    Import-DscResource -ModuleName PSDesiredStateConfiguration
+
+    Node "SRV01" {
+        WindowsFeature IIS {
+            Name   = "Web-Server"
+            Ensure = "Present"
+        }
+
+        Service W3SVC {
+            Name        = "W3SVC"
+            State       = "Running"
+            StartupType = "Automatic"
+            DependsOn   = "[WindowsFeature]IIS"
+        }
+    }
+}
+
+# Step 2: Compile to MOF
+WebServer -OutputPath "C:\DSC\WebServer"
+
+# Step 3: Push the configuration
+Start-DscConfiguration -Path "C:\DSC\WebServer" -ComputerName "SRV01" -Wait -Verbose -Force
+```
+
+### Configuration du LCM pour le mode Push
+
+```powershell
+[DSCLocalConfigurationManager()]
+Configuration PushModeLCM {
+    Node "SRV01" {
+        Settings {
+            RefreshMode                    = "Push"
+            ConfigurationMode              = "ApplyAndAutoCorrect"
+            ConfigurationModeFrequencyMins = 30
+            RebootNodeIfNeeded             = $true
+        }
+    }
+}
+
+PushModeLCM -OutputPath "C:\DSC\LCM"
+Set-DscLocalConfigurationManager -Path "C:\DSC\LCM" -ComputerName "SRV01" -Verbose
+```
+
+### Avantages et limites du mode Push
+
+| Avantage | Limite |
+|---|---|
+| Simple a mettre en oeuvre | L'admin doit envoyer chaque mise a jour manuellement |
+| Pas d'infrastructure supplementaire | Pas de distribution centralisee a grande echelle |
+| Ideal pour le dev/test | Le noeud ne peut pas demander sa config lui-meme |
+| Feedback immediat | Pas de rapport centralise |
+
+## Mode Pull
+
+### Principe
+
+En mode Pull, les noeuds cibles **recuperent** leur configuration depuis un serveur central (**Pull Server**). Le LCM interroge periodiquement le Pull Server pour obtenir les nouvelles configurations et les modules requis.
+
+```mermaid
+flowchart TD
+    A["Pull Server<br/>(IIS ou SMB)"] -->|Heberge| B["Configurations MOF"]
+    A -->|Heberge| C["Modules DSC"]
+
+    D["Noeud 1<br/>(LCM)"] -->|"Pull periodique"| A
+    E["Noeud 2<br/>(LCM)"] -->|"Pull periodique"| A
+    F["Noeud N<br/>(LCM)"] -->|"Pull periodique"| A
+```
+
+### Configurer un Pull Server (IIS)
+
+```powershell
+# Install prerequisites
+Install-WindowsFeature -Name DSC-Service, Web-Server -IncludeManagementTools
+
+# Install the DSC service module
+Install-Module -Name xPSDesiredStateConfiguration -Force
+
+# Configure the Pull Server
+Configuration PullServer {
+    Import-DscResource -ModuleName PSDesiredStateConfiguration
+    Import-DscResource -ModuleName xPSDesiredStateConfiguration
+
+    Node "YOURPULLSERVER" {
+        WindowsFeature DSCService {
+            Name   = "DSC-Service"
+            Ensure = "Present"
+        }
+
+        xDscWebService PullServerEndpoint {
+            EndpointName          = "PSDSCPullServer"
+            Port                  = 8080
+            PhysicalPath          = "C:\inetpub\PSDSCPullServer"
+            CertificateThumbPrint = "YOUR_CERT_THUMBPRINT"
+            ModulePath            = "C:\Program Files\WindowsPowerShell\DscService\Modules"
+            ConfigurationPath     = "C:\Program Files\WindowsPowerShell\DscService\Configuration"
+            State                 = "Started"
+            UseSecurityBestPractices = $true
+            DependsOn             = "[WindowsFeature]DSCService"
+        }
+    }
+}
+
+PullServer -OutputPath "C:\DSC\PullServer"
+Start-DscConfiguration -Path "C:\DSC\PullServer" -Wait -Verbose -Force
+```
+
+### Publier des configurations sur le Pull Server
+
+```powershell
+# Step 1: Compile the configuration with Configuration IDs
+Configuration WebServer {
+    Import-DscResource -ModuleName PSDesiredStateConfiguration
+
+    Node "a]b1c2d3-e4f5-6789-abcd-ef0123456789" {
+        # Use the node's Configuration ID (GUID) instead of the hostname
+        WindowsFeature IIS {
+            Name   = "Web-Server"
+            Ensure = "Present"
+        }
+    }
+}
+
+WebServer -OutputPath "C:\DSC\Publish"
+
+# Step 2: Create checksum file
+New-DscChecksum -Path "C:\DSC\Publish" -Force
+
+# Step 3: Copy MOF and checksum to the Pull Server configuration path
+$pullServerConfigPath = "C:\Program Files\WindowsPowerShell\DscService\Configuration"
+Copy-Item -Path "C:\DSC\Publish\*.mof" -Destination $pullServerConfigPath
+Copy-Item -Path "C:\DSC\Publish\*.mof.checksum" -Destination $pullServerConfigPath
+```
+
+### Configurer un noeud pour le mode Pull
+
+```powershell
+[DSCLocalConfigurationManager()]
+Configuration PullModeLCM {
+    Node "SRV01" {
+        Settings {
+            RefreshMode                    = "Pull"
+            ConfigurationMode              = "ApplyAndAutoCorrect"
+            ConfigurationModeFrequencyMins = 30
+            RefreshFrequencyMins           = 15
+            RebootNodeIfNeeded             = $true
+            ConfigurationID                = "a]b1c2d3-e4f5-6789-abcd-ef0123456789"
+        }
+
+        ConfigurationRepositoryWeb PullServer {
+            ServerURL          = "https://YOURPULLSERVER:8080/PSDSCPullServer.svc"
+            RegistrationKey    = "YOUR_REGISTRATION_KEY"
+            ConfigurationNames = @("WebServer")
+            AllowUnsecureConnection = $false
+        }
+
+        ResourceRepositoryWeb PullServerModules {
+            ServerURL       = "https://YOURPULLSERVER:8080/PSDSCPullServer.svc"
+            RegistrationKey = "YOUR_REGISTRATION_KEY"
+        }
+
+        ReportServerWeb PullServerReports {
+            ServerURL       = "https://YOURPULLSERVER:8080/PSDSCPullServer.svc"
+            RegistrationKey = "YOUR_REGISTRATION_KEY"
+        }
+    }
+}
+
+PullModeLCM -OutputPath "C:\DSC\LCM"
+Set-DscLocalConfigurationManager -Path "C:\DSC\LCM" -ComputerName "SRV01" -Verbose
+```
+
+### Pull Server SMB (alternative)
+
+Pour les environnements sans IIS, le Pull Server peut etre un simple partage SMB.
+
+```powershell
+[DSCLocalConfigurationManager()]
+Configuration SMBPullLCM {
+    Node "SRV01" {
+        Settings {
+            RefreshMode = "Pull"
+        }
+
+        ConfigurationRepositoryShare SMBPull {
+            SourcePath = "\\YOURFILESERVER\DSCConfigurations"
+        }
+
+        ResourceRepositoryShare SMBModules {
+            SourcePath = "\\YOURFILESERVER\DSCModules"
+        }
+    }
+}
+```
+
+### Comparaison Push vs Pull
+
+| Critere | Push | Pull |
+|---|---|---|
+| Complexite | Faible | Elevee |
+| Infrastructure requise | Aucune | Pull Server (IIS ou SMB) |
+| Scalabilite | Petits environnements | Grands environnements |
+| Mise a jour des configs | Manuelle | Automatique (polling) |
+| Rapport centralise | Non | Oui (via Report Server) |
+| Modules DSC | Doivent etre sur chaque noeud | Distribues par le Pull Server |
+
+## Configurations partielles
+
+Les **configurations partielles** permettent de fragmenter la configuration d'un noeud en plusieurs documents, chacun gere par une equipe differente.
+
+```mermaid
+flowchart TD
+    A["Equipe Securite"] -->|SecurityConfig.mof| D[Noeud cible]
+    B["Equipe Systeme"] -->|BaseConfig.mof| D
+    C["Equipe Applicative"] -->|AppConfig.mof| D
+    D -->|LCM fusionne les<br/>configurations partielles| E[Configuration finale]
+```
+
+### Configuration du LCM pour les partielles
+
+```powershell
+[DSCLocalConfigurationManager()]
+Configuration PartialLCM {
+    Node "SRV01" {
+        Settings {
+            RefreshMode = "Pull"
+        }
+
+        # Partial configuration from Pull Server
+        PartialConfiguration SecurityBaseline {
+            Description         = "Security baseline from security team"
+            ConfigurationSource = @("[ConfigurationRepositoryWeb]PullServer")
+            RefreshMode         = "Pull"
+        }
+
+        # Partial configuration pushed manually
+        PartialConfiguration ApplicationConfig {
+            Description = "Application configuration from dev team"
+            RefreshMode = "Push"
+            DependsOn   = "[PartialConfiguration]SecurityBaseline"
+        }
+
+        ConfigurationRepositoryWeb PullServer {
+            ServerURL       = "https://YOURPULLSERVER:8080/PSDSCPullServer.svc"
+            RegistrationKey = "YOUR_REGISTRATION_KEY"
+        }
+    }
+}
+```
+
+!!! warning "Conflits de configurations partielles"
+
+    Si deux configurations partielles tentent de configurer la meme ressource, un conflit se produit et la configuration echoue. Etablissez des conventions claires entre les equipes pour eviter les chevauchements.
+
+## Rapport et conformite
+
+### Interroger le Report Server
+
+```powershell
+# Query the Pull Server report endpoint
+$reportURL = "https://YOURPULLSERVER:8080/PSDSCPullServer.svc/Nodes(AgentId='AGENT-GUID')/Reports"
+$reports = Invoke-RestMethod -Uri $reportURL -Method Get -ContentType "application/json"
+
+# View compliance status
+$reports.value | Select-Object Status, StartDate, RebootRequested | Format-Table -AutoSize
+```
+
+### Verification locale
+
+```powershell
+# Check configuration status on a node
+Get-DscConfigurationStatus -All | Format-Table Status, StartDate, Type, Mode
+
+# Detailed compliance report
+Test-DscConfiguration -Detailed | Format-List *
+
+# Force a Pull refresh
+Update-DscConfiguration -ComputerName "SRV01" -Wait -Verbose
+```
+
+## Points cles a retenir
+
+- Le mode **Push** est simple et adapte aux petits environnements ou au dev/test
+- Le mode **Pull** centralise la distribution et est recommande pour les grands environnements
+- Le Pull Server peut etre base sur **IIS** (HTTP/HTTPS) ou sur un **partage SMB**
+- Les **configurations partielles** permettent a plusieurs equipes de gerer des aspects differents d'un meme noeud
+- Utilisez toujours **HTTPS** pour les Pull Servers en production
+- Le **Report Server** fournit des rapports de conformite centralises
+- Les fichiers **checksum** sont obligatoires pour les configurations publiees sur un Pull Server
+
+## Pour aller plus loin
+
+- Concepts DSC : [Concepts DSC](concepts-dsc.md)
+- Ressources DSC : [Ressources DSC](ressources-dsc.md)
+- Documentation Microsoft : Setting Up a Pull Server

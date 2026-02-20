@@ -49,5 +49,13 @@ description: Virtualisation Windows Server - Hyper-V et conteneurs.
 
     [:octicons-arrow-right-24: Conteneuriser](conteneurs/index.md)
 
+- :material-remote-desktop: **Remote Desktop Services (RDS)**
+
+    ---
+
+    Bureau a distance, RemoteApp, RD Gateway, profils utilisateurs.
+
+    [:octicons-arrow-right-24: Deployer](rds/index.md)
+
 </div>
 

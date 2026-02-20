@@ -1,6 +1,6 @@
 ---
-title: Protection des donnees
-description: Protection des donnees - BitLocker et EFS.
+title: AD FS
+description: Active Directory Federation Services - authentification federee et SSO.
 ---
 <!--
   Copyright 2026 Julien Bombled
@@ -18,35 +18,20 @@ description: Protection des donnees - BitLocker et EFS.
   limitations under the License.
 -->
 
-# Protection des donnees
+# Active Directory Federation Services (AD FS)
+
+Cette section couvre l'authentification federee et le Single Sign-On avec AD FS.
 
 ## Contenu
 
 <div class="grid cards" markdown>
 
-- :material-lock-outline: **BitLocker**
+- :material-shield-key: **Concepts et deploiement AD FS**
 
     ---
 
-    Chiffrement complet des volumes avec BitLocker Drive Encryption.
+    Comprendre la federation d'identite, deployer AD FS et configurer le SSO pour les applications cloud et partenaires.
 
-    [:octicons-arrow-right-24: Configurer](bitlocker.md)
-
-- :material-file-lock: **EFS**
-
-    ---
-
-    Chiffrement de fichiers individuels avec Encrypting File System.
-
-    [:octicons-arrow-right-24: Configurer](efs.md)
-
-- :material-shield-bug: **Windows Defender**
-
-    ---
-
-    Antivirus et protection en temps reel sur Windows Server.
-
-    [:octicons-arrow-right-24: Configurer](windows-defender.md)
+    [:octicons-arrow-right-24: Decouvrir](concepts-adfs.md)
 
 </div>
-

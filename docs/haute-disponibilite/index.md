@@ -1,6 +1,6 @@
 ---
 title: Haute disponibilite
-description: Haute disponibilite Windows Server - cluster, sauvegarde et equilibrage de charge.
+description: Haute disponibilite Windows Server - cluster, sauvegarde, equilibrage de charge et replication.
 ---
 <!--
   Copyright 2026 Julien Bombled
@@ -27,6 +27,7 @@ description: Haute disponibilite Windows Server - cluster, sauvegarde et equilib
     - [ ] Deployer un cluster de basculement
     - [ ] Mettre en place une strategie de sauvegarde et restauration
     - [ ] Configurer l'equilibrage de charge reseau (NLB)
+    - [ ] Mettre en place la replication de volumes avec Storage Replica
 
 ## Contenu
 
@@ -55,6 +56,14 @@ description: Haute disponibilite Windows Server - cluster, sauvegarde et equilib
     Concepts NLB et configuration.
 
     [:octicons-arrow-right-24: Equilibrer](nlb/index.md)
+
+- :material-content-copy: **Replication du stockage**
+
+    ---
+
+    Storage Replica pour la replication synchrone et asynchrone de volumes.
+
+    [:octicons-arrow-right-24: Repliquer](replication/index.md)
 
 </div>
 

@@ -56,5 +56,21 @@ description: Durcissement de Windows Server - bonnes pratiques et baselines.
 
     [:octicons-arrow-right-24: Configurer](laps.md)
 
+- :material-shield-lock-outline: **Credential Guard**
+
+    ---
+
+    Protection des credentials avec la Virtualization-Based Security (VBS).
+
+    [:octicons-arrow-right-24: Activer](credential-guard.md)
+
+- :material-application-cog: **AppLocker et WDAC**
+
+    ---
+
+    Controle des applications avec AppLocker et Windows Defender Application Control.
+
+    [:octicons-arrow-right-24: Configurer](applocker-wdac.md)
+
 </div>
 

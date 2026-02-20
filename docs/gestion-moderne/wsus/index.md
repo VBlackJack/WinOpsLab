@@ -1,6 +1,6 @@
 ---
-title: Protection des donnees
-description: Protection des donnees - BitLocker et EFS.
+title: WSUS
+description: Windows Server Update Services - gestion centralisee des mises a jour.
 ---
 <!--
   Copyright 2026 Julien Bombled
@@ -18,35 +18,20 @@ description: Protection des donnees - BitLocker et EFS.
   limitations under the License.
 -->
 
-# Protection des donnees
+# Windows Server Update Services (WSUS)
+
+Cette section couvre la gestion centralisee des mises a jour Windows avec WSUS.
 
 ## Contenu
 
 <div class="grid cards" markdown>
 
-- :material-lock-outline: **BitLocker**
+- :material-update: **Deployer et gerer WSUS**
 
     ---
 
-    Chiffrement complet des volumes avec BitLocker Drive Encryption.
+    Installation, configuration, approbation des mises a jour et maintenance du serveur WSUS.
 
-    [:octicons-arrow-right-24: Configurer](bitlocker.md)
-
-- :material-file-lock: **EFS**
-
-    ---
-
-    Chiffrement de fichiers individuels avec Encrypting File System.
-
-    [:octicons-arrow-right-24: Configurer](efs.md)
-
-- :material-shield-bug: **Windows Defender**
-
-    ---
-
-    Antivirus et protection en temps reel sur Windows Server.
-
-    [:octicons-arrow-right-24: Configurer](windows-defender.md)
+    [:octicons-arrow-right-24: Deployer](gestion-mises-a-jour.md)
 
 </div>
-

@@ -48,5 +48,13 @@ description: Gestion des disques Windows Server - types, volumes et iSCSI.
 
     [:octicons-arrow-right-24: Configurer](iscsi.md)
 
+- :material-content-duplicate: **Deduplication des donnees**
+
+    ---
+
+    Eliminer les donnees dupliquees pour optimiser l'espace disque.
+
+    [:octicons-arrow-right-24: Optimiser](deduplication.md)
+
 </div>
 

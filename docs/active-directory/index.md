@@ -65,6 +65,14 @@ description: Services d'annuaire Active Directory - AD DS, DNS, DHCP et strategi
 
     [:octicons-arrow-right-24: Appliquer](gpo/index.md)
 
+- :material-shield-key: **AD FS**
+
+    ---
+
+    Authentification federee, Single Sign-On et federation d'identite avec AD FS.
+
+    [:octicons-arrow-right-24: Decouvrir](adfs/index.md)
+
 </div>
 
 ## Prerequis

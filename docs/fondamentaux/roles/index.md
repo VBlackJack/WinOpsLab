@@ -42,5 +42,13 @@ Cette section explique le systeme de roles et fonctionnalites de Windows Server.
 
     [:octicons-arrow-right-24: Configurer](ajout-suppression.md)
 
+- :material-printer: **Services d'impression**
+
+    ---
+
+    Deployer et gerer le role Print and Document Services et les imprimantes.
+
+    [:octicons-arrow-right-24: Deployer](services-impression.md)
+
 </div>
 

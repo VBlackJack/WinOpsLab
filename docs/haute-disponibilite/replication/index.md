@@ -1,6 +1,6 @@
 ---
-title: Protection des donnees
-description: Protection des donnees - BitLocker et EFS.
+title: Replication du stockage
+description: Replication de volumes avec Storage Replica pour la reprise d'activite.
 ---
 <!--
   Copyright 2026 Julien Bombled
@@ -18,35 +18,20 @@ description: Protection des donnees - BitLocker et EFS.
   limitations under the License.
 -->
 
-# Protection des donnees
+# Replication du stockage
+
+Cette section couvre la replication de volumes pour la haute disponibilite et la reprise d'activite.
 
 ## Contenu
 
 <div class="grid cards" markdown>
 
-- :material-lock-outline: **BitLocker**
+- :material-content-copy: **Storage Replica**
 
     ---
 
-    Chiffrement complet des volumes avec BitLocker Drive Encryption.
+    Replication synchrone et asynchrone de volumes pour la continuite d'activite.
 
-    [:octicons-arrow-right-24: Configurer](bitlocker.md)
-
-- :material-file-lock: **EFS**
-
-    ---
-
-    Chiffrement de fichiers individuels avec Encrypting File System.
-
-    [:octicons-arrow-right-24: Configurer](efs.md)
-
-- :material-shield-bug: **Windows Defender**
-
-    ---
-
-    Antivirus et protection en temps reel sur Windows Server.
-
-    [:octicons-arrow-right-24: Configurer](windows-defender.md)
+    [:octicons-arrow-right-24: Configurer](storage-replica.md)
 
 </div>
-

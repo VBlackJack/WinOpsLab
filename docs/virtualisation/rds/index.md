@@ -1,6 +1,6 @@
 ---
-title: Protection des donnees
-description: Protection des donnees - BitLocker et EFS.
+title: Services Bureau a distance (RDS)
+description: Remote Desktop Services - sessions, RemoteApp et licences.
 ---
 <!--
   Copyright 2026 Julien Bombled
@@ -18,35 +18,20 @@ description: Protection des donnees - BitLocker et EFS.
   limitations under the License.
 -->
 
-# Protection des donnees
+# Services Bureau a distance (RDS)
+
+Cette section couvre le deploiement et la gestion des Remote Desktop Services.
 
 ## Contenu
 
 <div class="grid cards" markdown>
 
-- :material-lock-outline: **BitLocker**
+- :material-remote-desktop: **Architecture et deploiement RDS**
 
     ---
 
-    Chiffrement complet des volumes avec BitLocker Drive Encryption.
+    Comprendre l'architecture RDS, deployer une ferme de sessions et configurer RemoteApp.
 
-    [:octicons-arrow-right-24: Configurer](bitlocker.md)
-
-- :material-file-lock: **EFS**
-
-    ---
-
-    Chiffrement de fichiers individuels avec Encrypting File System.
-
-    [:octicons-arrow-right-24: Configurer](efs.md)
-
-- :material-shield-bug: **Windows Defender**
-
-    ---
-
-    Antivirus et protection en temps reel sur Windows Server.
-
-    [:octicons-arrow-right-24: Configurer](windows-defender.md)
+    [:octicons-arrow-right-24: Deployer](architecture-rds.md)
 
 </div>
-

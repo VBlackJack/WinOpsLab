@@ -82,5 +82,29 @@ Cette section couvre les services de domaine Active Directory, du deploiement a 
 
     [:octicons-arrow-right-24: Lire](niveaux-fonctionnels.md)
 
+- :material-badge-account: **Comptes de service gMSA**
+
+    ---
+
+    Deployer des Group Managed Service Accounts pour securiser les services sans gestion manuelle des mots de passe.
+
+    [:octicons-arrow-right-24: Deployer](gmsa.md)
+
+- :material-form-textbox-password: **Politiques de mot de passe (PSO)**
+
+    ---
+
+    Configurer des politiques de mot de passe granulaires par groupe d'utilisateurs.
+
+    [:octicons-arrow-right-24: Configurer](politiques-mot-de-passe.md)
+
+- :material-shield-key: **Delegation Kerberos**
+
+    ---
+
+    Comprendre et configurer la delegation Kerberos pour les architectures multi-tiers.
+
+    [:octicons-arrow-right-24: Lire](delegation-kerberos.md)
+
 </div>
 

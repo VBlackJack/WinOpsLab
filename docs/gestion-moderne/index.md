@@ -57,5 +57,13 @@ description: Gestion moderne de Windows Server - Windows Admin Center, Azure Hyb
 
     [:octicons-arrow-right-24: Heberger](iis/index.md)
 
+- :material-update: **WSUS**
+
+    ---
+
+    Deploiement et gestion centralisee des mises a jour Windows.
+
+    [:octicons-arrow-right-24: Mettre a jour](wsus/index.md)
+
 </div>
 

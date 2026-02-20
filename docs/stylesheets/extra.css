@@ -56,6 +56,11 @@
   color: #ef9a9a;
 }
 
+/* Allow navigation tabs to wrap when the header is too narrow */
+.md-tabs__list {
+  flex-wrap: wrap;
+}
+
 /* Card grid hover effect */
 .md-typeset .grid.cards > ul > li {
   transition: box-shadow 0.2s, transform 0.2s;

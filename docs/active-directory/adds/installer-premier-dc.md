@@ -220,6 +220,58 @@ Install-ADDSDomainController `
 
 Voir le [Memento des Ports AD](../../ressources/memento-ports-ad.md) pour la liste complete.
 
+!!! example "Scenario pratique"
+
+    **Contexte :** Marc, administrateur systeme, tente de promouvoir un nouveau serveur `SRV-DC-01` en premier controleur de domaine pour creer la foret `lab.local`. La commande `Install-ADDSForest` echoue avec l'erreur "DNS not available or unable to reach DNS servers configured for this computer".
+
+    **Symptomes :**
+
+    - La promotion s'arrete avec une erreur DNS
+    - L'Assistant de configuration AD DS signale que le DNS n'est pas accessible
+    - La verification des prerequis (`Test-ADDSForestInstallation`) retourne des avertissements DNS
+
+    **Diagnostic :**
+
+    ```powershell
+    # Check DNS client configuration on the future DC
+    Get-DnsClientServerAddress -InterfaceAlias "Ethernet" |
+        Select-Object InterfaceAlias, ServerAddresses
+    ```
+
+    Resultat :
+
+    ```text
+    InterfaceAlias  ServerAddresses
+    --------------  ---------------
+    Ethernet        {8.8.8.8, 8.8.4.4}
+    ```
+
+    La carte reseau pointe vers les serveurs DNS publics de Google. Lors de la promotion, Windows tente de resoudre `_ldap._tcp.lab.local` pour verifier l'existence du domaine — les serveurs DNS publics ne connaissent pas cette zone et retournent une erreur. Le DC doit pointer vers lui-meme (`127.0.0.1`) car il va devenir serveur DNS lors de la promotion.
+
+    **Solution :**
+
+    ```powershell
+    # Point the DNS client to localhost (the server will become its own DNS)
+    Set-DnsClientServerAddress -InterfaceAlias "Ethernet" `
+        -ServerAddresses "127.0.0.1"
+
+    # Verify the change
+    Get-DnsClientServerAddress -InterfaceAlias "Ethernet" |
+        Select-Object InterfaceAlias, ServerAddresses
+
+    # Retry the forest promotion
+    Install-ADDSForest `
+        -DomainName "lab.local" `
+        -DomainNetbiosName "LAB" `
+        -ForestMode "WinThreshold" `
+        -DomainMode "WinThreshold" `
+        -InstallDns:$true `
+        -SafeModeAdministratorPassword (ConvertTo-SecureString "P@ssw0rd!DSRM" -AsPlainText -Force) `
+        -Force:$true
+    ```
+
+    Apres correction du DNS, la promotion aboutit correctement. Le role DNS est installe automatiquement et le serveur enregistre ses propres enregistrements SRV dans la zone `lab.local` qu'il vient de creer.
+
 ## Pour aller plus loin
 
 - [Structure des OU](structure-ou.md) - organiser l'annuaire

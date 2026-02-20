@@ -78,7 +78,7 @@ graph TD
     style OU_SVC fill:#795548,color:#fff
 ```
 
-![Hierarchie AD DS - Forest lab.local, Domaine, OUs et roles FSMO](../../diagrams/ad-ds-forest.drawio)
+![AD DS Forest](../../diagrams/ad-ds-forest.drawio)
 
 ### Par departement (recommande pour les PME)
 

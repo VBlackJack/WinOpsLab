@@ -311,6 +311,16 @@ Get-WinEvent -LogName "Microsoft-Windows-Hyper-V-VMMS-Admin" -MaxEvents 20 |
 - L'option **SMB/RDMA** offre les meilleures performances sur les reseaux 10 Gbps+
 - Activez la **compatibilite CPU** si les hotes n'ont pas exactement le meme processeur
 
+!!! danger "Erreurs courantes"
+
+    1. **Utiliser CredSSP en production pour la Live Migration.** CredSSP exige que l'administrateur soit connecte sur l'hote source pour deleguer ses identifiants. En cas de maintenance planifiee ou de migration automatisee (SCVMM, scripts), la migration echoue car personne n'est connecte. Toujours utiliser Kerberos avec delegation de contrainte en production.
+
+    2. **Ne pas creer les memes commutateurs virtuels sur tous les hotes.** Si la VM est connectee a un vSwitch `LAN-Production` sur l'hote source mais que ce switch n'existe pas (ou a un nom different) sur la destination, la migration echoue. Standardiser les noms de vSwitch sur tout le parc Hyper-V.
+
+    3. **Migrer des VMs avec des processeurs incompatibles sans activer la compatibilite.** Des generations de processeur differentes (Haswell vs Skylake) provoquent une erreur immediate. Activer `Set-VMProcessor -CompatibilityForMigrationEnabled $true` sur la VM avant la migration si les hotes n'ont pas le meme modele de CPU.
+
+    4. **Lancer plusieurs migrations simultanees sur un reseau partage.** Chaque Live Migration transfere plusieurs Go de memoire. Sur un reseau 1 Gbps partage avec le trafic de production, deux migrations simultanees saturent la bande passante et impactent les utilisateurs. Utiliser un reseau dedie pour la migration et limiter les migrations simultanees avec `Set-VMHost -MaximumVirtualMachineMigrations 1`.
+
 ---
 
 ## Scenario pratique

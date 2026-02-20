@@ -444,6 +444,16 @@ Get-NlbCluster -ClusterName "YOURNLB" | Get-NlbClusterDriverInfo
 
     Les logs IIS de `SRV-WEB-03` se remplissent desormais et la charge est distribuee sur les trois noeuds.
 
+!!! danger "Erreurs courantes"
+
+    1. **Laisser la regle de port par defaut (0-65535).** La regle par defaut repartit TOUT le trafic, y compris RDP (3389) et SMB (445). Si un administrateur se connecte en RDP via l'IP virtuelle NLB, sa session peut basculer vers un autre noeud a chaque reconnexion. Supprimer la regle par defaut et creer des regles uniquement pour les ports applicatifs (80, 443).
+
+    2. **Utiliser le mode Unicast avec une seule carte reseau.** En mode unicast, NLB remplace l'adresse MAC de la carte par une adresse MAC virtuelle partagee. Avec une seule NIC, les noeuds ne peuvent plus communiquer entre eux (heartbeat impossible, RDP inaccessible). Toujours utiliser deux NICs en mode unicast ou passer en mode multicast.
+
+    3. **Ne pas configurer l'affinite pour les applications avec sessions.** Sans affinite (`-Affinity None`), chaque requete HTTP d'un meme client peut etre envoyee a un noeud different. Si l'application utilise des sessions en memoire (sans session stickiness cote applicatif), l'utilisateur perd sa session a chaque requete. Configurer `-Affinity Single` pour les applications a etat.
+
+    4. **Oublier l'enregistrement DNS apres la creation du cluster.** Le cluster NLB fonctionne, mais les utilisateurs ne peuvent pas y acceder par nom car aucun enregistrement DNS ne pointe vers l'IP virtuelle. Toujours creer un enregistrement A dans le DNS interne (`Add-DnsServerResourceRecordA`) pointant vers l'IP virtuelle du cluster.
+
 ## Points cles a retenir
 
 - Installez NLB sur **tous les noeuds** avant de creer le cluster

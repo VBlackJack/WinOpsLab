@@ -28,6 +28,10 @@ tags:
 
 <span class="level-advanced">Avance</span> · Temps estime : 45 minutes
 
+!!! example "Analogie"
+
+    Passer de PerfMon a Prometheus/Grafana, c'est comme remplacer un **thermometre a mercure** par une **station meteo connectee**. Le thermometre vous donne la temperature de la piece ou vous etes (un serveur a la fois). La station meteo collecte les donnees de tous les capteurs de la maison, les historise sur des mois, affiche des graphiques en temps reel, et vous alerte si la temperature d'une piece depasse un seuil — meme quand vous n'etes pas chez vous.
+
 ## Pourquoi moderniser ?
 
 Les outils natifs comme **Performance Monitor** (PerfMon) et **Event Viewer** sont excellents pour le depannage ponctuel, mais limites pour la surveillance proactive d'un parc de serveurs.
@@ -192,7 +196,23 @@ Vous disposez maintenant d'un tableau de bord temps reel affichant CPU, RAM, Dis
            200
     ```
 
-    Le service est redémarre, l'endpoint repond. Les metriques reapparaissent dans Grafana dans
+    Le service est redemarre, l'endpoint repond. Les metriques reapparaissent dans Grafana dans
     le cycle de scrape suivant (15 secondes). Pour eviter la recidive, une regle Alertmanager
     est ajoutee pour surveiller l'etat du service windows_exporter lui-meme via la metrique
     `windows_service_state{name="windows_exporter"}`.
+
+!!! danger "Erreurs courantes"
+
+    1. **Ne pas ouvrir le port 9182 dans le pare-feu Windows.** Apres installation de windows_exporter, les metriques sont exposees sur le port 9182 mais le pare-feu Windows bloque l'acces par defaut. Prometheus ne peut pas scraper et aucune alerte n'est generee. Creer une regle `New-NetFirewallRule -DisplayName "Windows Exporter" -Direction Inbound -Protocol TCP -LocalPort 9182 -Action Allow`.
+
+    2. **Utiliser le scrape interval par defaut sur un grand parc.** Avec 50+ serveurs et un intervalle de 15 secondes, Prometheus genere une charge importante (metriques, stockage, reseau). Augmenter l'intervalle a 30s ou 60s pour les serveurs non critiques et garder 15s uniquement pour les machines critiques.
+
+    3. **Ignorer la retention des donnees.** Par defaut, Prometheus conserve les metriques 15 jours. Sur un lab, c'est suffisant. En production, il faut configurer `--storage.tsdb.retention.time=90d` et prevoir l'espace disque correspondant (environ 1-2 Go par serveur et par mois).
+
+    4. **Deployer windows_exporter sans collecteurs specifiques.** L'installation par defaut active tous les collecteurs, generant des milliers de metriques inutiles. Specifier explicitement les collecteurs necessaires avec `ENABLED_COLLECTORS="cpu,cs,logical_disk,net,os,service,system,memory"` pour reduire le bruit et la charge.
+
+## Pour aller plus loin
+
+- [Performance Monitor](performance-monitor.md) pour la supervision native Windows
+- [Data Collector Sets](data-collector-sets.md) pour les collecteurs de donnees integres
+- [Event Viewer](event-viewer.md) pour la consultation des journaux d'evenements

@@ -27,6 +27,10 @@ tags:
 
 <span class="level-advanced">Avance</span> · Temps estime : 45 minutes
 
+!!! example "Analogie"
+
+    Le modele de Tiering fonctionne comme les **niveaux d'acces d'une banque**. Le coffre-fort central (Tier 0) n'est accessible qu'au directeur avec une cle biometrique. Les guichets (Tier 1) sont geres par les conseillers. Et l'espace client (Tier 2) est ouvert au public. Un conseiller ne peut pas entrer dans le coffre-fort, et un client ne peut pas passer derriere les guichets. Si quelqu'un vole le badge d'un client, il n'accede qu'a l'espace public — jamais au coffre.
+
 ## Pourquoi le Tiering ?
 
 Dans une attaque classique (type Ransomware), l'attaquant commence par compromettre un poste de travail (Phishing), vole les identifiants en memoire (LSASS), et rebondit de machine en machine (Lateral Movement) jusqu'a trouver un compte Administrateur de Domaine.
@@ -154,3 +158,19 @@ Les Admins Tier 0 ne doivent administrer l'AD que depuis une station de travail 
     ```
 
     Desormais, toute tentative de connexion du compte `T0-admin` sur un serveur non-DC est bloquee par la politique d'authentification AD. L'administrateur doit configurer une alerte sur l'Event ID 4820 pour detecter les futures violations.
+
+!!! danger "Erreurs courantes"
+
+    1. **Utiliser un seul compte admin pour tous les Tiers.** Un administrateur qui gere le domaine (Tier 0) avec le meme compte que celui utilise pour se connecter aux postes utilisateurs (Tier 2) expose ses identifiants privilegies a toute machine compromise. Creer systematiquement des comptes separes par Tier.
+
+    2. **Implementer le Tiering sans GPO de restriction.** Documenter le modele ne suffit pas : sans GPO `Deny log on locally` et `Deny log on through Remote Desktop Services`, rien n'empeche techniquement un admin Tier 0 de se connecter sur un serveur Tier 1. L'enforcement doit etre technique, pas seulement organisationnel.
+
+    3. **Oublier les comptes de service dans le modele.** Les comptes de service (SQL, IIS, SCCM) qui tournent sur des serveurs Tier 1 mais ont des droits Tier 0 (ex: replication AD) brisent le cloisonnement. Auditer les comptes de service avec `Get-ADServiceAccount` et les placer dans le Tier correspondant a leur niveau de privilege reel.
+
+    4. **Ne pas monitorer les violations du modele.** Sans surveillance des Event ID 4624/4625 croises avec les appartenances de groupes, les violations passent inapercues. Mettre en place une alerte sur les connexions d'un compte `T0-*` sur un serveur hors OU Controleurs-Domaine.
+
+## Pour aller plus loin
+
+- [Bonnes pratiques de durcissement](bonnes-pratiques.md) pour les mesures complementaires
+- [Comptes privilegies](comptes-privilegies.md) pour la gestion des comptes a hauts privileges
+- [LAPS](laps.md) pour la rotation des mots de passe locaux

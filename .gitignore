@@ -19,6 +19,9 @@ __pycache__/
 CLAUDE.md
 .claude/
 
+# Other AI
+GEMINI.md
+
 # OS
 Thumbs.db
 Desktop.ini

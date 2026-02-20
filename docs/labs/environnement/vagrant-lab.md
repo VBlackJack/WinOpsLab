@@ -27,6 +27,10 @@ tags:
 
 <span class="level-intermediate">Intermediaire</span> · Temps estime : 15 minutes
 
+!!! example "Analogie"
+
+    Vagrant est comme un **plan de montage IKEA pour votre lab**. Au lieu de construire chaque meuble (VM) piece par piece en suivant 30 etapes manuelles, vous donnez le plan (Vagrantfile) a un robot (Vagrant) qui assemble tout automatiquement. Si vous voulez tout recommencer, une seule commande (`vagrant destroy`) demonte tout, et `vagrant up` reconstruit a l'identique.
+
 Pour accelerer la mise en place de vos labs, nous fournissons une configuration **Vagrant**. Cela permet de deployer `DC-01` et `SRV-01` en une seule commande, plutot que de creer les VMs manuellement.
 
 ## Prerequis
@@ -97,3 +101,9 @@ vagrant winrm DC-01
 ```
 
 Vous pouvez maintenant suivre les TPs du module **Active Directory** directement sur ces machines.
+
+## Pour aller plus loin
+
+- [Architecture du lab](architecture-lab.md) pour comprendre le plan reseau complet
+- [Creation de VMs](creation-vms.md) pour la creation manuelle dans Hyper-V
+- [Prerequis materiel](prerequis-materiel.md) pour verifier la compatibilite de votre machine

@@ -27,6 +27,10 @@ tags:
 
 <span class="level-advanced">Avance</span> · Temps estime : 40 minutes
 
+!!! example "Analogie"
+
+    Depanner le DNS, c'est comme **retrouver une lettre perdue dans un systeme postal**. D'abord, vous verifiez que l'expediteur a bien ecrit l'adresse (resolution du nom). Puis que la lettre est partie du bon bureau de poste (serveur DNS client). Ensuite que le bureau de poste connait le destinataire (zone DNS). Et enfin, si c'est une adresse etrangere, que le bureau sait a qui transmettre (redirecteurs). A chaque etape, un outil vous aide : `Resolve-DnsName` est le suivi de colis.
+
 ## Memento des Commandes de Survie
 
 Avant de plonger dans les theories, voici les commandes indispensables pour survivre a un probleme DNS.
@@ -171,6 +175,66 @@ $Validation | Format-Table -AutoSize
 ### 3. Pollution DNS (Vieux enregistrements)
 *   **Cause :** Le "Scavenging" (nettoyage) n'est pas active. Les vieilles IP de PC disparus restent dans la zone.
 *   **Fix :** Activer le Scavenging sur le Serveur ET sur la Zone. (Voir section *Concepts DNS*).
+
+!!! danger "Erreurs courantes"
+
+    1. **Pointer les clients DNS vers des serveurs publics (8.8.8.8) dans un environnement AD.** Les serveurs DNS publics ne connaissent pas les zones internes (`lab.local`, `_msdcs.lab.local`). Les postes clients ne peuvent pas resoudre les enregistrements SRV du domaine et la jonction au domaine echoue. Les clients doivent pointer vers les controleurs de domaine comme serveurs DNS primaires.
+
+    2. **Oublier de configurer les redirecteurs sur le serveur DNS.** Sans redirecteurs (Forwarders), le serveur DNS ne peut resoudre que les zones dont il est autoritaire. Toute requete pour un nom public (`google.fr`, `windowsupdate.com`) echoue. Configurer au moins deux redirecteurs avec `Set-DnsServerForwarder -IPAddress "1.1.1.1","8.8.8.8"`.
+
+    3. **Ne pas verifier les enregistrements SRV apres la promotion d'un DC.** Les enregistrements `_ldap._tcp.dc._msdcs.domaine` sont essentiels pour la localisation des controleurs de domaine. S'ils sont absents, les clients ne trouvent pas le DC. Verifier avec `Resolve-DnsName _ldap._tcp.dc._msdcs.lab.local -Type SRV` et forcer leur re-creation avec `Restart-Service Netlogon`.
+
+    4. **Desactiver le Scavenging par peur de perdre des enregistrements.** Sans nettoyage automatique, les enregistrements DNS de machines retirees du reseau persistent indefiniment, polluant la zone et provoquant des conflits. Activer le Scavenging avec des intervalles raisonnables (7 jours de non-actualisation + 7 jours de nettoyage).
+
+!!! example "Scenario pratique"
+
+    **Contexte :** Thomas, administrateur reseau, constate que les mises a jour Windows ne fonctionnent plus sur aucun serveur du domaine `lab.local`. Les serveurs tentent d'acceder a `windowsupdate.com` mais la resolution echoue.
+
+    **Symptomes :**
+
+    - `Resolve-DnsName windowsupdate.com` retourne *DNS name does not exist*
+    - `ping 8.8.8.8` fonctionne (connectivite Internet OK)
+    - La resolution des noms internes (`dc01.lab.local`) fonctionne normalement
+
+    **Diagnostic :**
+
+    ```powershell
+    # Check DNS forwarders on the domain controller
+    Get-DnsServerForwarder | Select-Object IPAddress
+    ```
+
+    Resultat :
+
+    ```text
+    IPAddress
+    ---------
+    {}
+    ```
+
+    La liste des redirecteurs est vide. Le serveur DNS ne sait pas a qui transmettre les requetes pour les zones non-locales.
+
+    **Solution :**
+
+    ```powershell
+    # Configure DNS forwarders to reliable public DNS servers
+    Set-DnsServerForwarder -IPAddress "1.1.1.1", "8.8.8.8"
+
+    # Clear the DNS server cache to apply immediately
+    Clear-DnsServerCache -Force
+
+    # Verify the fix
+    Resolve-DnsName windowsupdate.com -Type A
+    ```
+
+    Resultat :
+
+    ```text
+    Name                           Type TTL  Section IPAddress
+    ----                           ---- ---  ------- ---------
+    windowsupdate.com              A    300  Answer  13.107.4.50
+    ```
+
+    La resolution externe fonctionne a nouveau. Thomas configure egalement un second serveur DNS comme redirecteur de secours pour eviter que le probleme ne se reproduise en cas de panne du redirecteur principal.
 
 ## Pour aller plus loin
 

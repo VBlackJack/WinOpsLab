@@ -27,6 +27,26 @@ tags:
 
 <span class="level-advanced">Avance</span> · Temps estime : 30 minutes
 
+!!! example "Analogie"
+
+    Pktmon est le **stethoscope du medecin reseau**. Quand un paquet reseau ne parvient pas a destination, c'est comme un colis postal qui se perd. Pktmon vous permet d'ausculter chaque etape du trajet — de l'application jusqu'a la carte reseau — pour trouver exactement ou le paquet est bloque ou abandonne. Et contrairement a Wireshark, il est deja dans la boite a outils du systeme, comme un stethoscope integre a la blouse.
+
+```mermaid
+graph TD
+    APP["Application (TCP/UDP)"] --> TCPIP["Pile TCP/IP"]
+    TCPIP --> WFP["Windows Filtering Platform<br/>(Pare-feu)"]
+    WFP --> NDIS["Driver NDIS<br/>(Carte reseau)"]
+    NDIS --> NET["Reseau physique"]
+
+    PKTMON["pktmon start --etw -c"] -.->|Capture a chaque couche| APP
+    PKTMON -.-> TCPIP
+    PKTMON -.-> WFP
+    PKTMON -.-> NDIS
+
+    style WFP fill:#f44336,color:#fff
+    style PKTMON fill:#1565c0,color:#fff
+```
+
 ## Pourquoi Pktmon ?
 
 Vous avez un probleme reseau sur un serveur de production. Vous voulez voir si les paquets arrivent.
@@ -185,3 +205,19 @@ Remove-Item PktMon.etl, capture.txt, capture.pcapng
 
     Apres creation de la regle, `Test-NetConnection SRV-DB-01 -Port 1433` retourne
     `TcpTestSucceeded: True` et les connexions SQL s'etablissent normalement.
+
+!!! danger "Erreurs courantes"
+
+    1. **Oublier de supprimer les filtres apres la capture.** Les filtres Pktmon persistent entre les redemarrages du service. Si vous ne lancez pas `pktmon filter remove` apres votre diagnostic, les prochaines captures seront filtrees de maniere inattendue. Toujours nettoyer apres usage.
+
+    2. **Capturer sans filtre sur un serveur en production.** Sans filtre, Pktmon enregistre TOUS les paquets. Sur un serveur charge, le fichier `.etl` peut atteindre plusieurs Go en quelques secondes et saturer le disque. Toujours definir un filtre avec `pktmon filter add` avant de demarrer.
+
+    3. **Analyser uniquement le fichier texte.** Le format texte (`pktmon format`) montre un resume, mais le format `.pcapng` (`pktmon pcapng`) ouvert dans Wireshark revele les en-tetes complets, le contenu des paquets et les retransmissions TCP. Toujours convertir en pcapng pour une analyse approfondie.
+
+    4. **Confondre un drop WFP avec un probleme reseau distant.** Quand Pktmon montre `Action: Drop, Reason: PolicyFrag` au niveau WFP, le probleme est local (pare-feu Windows). Ne pas chercher la cause sur le serveur distant ou sur les equipements reseau intermediaires.
+
+## Pour aller plus loin
+
+- [Outils reseau](outils-reseau.md) pour les autres outils de diagnostic reseau natifs
+- [Outils systeme](outils-systeme.md) pour le diagnostic systeme complementaire
+- [Pare-feu Windows](../../reseau/pare-feu/wfas-concepts.md) pour comprendre les regles WFP qui bloquent les paquets

@@ -397,6 +397,16 @@ wevtutil sl ForwardedEvents /rt:true /ab:true
     Sur un collecteur centralisant des dizaines de serveurs, le journal **ForwardedEvents**
     doit etre dimensionne a plusieurs Go. Prevoyez un disque dedie pour les journaux.
 
+!!! danger "Erreurs courantes"
+
+    1. **Ne pas configurer WinRM sur le collecteur.** WEF repose sur WinRM pour le transport. Si le service WinRM est arrete ou mal configure sur le collecteur (WEC), les sources ne peuvent pas envoyer leurs evenements. Verifier avec `Get-Service WinRM` et configurer avec `winrm quickconfig /q` sur le collecteur.
+
+    2. **Utiliser le mode "initie par le collecteur" en production.** Ce mode necessite d'enumerer chaque source manuellement et ne passe pas a l'echelle. Au-dela de 50 serveurs, privilegier le mode "initie par la source" avec deploiement GPO pour que les nouvelles machines s'inscrivent automatiquement.
+
+    3. **Laisser la taille par defaut du journal ForwardedEvents (20 Mo).** Avec une dizaine de sources envoyant des evenements de securite, le journal de 20 Mo se remplit en quelques heures et les anciens evenements sont ecrases. Dimensionner a 1 Go minimum avec `wevtutil sl ForwardedEvents /ms:1073741824`.
+
+    4. **Ne pas filtrer les evenements dans l'abonnement.** Collecter tous les evenements de tous les journaux (`*`) genere un volume enorme et noie les evenements importants. Filtrer par Event ID pertinents (4624, 4625, 4720, 4726, 7034) et par niveaux de gravite (Critical, Error, Warning) dans la requete XPath de l'abonnement.
+
 ## Points cles a retenir
 
 - WEF/WEC est la solution native Microsoft pour centraliser les journaux sans agent tiers

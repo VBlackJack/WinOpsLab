@@ -216,6 +216,16 @@ Install-ADDSDomainController `
         
         **Correction :** Changez le serveur DNS sur la carte reseau de `PC-01` pour pointer vers `10.0.0.10`.
 
+!!! danger "Erreurs courantes"
+
+    1. **Configurer le DNS client du futur DC vers des serveurs publics (8.8.8.8).** Lors de la promotion, Windows tente de verifier l'existence du domaine via DNS. Les serveurs publics ne connaissent pas `lab.local` et retournent une erreur. Le futur DC doit pointer vers `127.0.0.1` (lui-meme) car il deviendra serveur DNS.
+
+    2. **Utiliser un nom de domaine en `.local` en production.** Le suffixe `.local` entre en conflit avec le protocole mDNS/Bonjour utilise par les appareils Apple et certains peripheriques reseau. Privilegier un sous-domaine du domaine public (`ad.monentreprise.com` ou `corp.monentreprise.com`). En lab, `.local` reste acceptable.
+
+    3. **Perdre le mot de passe DSRM (SafeModeAdministratorPassword).** Ce mot de passe est la seule maniere d'acceder au controleur de domaine en mode restauration des services d'annuaire. Il n'est pas recuperable. Le stocker dans un coffre-fort de mots de passe securise des la promotion.
+
+    4. **Ne deployer qu'un seul controleur de domaine.** Un DC unique est un point de defaillance critique : s'il tombe, plus personne ne peut s'authentifier. Toujours deployer au minimum deux DC avec replication pour la redondance.
+
 ## Ports reseau requis
 
 Voir le [Memento des Ports AD](../../ressources/memento-ports-ad.md) pour la liste complete.

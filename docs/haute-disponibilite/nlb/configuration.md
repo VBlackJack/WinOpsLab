@@ -382,6 +382,68 @@ Get-WinEvent -LogName "Microsoft-Windows-NLB/Operational" -MaxEvents 20 |
 Get-NlbCluster -ClusterName "YOURNLB" | Get-NlbClusterDriverInfo
 ```
 
+!!! example "Scenario pratique"
+
+    **Contexte :** Romain, administrateur systeme dans une societe de e-commerce, dispose d'un cluster NLB de deux noeuds (`SRV-WEB-01` et `SRV-WEB-02`) servant du trafic HTTP/HTTPS. Apres ajout d'un troisieme noeud `SRV-WEB-03`, tout le trafic continue de transiter uniquement par les deux anciens noeuds.
+
+    **Symptomes :**
+
+    - Les logs IIS de `SRV-WEB-03` restent vides alors que le serveur est en ligne
+    - `Get-NlbClusterNode` liste bien les trois noeuds mais le trafic ne se repartit pas
+
+    **Diagnostic :**
+
+    ```powershell
+    # Check load weight of each node on port 80
+    Get-NlbClusterNode | ForEach-Object {
+        Get-NlbClusterNodePortRule -HostName $_.Name -Port 80 |
+            Select-Object @{N="Node";E={$_.HostName}}, LoadWeight
+    }
+    ```
+
+    Resultat :
+
+    ```text
+    Node          LoadWeight
+    ----          ----------
+    SRV-WEB-01    50
+    SRV-WEB-02    50
+    SRV-WEB-03     0
+    ```
+
+    Le nouveau noeud a un poids de charge a 0 : il ne recoit aucun trafic. Lors de l'ajout du noeud, le poids n'a pas ete configure.
+
+    **Solution :**
+
+    ```powershell
+    # Redistribute load equally across all three nodes (33% each)
+    Set-NlbClusterNodePortRule -HostName "SRV-WEB-01" -InterfaceName "Ethernet" -Port 80 -LoadWeight 33
+    Set-NlbClusterNodePortRule -HostName "SRV-WEB-02" -InterfaceName "Ethernet" -Port 80 -LoadWeight 33
+    Set-NlbClusterNodePortRule -HostName "SRV-WEB-03" -InterfaceName "Ethernet" -Port 80 -LoadWeight 34
+    ```
+
+    Apres quelques secondes de convergence, Romain verifie la repartition :
+
+    ```powershell
+    # Verify new load distribution
+    Get-NlbClusterNode | ForEach-Object {
+        Get-NlbClusterNodePortRule -HostName $_.Name -Port 80 |
+            Select-Object @{N="Node";E={$_.HostName}}, LoadWeight
+    }
+    ```
+
+    Resultat :
+
+    ```text
+    Node          LoadWeight
+    ----          ----------
+    SRV-WEB-01    33
+    SRV-WEB-02    33
+    SRV-WEB-03    34
+    ```
+
+    Les logs IIS de `SRV-WEB-03` se remplissent desormais et la charge est distribuee sur les trois noeuds.
+
 ## Points cles a retenir
 
 - Installez NLB sur **tous les noeuds** avant de creer le cluster

@@ -110,3 +110,89 @@ Vous disposez maintenant d'un tableau de bord temps reel affichant CPU, RAM, Dis
     $result = 1; foreach ($number in 1..2147483647) {$result = $result * $number}
     ```
 5.  Observez l'alerte se declencher dans Grafana.
+
+!!! example "Scenario pratique"
+
+    **Contexte :** Prometheus ne collecte plus les metriques du serveur SRV-MONITOR-01. Le
+    dashboard Grafana affiche "No data" depuis 2 heures sur tous les panneaux concernant
+    ce serveur.
+
+    **Symptomes :**
+
+    - Tous les panneaux Grafana relatifs a SRV-MONITOR-01 affichent "No data"
+    - Les autres serveurs supervises sont toujours visibles
+    - Aucune alerte n'a ete declenchee dans Alertmanager
+
+    **Diagnostic :**
+
+    ```powershell
+    # Test the metrics endpoint from the Prometheus server
+    Invoke-WebRequest http://SRV-MONITOR-01:9182/metrics -UseBasicParsing
+    ```
+
+    Resultat :
+
+    ```text
+    Invoke-WebRequest : Unable to connect to the remote server
+    At line:1 char:1
+    + Invoke-WebRequest http://SRV-MONITOR-01:9182/metrics
+    ```
+
+    La connexion est refusee. Verification de l'etat du service windows_exporter :
+
+    ```powershell
+    # Check windows_exporter service on the monitored server
+    Get-Service windows_exporter -ComputerName SRV-MONITOR-01
+    ```
+
+    Resultat :
+
+    ```text
+    Status   Name               DisplayName
+    ------   ----               -----------
+    Stopped  windows_exporter   windows_exporter
+    ```
+
+    Le service windows_exporter s'est arrete. Consultation des journaux pour identifier la cause :
+
+    ```powershell
+    # Check system events around the time the data disappeared
+    Get-WinEvent -ComputerName SRV-MONITOR-01 -FilterHashtable @{
+        LogName = 'System'
+        Id      = 7036
+        StartTime = (Get-Date).AddHours(-3)
+    } | Where-Object { $_.Message -like "*windows_exporter*" } |
+        Select-Object TimeCreated, Message
+    ```
+
+    Resultat :
+
+    ```text
+    TimeCreated           Message
+    -----------           -------
+    2026-02-20 10:14:22   The windows_exporter service entered the stopped state.
+    ```
+
+    **Solution :**
+
+    ```powershell
+    # Restart the windows_exporter service and set it to Automatic startup
+    Start-Service windows_exporter -ComputerName SRV-MONITOR-01
+    Set-Service windows_exporter -StartupType Automatic -ComputerName SRV-MONITOR-01
+
+    # Verify the endpoint is reachable again
+    Invoke-WebRequest http://SRV-MONITOR-01:9182/metrics -UseBasicParsing | Select-Object StatusCode
+    ```
+
+    Resultat :
+
+    ```text
+    StatusCode
+    ----------
+           200
+    ```
+
+    Le service est redémarre, l'endpoint repond. Les metriques reapparaissent dans Grafana dans
+    le cycle de scrape suivant (15 secondes). Pour eviter la recidive, une regle Alertmanager
+    est ajoutee pour surveiller l'etat du service windows_exporter lui-meme via la metrique
+    `windows_service_state{name="windows_exporter"}`.

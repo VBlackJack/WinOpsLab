@@ -85,3 +85,72 @@ Les Admins Tier 0 ne doivent administrer l'AD que depuis une station de travail 
 5.  Ajoutez le groupe `Domain Admins` et `Enterprise Admins`.
 
 **Resultat :** Si vous tentez d'ouvrir une session sur un PC Windows 10 avec le compte Administrateur du domaine, vous recevrez un message "La methode de connexion n'est pas autorisee". C'est une victoire pour la securite !
+
+---
+
+!!! example "Scenario pratique"
+
+    **Contexte :** Un administrateur Tier 1 utilise son compte Tier 0 (Domain Admin) pour se connecter a un serveur applicatif Tier 1, violant le modele. L'equipe securite soupconne que des credentials privilegies ont ete exposes sur un systeme non protege.
+
+    **Symptomes :**
+
+    - Le SIEM detecte une connexion interactive d'un compte `T0-admin` sur `SRV-APP-01`
+    - L'alerte indique un Logon Type 10 (RDP) depuis une adresse hors du reseau PAW
+
+    **Diagnostic :**
+
+    ```powershell
+    # Verify if a Tier 0 account connected to a Tier 1 server
+    Get-WinEvent -ComputerName "SRV-APP-01" -FilterHashtable @{
+        LogName = 'Security'; Id = 4624
+    } -MaxEvents 50 | ForEach-Object {
+        $xml = [xml]$_.ToXml()
+        $user = $xml.Event.EventData.Data | Where-Object { $_.Name -eq 'TargetUserName' } | Select-Object -ExpandProperty '#text'
+        if ($user -like "T0-*") {
+            [PSCustomObject]@{
+                Time      = $_.TimeCreated
+                Account   = $user
+                LogonType = $xml.Event.EventData.Data | Where-Object { $_.Name -eq 'LogonType' } | Select-Object -ExpandProperty '#text'
+                SourceIP  = $xml.Event.EventData.Data | Where-Object { $_.Name -eq 'IpAddress' } | Select-Object -ExpandProperty '#text'
+            }
+        }
+    }
+    ```
+
+    Resultat :
+
+    ```text
+    Time                  Account     LogonType  SourceIP
+    ----                  -------     ---------  --------
+    2026-02-20 14:32:15   T0-admin    10         10.0.2.55
+    2026-02-20 14:28:03   T0-admin    10         10.0.2.55
+    ```
+
+    Le compte Tier 0 `T0-admin` a ouvert deux sessions RDP depuis `10.0.2.55`, une adresse qui n'appartient pas au VLAN PAW (10.0.0.x). La violation du modele est confirmee.
+
+    **Solution :**
+
+    ```powershell
+    # Configure Authentication Policy to restrict Tier 0 accounts to DCs only
+    New-ADAuthenticationPolicy -Name "Tier0-RestrictToDC" `
+        -UserAllowedToAuthenticateFrom "O:SYG:SYD:(XA;OICI;CR;;;WD;(@USER.ad://ext/AuthenticationSilo == `"Tier0-Silo`"))" `
+        -Enforce $true
+
+    # Create authentication policy silo for Tier 0 accounts
+    New-ADAuthenticationPolicySilo -Name "Tier0-Silo" `
+        -UserAuthenticationPolicy "Tier0-RestrictToDC" `
+        -Enforce $true
+
+    # Assign the Tier 0 admin to the silo
+    Set-ADUser "T0-admin" -AuthenticationPolicySilo "Tier0-Silo"
+    ```
+
+    Resultat :
+
+    ```text
+    PS C:\> New-ADAuthenticationPolicy -Name "Tier0-RestrictToDC" ...
+    PS C:\> New-ADAuthenticationPolicySilo -Name "Tier0-Silo" ...
+    PS C:\> Set-ADUser "T0-admin" -AuthenticationPolicySilo "Tier0-Silo"
+    ```
+
+    Desormais, toute tentative de connexion du compte `T0-admin` sur un serveur non-DC est bloquee par la politique d'authentification AD. L'administrateur doit configurer une alerte sur l'Event ID 4820 pour detecter les futures violations.

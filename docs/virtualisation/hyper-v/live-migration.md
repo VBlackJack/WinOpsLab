@@ -313,6 +313,96 @@ Get-WinEvent -LogName "Microsoft-Windows-Hyper-V-VMMS-Admin" -MaxEvents 20 |
 
 ---
 
+## Scenario pratique
+
+!!! example "Scenario pratique"
+
+    **Contexte :** Nicolas, administrateur infrastructure, doit effectuer une migration dynamique de la VM `SRV-APP-01` depuis l'hote `HV-SRV01` vers `HV-SRV02` pour liberer de la RAM sur l'hote source. L'authentification de migration est configuree en CredSSP.
+
+    **Symptomes :**
+
+    - La commande `Move-VM` echoue immediatement avec une erreur d'acces refuse
+    - La VM reste sur l'hote source
+
+    **Diagnostic :**
+
+    ```powershell
+    # Check current migration authentication type on the source host
+    Get-VMHost -ComputerName "HV-SRV01" |
+        Select-Object VirtualMachineMigrationEnabled, VirtualMachineMigrationAuthenticationType
+    ```
+
+    Resultat :
+
+    ```text
+    VirtualMachineMigrationEnabled  VirtualMachineMigrationAuthenticationType
+    ------------------------------  -----------------------------------------
+    True                            CredSSP
+    ```
+
+    ```powershell
+    # Check migration network configuration
+    Get-VMMigrationNetwork -ComputerName "HV-SRV01"
+    ```
+
+    Resultat :
+
+    ```text
+    Subnet          Priority
+    ------          --------
+    10.10.10.0/24   1
+    ```
+
+    ```powershell
+    # Verify virtual switches exist on the destination host
+    Get-VMSwitch -ComputerName "HV-SRV02" | Select-Object Name, SwitchType
+    ```
+
+    Resultat :
+
+    ```text
+    Name             SwitchType
+    ----             ----------
+    vSwitch-External External
+    vSwitch-Internal Internal
+    ```
+
+    Le commutateur `LAN-Switch` auquel `SRV-APP-01` est connecte n'existe pas sur `HV-SRV02`. La migration echoue car la VM ne peut pas etre reconnectee au reseau sur la destination.
+
+    **Solution :**
+
+    ```powershell
+    # Create the missing switch on the destination host
+    Invoke-Command -ComputerName "HV-SRV02" -ScriptBlock {
+        New-VMSwitch -Name "LAN-Switch" -NetAdapterName "Ethernet" -AllowManagementOS $true
+    }
+
+    # Switch to Kerberos authentication for production use
+    Set-VMHost -ComputerName "HV-SRV01" -VirtualMachineMigrationAuthenticationType Kerberos
+    Set-VMHost -ComputerName "HV-SRV02" -VirtualMachineMigrationAuthenticationType Kerberos
+
+    # Retry the live migration
+    Move-VM -Name "SRV-APP-01" -ComputerName "HV-SRV01" -DestinationHost "HV-SRV02.lab.local"
+    ```
+
+    Resultat :
+
+    ```text
+    # Migration completes without errors
+    # Verify the VM is now running on HV-SRV02
+    Get-VM -Name "SRV-APP-01" -ComputerName "HV-SRV02"
+    ```
+
+    ```text
+    Name        State   CPUUsage  MemoryAssigned  Uptime
+    ----        -----   --------  --------------  ------
+    SRV-APP-01  Running        4      4294967296  00:01:32
+    ```
+
+    La VM a ete migree avec succes. Nicolas note dans la documentation que tous les commutateurs virtuels utilises par les VMs doivent exister avec le meme nom sur chaque hote Hyper-V avant de tenter une migration.
+
+---
+
 ## Pour aller plus loin
 
 - Hyper-V Replica pour la reprise d'activite (voir la page [Hyper-V Replica](replica.md))

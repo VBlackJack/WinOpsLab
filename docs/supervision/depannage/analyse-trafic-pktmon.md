@@ -111,3 +111,77 @@ N'oubliez jamais de supprimer les filtres et le fichier de capture.
 pktmon filter remove
 Remove-Item PktMon.etl, capture.txt, capture.pcapng
 ```
+
+!!! example "Scenario pratique"
+
+    **Contexte :** Un flux applicatif entre SRV-APP-01 (10.0.1.10) et SRV-DB-01 (10.0.1.20)
+    sur le port SQL Server 1433 semble etre abandonne quelque part dans la pile reseau. Les
+    developpeurs constatent des timeouts de connexion. `Test-NetConnection SRV-DB-01 -Port 1433`
+    echoue depuis SRV-APP-01 mais le ping reussit.
+
+    **Symptomes :**
+
+    - `Test-NetConnection SRV-DB-01 -Port 1433` : `TcpTestSucceeded: False`
+    - `ping SRV-DB-01` reussit (connectivite L3 OK)
+    - Le service SQL Server est bien en ecoute sur SRV-DB-01 (verifie localement)
+
+    **Diagnostic :**
+
+    ```powershell
+    # On SRV-APP-01: set a filter for TCP port 1433 then start capture
+    pktmon filter remove
+    pktmon filter add -t tcp -p 1433
+    pktmon start --etw -c
+    ```
+
+    Reproduire la connexion depuis une autre fenetre :
+
+    ```powershell
+    # Trigger a connection attempt in another window
+    Test-NetConnection SRV-DB-01 -Port 1433
+    ```
+
+    Arreter la capture et convertir :
+
+    ```powershell
+    pktmon stop
+    pktmon format PktMon.etl -o capture.txt
+    ```
+
+    Resultat (extrait de capture.txt) :
+
+    ```text
+    [Microsoft-Windows-PktMon]
+    Direction : Tx
+    ComponentId: 11
+    ComponentName: WFP Native MAC Layer LightWeight Filter
+    Action: Drop
+    Reason: PolicyFrag
+    SourceIP: 10.0.1.10
+    DestIP: 10.0.1.20
+    DestPort: 1433
+    ```
+
+    Les paquets sortants vers 10.0.1.20:1433 apparaissent au niveau de la couche IP mais
+    sont abandonnes par le pare-feu Windows (WFP) avant l'emission. Une regle de pare-feu
+    sortante bloque le trafic vers ce port.
+
+    **Solution :**
+
+    ```powershell
+    # Create an outbound firewall rule allowing TCP to SRV-DB-01 on port 1433
+    New-NetFirewallRule `
+        -DisplayName "Allow-SQL-Outbound-SRV-DB-01" `
+        -Direction Outbound `
+        -Protocol TCP `
+        -RemotePort 1433 `
+        -RemoteAddress 10.0.1.20 `
+        -Action Allow
+
+    # Cleanup the capture files
+    pktmon filter remove
+    Remove-Item PktMon.etl, capture.txt -ErrorAction SilentlyContinue
+    ```
+
+    Apres creation de la regle, `Test-NetConnection SRV-DB-01 -Port 1433` retourne
+    `TcpTestSucceeded: True` et les connexions SQL s'etablissent normalement.

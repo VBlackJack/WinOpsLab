@@ -406,6 +406,91 @@ wevtutil sl ForwardedEvents /rt:true /ab:true
 - Le mode de livraison **MinLatency** est recommande pour les evenements critiques de securite
 - Le journal **ForwardedEvents** sur le collecteur doit etre dimensionne en consequence
 
+!!! example "Scenario pratique"
+
+    **Contexte :** La collecte WEF est configuree depuis 2 jours. Les ordinateurs sources ont
+    recu la GPO "Event Log Readers" et le mode initie par la source est en place. Pourtant,
+    le journal "Forwarded Events" sur le collecteur SRV-WEC-01 reste vide.
+
+    **Symptomes :**
+
+    - Le journal `ForwardedEvents` contient 0 evenements
+    - `wecutil gr "All-Servers-Security"` montre les sources en etat "Inactive"
+    - Aucun evenement n'arrive depuis 2 jours
+
+    **Diagnostic :**
+
+    ```powershell
+    # Check the ForwardedEvents log record count on the collector
+    Get-WinEvent -ComputerName SRV-WEC-01 -ListLog "ForwardedEvents" |
+        Select-Object LogName, RecordCount
+    ```
+
+    Resultat :
+
+    ```text
+    LogName         RecordCount
+    -------         -----------
+    ForwardedEvents           0
+    ```
+
+    Verification du journal operationnel de la transmission sur un client source :
+
+    ```powershell
+    # Check forwarding operational log on a source server
+    Get-WinEvent -ComputerName SRV-DC01 -LogName "Microsoft-Windows-Forwarding/Operational" `
+        -MaxEvents 5 | Select-Object TimeCreated, LevelDisplayName, Message
+    ```
+
+    Resultat :
+
+    ```text
+    TimeCreated           LevelDisplayName Message
+    -----------           ---------------- -------
+    2026-02-20 08:15:44   Error            The WS-Management service cannot complete the
+                                           operation within the time specified. [...]
+    ```
+
+    Le service WinRM est inaccessible sur le collecteur. Verification :
+
+    ```powershell
+    # Check WinRM service on the WEC collector
+    Get-Service WinRM -ComputerName SRV-WEC-01
+    ```
+
+    Resultat :
+
+    ```text
+    Status   Name    DisplayName
+    ------   ----    -----------
+    Stopped  WinRM   Windows Remote Management (WS-Management)
+    ```
+
+    **Solution :**
+
+    ```powershell
+    # Start WinRM on the collector and configure it
+    Start-Service WinRM -ComputerName SRV-WEC-01
+    Invoke-Command -ComputerName SRV-WEC-01 -ScriptBlock { winrm quickconfig /q }
+
+    # Verify the WinRM listener is active on the collector
+    Get-WSManInstance winrm/config/listener -ComputerName SRV-WEC-01 |
+        Select-Object Transport, Address, Port, Enabled
+    ```
+
+    Resultat :
+
+    ```text
+    Transport Address Port Enabled
+    --------- ------- ---- -------
+    HTTP      *       5985 true
+    ```
+
+    Apres demarrage de WinRM sur le collecteur, les sources detecent automatiquement le
+    collecteur accessible dans les 60 secondes (parametre Refresh de la GPO SubscriptionManager).
+    Le journal `ForwardedEvents` commence a recevoir des evenements. `wecutil gr` confirme
+    le passage des sources en etat "Active".
+
 ## Pour aller plus loin
 
 - [Observateur d'evenements](../surveillance/event-viewer.md) pour maitriser les requetes et filtres

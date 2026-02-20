@@ -56,10 +56,20 @@
   color: #ef9a9a;
 }
 
-/* Fit all 13 navigation tabs on a single line */
-.md-tabs__link {
-  font-size: 0.68rem;
-  padding: 0 0.6em;
+/* Scrollable navigation tabs */
+.md-tabs__list {
+  overflow-x: auto;
+  flex-wrap: nowrap;
+  scrollbar-width: thin;
+}
+
+.md-tabs__list::-webkit-scrollbar {
+  height: 2px;
+}
+
+.md-tabs__list::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 1px;
 }
 
 /* Card grid hover effect */

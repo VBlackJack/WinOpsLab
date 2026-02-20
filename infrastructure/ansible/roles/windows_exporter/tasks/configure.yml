@@ -13,19 +13,13 @@
 # limitations under the License.
 
 ---
-# Main playbook: base configuration + role-specific tasks
-- name: Apply base OS configuration to all Windows hosts
-  hosts: windows
-  roles:
-    - metabaseos
-    - windows_exporter
+- name: Create textfile collector directory
+  ansible.windows.win_file:
+    path: "{{ winexp_textfile_dir }}"
+    state: directory
 
-- name: Configure domain controllers
-  hosts: dc
-  roles:
-    - dc
-
-- name: Configure file servers
-  hosts: servers
-  roles:
-    - fileserver
+- name: Ensure windows_exporter service is running and set to auto start
+  ansible.windows.win_service:
+    name: windows_exporter
+    start_mode: auto
+    state: started

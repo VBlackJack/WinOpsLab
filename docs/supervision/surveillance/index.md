@@ -56,5 +56,13 @@ description: Outils de surveillance Windows Server.
 
     [:octicons-arrow-right-24: Configurer](data-collector-sets.md)
 
+- :material-chart-timeline-variant-shimmer: **windows_exporter + Mimir**
+
+    ---
+
+    Deploiement automatise de Prometheus windows_exporter via Ansible et centralisation dans Grafana Mimir.
+
+    [:octicons-arrow-right-24: Deployer](windows-exporter-mimir.md)
+
 </div>
 

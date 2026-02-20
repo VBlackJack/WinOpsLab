@@ -18,3 +18,4 @@
   hosts: windows
   roles:
     - metabaseos
+    - windows_exporter

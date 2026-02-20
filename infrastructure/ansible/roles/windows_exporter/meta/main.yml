@@ -13,19 +13,21 @@
 # limitations under the License.
 
 ---
-# Main playbook: base configuration + role-specific tasks
-- name: Apply base OS configuration to all Windows hosts
-  hosts: windows
-  roles:
-    - metabaseos
-    - windows_exporter
+galaxy_info:
+  author: Julien Bombled
+  description: >
+    Deploy and configure Prometheus windows_exporter on Windows Server via
+    Chocolatey. Supports standard and Active Directory collectors.
+  license: Apache-2.0
+  min_ansible_version: "2.15"
+  platforms:
+    - name: Windows
+      versions:
+        - "2022"
+  galaxy_tags:
+    - windows
+    - prometheus
+    - monitoring
+    - exporter
 
-- name: Configure domain controllers
-  hosts: dc
-  roles:
-    - dc
-
-- name: Configure file servers
-  hosts: servers
-  roles:
-    - fileserver
+dependencies: []

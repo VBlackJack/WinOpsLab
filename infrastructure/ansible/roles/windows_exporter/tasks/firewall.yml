@@ -13,19 +13,13 @@
 # limitations under the License.
 
 ---
-# Main playbook: base configuration + role-specific tasks
-- name: Apply base OS configuration to all Windows hosts
-  hosts: windows
-  roles:
-    - metabaseos
-    - windows_exporter
-
-- name: Configure domain controllers
-  hosts: dc
-  roles:
-    - dc
-
-- name: Configure file servers
-  hosts: servers
-  roles:
-    - fileserver
+- name: Allow windows_exporter through firewall
+  community.windows.win_firewall_rule:
+    name: windows_exporter (HTTP {{ winexp_listen_port }})
+    localport: "{{ winexp_listen_port }}"
+    action: allow
+    direction: in
+    protocol: tcp
+    profiles: "{{ winexp_firewall_profiles }}"
+    state: present
+    enabled: true

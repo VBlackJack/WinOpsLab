@@ -13,19 +13,14 @@
 # limitations under the License.
 
 ---
-# Main playbook: base configuration + role-specific tasks
-- name: Apply base OS configuration to all Windows hosts
-  hosts: windows
-  roles:
-    - metabaseos
-    - windows_exporter
+- name: Install windows_exporter
+  ansible.builtin.include_tasks: install.yml
+  tags: [install]
 
-- name: Configure domain controllers
-  hosts: dc
-  roles:
-    - dc
+- name: Configure windows_exporter
+  ansible.builtin.include_tasks: configure.yml
+  tags: [configure]
 
-- name: Configure file servers
-  hosts: servers
-  roles:
-    - fileserver
+- name: Configure firewall for windows_exporter
+  ansible.builtin.include_tasks: firewall.yml
+  tags: [firewall]

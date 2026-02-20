@@ -350,6 +350,7 @@ nav:
       - Surveillance systeme:
           - supervision/surveillance/index.md
           - supervision/surveillance/monitoring-moderne.md
+          - supervision/surveillance/windows-exporter-mimir.md
           - supervision/surveillance/performance-monitor.md
           - supervision/surveillance/resource-monitor.md
           - supervision/surveillance/event-viewer.md

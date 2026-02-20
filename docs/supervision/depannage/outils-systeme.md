@@ -1,4 +1,12 @@
-﻿<!--
+---
+title: "Outils systeme de depannage"
+description: Utiliser les outils systeme de depannage Windows Server 2022 - Gestionnaire des taches, msconfig, msinfo32, SFC, DISM et moniteur de fiabilite.
+tags:
+  - supervision
+  - depannage
+  - intermediaire
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,14 +21,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: "Outils systeme de depannage"
-description: Utiliser les outils systeme de depannage Windows Server 2022 - Gestionnaire des taches, msconfig, msinfo32, SFC, DISM et moniteur de fiabilite.
-tags:
-  - supervision
-  - depannage
-  - intermediaire
----
 
 # Outils systeme de depannage
 

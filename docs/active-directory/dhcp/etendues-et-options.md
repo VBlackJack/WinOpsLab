@@ -1,4 +1,13 @@
-﻿<!--
+---
+title: "Etendues et options DHCP"
+description: "Creer et configurer des etendues DHCP, definir les options de serveur, d'etendue et de reservation, gerer les exclusions et decouvrir les superscopes."
+tags:
+  - DHCP
+  - Etendues
+  - Options DHCP
+  - Windows Server 2022
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,15 +22,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: "Etendues et options DHCP"
-description: "Creer et configurer des etendues DHCP, definir les options de serveur, d'etendue et de reservation, gerer les exclusions et decouvrir les superscopes."
-tags:
-  - DHCP
-  - Etendues
-  - Options DHCP
-  - Windows Server 2022
----
 
 # Etendues et options DHCP
 

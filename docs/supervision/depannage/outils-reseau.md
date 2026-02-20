@@ -1,4 +1,13 @@
-﻿<!--
+---
+title: "Outils reseau de depannage"
+description: Maitriser les outils de diagnostic reseau sur Windows Server 2022 - ping, tracert, nslookup, netstat, Test-NetConnection, pathping et PortQry.
+tags:
+  - supervision
+  - depannage
+  - reseau
+  - intermediaire
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,15 +22,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: "Outils reseau de depannage"
-description: Maitriser les outils de diagnostic reseau sur Windows Server 2022 - ping, tracert, nslookup, netstat, Test-NetConnection, pathping et PortQry.
-tags:
-  - supervision
-  - depannage
-  - reseau
-  - intermediaire
----
 
 # Outils reseau de depannage
 

@@ -1,4 +1,13 @@
-﻿<!--
+---
+title: "Azure Backup pour Windows Server"
+description: Sauvegarder des serveurs Windows on-premises avec Azure Backup - agent MARS, coffre de sauvegarde et recuperation.
+tags:
+  - gestion-moderne
+  - azure
+  - sauvegarde
+  - intermediaire
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,15 +22,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: "Azure Backup pour Windows Server"
-description: Sauvegarder des serveurs Windows on-premises avec Azure Backup - agent MARS, coffre de sauvegarde et recuperation.
-tags:
-  - gestion-moderne
-  - azure
-  - sauvegarde
-  - intermediaire
----
 
 # Azure Backup pour Windows Server
 

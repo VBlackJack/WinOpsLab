@@ -1,4 +1,8 @@
-﻿<!--
+---
+title: Fondamentaux
+description: Les bases de Windows Server 2022 - installation, configuration et premiers pas avec PowerShell.
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,10 +17,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: Fondamentaux
-description: Les bases de Windows Server 2022 - installation, configuration et premiers pas avec PowerShell.
----
 
 # Fondamentaux de Windows Server
 

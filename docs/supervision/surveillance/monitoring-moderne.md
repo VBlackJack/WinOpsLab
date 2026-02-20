@@ -1,3 +1,13 @@
+---
+title: Supervision Moderne (Prometheus / Grafana)
+description: Moderniser la supervision Windows Server en remplacant PerfMon par la stack Prometheus, Windows Exporter et Grafana.
+tags:
+  - supervision
+  - prometheus
+  - grafana
+  - monitoring
+  - moderne
+---
 <!--
   Copyright 2026 Julien Bombled
 
@@ -13,16 +23,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: Supervision Moderne (Prometheus / Grafana)
-description: Moderniser la supervision Windows Server en remplacant PerfMon par la stack Prometheus, Windows Exporter et Grafana.
-tags:
-  - supervision
-  - prometheus
-  - grafana
-  - monitoring
-  - moderne
----
 
 # Supervision Moderne avec Prometheus et Grafana
 

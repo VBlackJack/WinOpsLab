@@ -1,3 +1,12 @@
+---
+title: "Concepts du clustering avec basculement"
+description: "Comprendre les fondamentaux du failover clustering sous Windows Server 2022 : noeuds, heartbeat, basculement, modes actif-passif et actif-actif."
+tags:
+  - haute-disponibilite
+  - cluster
+  - failover
+  - windows-server
+---
 <!--
   Copyright 2026 Julien Bombled
 
@@ -13,15 +22,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: "Concepts du clustering avec basculement"
-description: "Comprendre les fondamentaux du failover clustering sous Windows Server 2022 : noeuds, heartbeat, basculement, modes actif-passif et actif-actif."
-tags:
-  - haute-disponibilite
-  - cluster
-  - failover
-  - windows-server
----
 
 # Concepts du clustering avec basculement
 

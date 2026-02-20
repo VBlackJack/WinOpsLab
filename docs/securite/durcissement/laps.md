@@ -1,4 +1,14 @@
-﻿<!--
+---
+title: "LAPS - Local Administrator Password Solution"
+description: "Deploiement et gestion de LAPS et Windows LAPS pour la rotation automatique des mots de passe administrateur locaux sur Windows Server 2022."
+tags:
+  - securite
+  - durcissement
+  - laps
+  - mots-de-passe
+  - active-directory
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,16 +23,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: "LAPS - Local Administrator Password Solution"
-description: "Deploiement et gestion de LAPS et Windows LAPS pour la rotation automatique des mots de passe administrateur locaux sur Windows Server 2022."
-tags:
-  - securite
-  - durcissement
-  - laps
-  - mots-de-passe
-  - active-directory
----
 
 # LAPS - Local Administrator Password Solution
 

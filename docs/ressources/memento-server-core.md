@@ -1,3 +1,12 @@
+---
+title: Memento Server Core
+description: Guide de survie pour administrer Windows Server Core sans interface graphique. Commandes essentielles et sconfig.
+tags:
+  - server-core
+  - powershell
+  - cheat-sheet
+  - administration
+---
 <!--
   Copyright 2026 Julien Bombled
 
@@ -13,15 +22,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: Memento Server Core
-description: Guide de survie pour administrer Windows Server Core sans interface graphique. Commandes essentielles et sconfig.
-tags:
-  - server-core
-  - powershell
-  - cheat-sheet
-  - administration
----
 
 # Memento : Survivre en Server Core
 

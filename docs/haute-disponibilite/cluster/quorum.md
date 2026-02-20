@@ -1,4 +1,13 @@
-﻿<!--
+---
+title: "Quorum et temoin de cluster"
+description: "Comprendre le quorum dans un cluster de basculement Windows Server 2022 : types de temoins, vote, quorum dynamique et configuration."
+tags:
+  - haute-disponibilite
+  - cluster
+  - quorum
+  - windows-server
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,15 +22,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: "Quorum et temoin de cluster"
-description: "Comprendre le quorum dans un cluster de basculement Windows Server 2022 : types de temoins, vote, quorum dynamique et configuration."
-tags:
-  - haute-disponibilite
-  - cluster
-  - quorum
-  - windows-server
----
 
 # Quorum et temoin de cluster
 

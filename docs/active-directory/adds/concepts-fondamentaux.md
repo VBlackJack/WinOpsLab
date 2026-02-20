@@ -1,3 +1,11 @@
+---
+title: Concepts fondamentaux
+description: Les concepts cles d'Active Directory Domain Services - foret, domaine, DC, LDAP, Kerberos.
+tags:
+  - active-directory
+  - adds
+  - intermediaire
+---
 <!--
   Copyright 2026 Julien Bombled
 
@@ -13,14 +21,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: Concepts fondamentaux
-description: Les concepts cles d'Active Directory Domain Services - foret, domaine, DC, LDAP, Kerberos.
-tags:
-  - active-directory
-  - adds
-  - intermediaire
----
 
 # Concepts fondamentaux d'AD DS
 

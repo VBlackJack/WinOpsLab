@@ -1,4 +1,13 @@
-﻿<!--
+---
+title: "Lab 07 : Cluster de basculement"
+description: Exercice pratique - creer un cluster de basculement a 2 noeuds avec stockage partage et tester le basculement.
+tags:
+  - lab
+  - cluster
+  - haute-disponibilite
+  - avance
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,15 +22,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: "Lab 07 : Cluster de basculement"
-description: Exercice pratique - creer un cluster de basculement a 2 noeuds avec stockage partage et tester le basculement.
-tags:
-  - lab
-  - cluster
-  - haute-disponibilite
-  - avance
----
 
 # Lab 07 : Cluster de basculement
 

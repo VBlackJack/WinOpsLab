@@ -1,4 +1,13 @@
-﻿<!--
+---
+title: "Gestion des erreurs PowerShell"
+description: "Maitriser la gestion des erreurs en PowerShell : try/catch/finally, ErrorActionPreference, erreurs terminantes et non-terminantes, messages personnalises."
+tags:
+  - automatisation
+  - powershell
+  - erreurs
+  - windows-server
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,15 +22,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: "Gestion des erreurs PowerShell"
-description: "Maitriser la gestion des erreurs en PowerShell : try/catch/finally, ErrorActionPreference, erreurs terminantes et non-terminantes, messages personnalises."
-tags:
-  - automatisation
-  - powershell
-  - erreurs
-  - windows-server
----
 
 # Gestion des erreurs PowerShell
 

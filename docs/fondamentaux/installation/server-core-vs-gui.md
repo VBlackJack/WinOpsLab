@@ -1,4 +1,12 @@
-﻿<!--
+---
+title: Server Core vs Desktop Experience
+description: Comparaison entre l'installation Server Core et Desktop Experience de Windows Server 2022.
+tags:
+  - fondamentaux
+  - installation
+  - debutant
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,14 +21,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: Server Core vs Desktop Experience
-description: Comparaison entre l'installation Server Core et Desktop Experience de Windows Server 2022.
-tags:
-  - fondamentaux
-  - installation
-  - debutant
----
 
 # Server Core vs Desktop Experience
 

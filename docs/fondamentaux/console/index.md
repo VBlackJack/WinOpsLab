@@ -1,4 +1,8 @@
-﻿<!--
+---
+title: Console de gestion
+description: Outils de gestion Windows Server - Server Manager, MMC et RSAT.
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,10 +17,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: Console de gestion
-description: Outils de gestion Windows Server - Server Manager, MMC et RSAT.
----
 
 # Console de gestion
 

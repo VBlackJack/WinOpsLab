@@ -1,4 +1,13 @@
-﻿<!--
+---
+title: BranchCache
+description: Comprendre BranchCache - modes distribue et heberge, cas d'usage pour les succursales, configuration sur Windows Server 2022.
+tags:
+  - stockage
+  - partage
+  - branchcache
+  - intermediaire
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,15 +22,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: BranchCache
-description: Comprendre BranchCache - modes distribue et heberge, cas d'usage pour les succursales, configuration sur Windows Server 2022.
-tags:
-  - stockage
-  - partage
-  - branchcache
-  - intermediaire
----
 
 # BranchCache
 

@@ -1,4 +1,14 @@
-﻿<!--
+---
+title: "Audit avance"
+description: "Audit d'acces aux objets via SACL, surveillance des acces fichiers et modifications Active Directory sur Windows Server 2022."
+tags:
+  - securite
+  - audit
+  - sacl
+  - active-directory
+  - acces-fichiers
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,16 +23,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: "Audit avance"
-description: "Audit d'acces aux objets via SACL, surveillance des acces fichiers et modifications Active Directory sur Windows Server 2022."
-tags:
-  - securite
-  - audit
-  - sacl
-  - active-directory
-  - acces-fichiers
----
 
 # Audit avance
 

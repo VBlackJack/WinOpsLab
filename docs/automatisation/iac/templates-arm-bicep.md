@@ -1,4 +1,15 @@
-﻿<!--
+---
+title: "Templates ARM et Bicep"
+description: "Deployer des machines virtuelles Windows Server sur Azure avec les templates ARM et Bicep : structure, parametres, deploiement et bonnes pratiques."
+tags:
+  - automatisation
+  - iac
+  - arm
+  - bicep
+  - azure
+  - windows-server
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,17 +24,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: "Templates ARM et Bicep"
-description: "Deployer des machines virtuelles Windows Server sur Azure avec les templates ARM et Bicep : structure, parametres, deploiement et bonnes pratiques."
-tags:
-  - automatisation
-  - iac
-  - arm
-  - bicep
-  - azure
-  - windows-server
----
 
 # Templates ARM et Bicep
 

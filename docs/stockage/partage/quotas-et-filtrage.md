@@ -1,4 +1,13 @@
-﻿<!--
+---
+title: Quotas et filtrage FSRM
+description: Configurer le Gestionnaire de ressources du serveur de fichiers (FSRM) - quotas, filtrage de fichiers, modeles et rapports.
+tags:
+  - stockage
+  - partage
+  - fsrm
+  - intermediaire
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,15 +22,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: Quotas et filtrage FSRM
-description: Configurer le Gestionnaire de ressources du serveur de fichiers (FSRM) - quotas, filtrage de fichiers, modeles et rapports.
-tags:
-  - stockage
-  - partage
-  - fsrm
-  - intermediaire
----
 
 # Quotas et filtrage FSRM
 

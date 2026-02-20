@@ -1,4 +1,13 @@
-﻿<!--
+---
+title: "Live Migration"
+description: "Migration dynamique de VMs Hyper-V : prerequis, configuration, Shared Nothing Migration et options de performance sur Windows Server 2022."
+tags:
+  - virtualisation
+  - hyper-v
+  - live-migration
+  - haute-disponibilite
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,15 +22,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: "Live Migration"
-description: "Migration dynamique de VMs Hyper-V : prerequis, configuration, Shared Nothing Migration et options de performance sur Windows Server 2022."
-tags:
-  - virtualisation
-  - hyper-v
-  - live-migration
-  - haute-disponibilite
----
 
 # Live Migration
 

@@ -1,4 +1,14 @@
-﻿<!--
+---
+title: "Always On VPN"
+description: "Deployer Always On VPN comme remplacement de DirectAccess : tunnel machine vs utilisateur, protocoles, profils et vue d'ensemble du deploiement."
+tags:
+  - reseau
+  - vpn
+  - always-on-vpn
+  - acces-distant
+  - windows-server
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,16 +23,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: "Always On VPN"
-description: "Deployer Always On VPN comme remplacement de DirectAccess : tunnel machine vs utilisateur, protocoles, profils et vue d'ensemble du deploiement."
-tags:
-  - reseau
-  - vpn
-  - always-on-vpn
-  - acces-distant
-  - windows-server
----
 
 # Always On VPN
 

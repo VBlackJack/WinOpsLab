@@ -1,4 +1,14 @@
-﻿<!--
+---
+title: "Stockage virtuel"
+description: "Disques virtuels Hyper-V : VHD vs VHDX, disques dynamiques, fixes et de differenciation, disques pass-through."
+tags:
+  - virtualisation
+  - hyper-v
+  - stockage
+  - vhdx
+  - disques-virtuels
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,16 +23,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: "Stockage virtuel"
-description: "Disques virtuels Hyper-V : VHD vs VHDX, disques dynamiques, fixes et de differenciation, disques pass-through."
-tags:
-  - virtualisation
-  - hyper-v
-  - stockage
-  - vhdx
-  - disques-virtuels
----
 
 # Stockage virtuel
 

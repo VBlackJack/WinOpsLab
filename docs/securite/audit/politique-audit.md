@@ -1,4 +1,13 @@
-﻿<!--
+---
+title: "Politique d'audit"
+description: "Configuration des strategies d'audit Windows Server 2022 : audit de base vs audit avance, parametrage via GPO et bonnes pratiques."
+tags:
+  - securite
+  - audit
+  - gpo
+  - journalisation
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,15 +22,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: "Politique d'audit"
-description: "Configuration des strategies d'audit Windows Server 2022 : audit de base vs audit avance, parametrage via GPO et bonnes pratiques."
-tags:
-  - securite
-  - audit
-  - gpo
-  - journalisation
----
 
 # Politique d'audit
 

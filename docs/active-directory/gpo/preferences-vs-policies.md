@@ -1,4 +1,14 @@
-﻿<!--
+---
+title: Preferences vs Policies
+description: Comprendre la difference entre les strategies (Policies) et les preferences (Preferences) dans les GPO, et savoir quand utiliser chaque approche.
+tags:
+  - gpo
+  - active-directory
+  - preferences
+  - policies
+  - item-level-targeting
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,16 +23,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: Preferences vs Policies
-description: Comprendre la difference entre les strategies (Policies) et les preferences (Preferences) dans les GPO, et savoir quand utiliser chaque approche.
-tags:
-  - gpo
-  - active-directory
-  - preferences
-  - policies
-  - item-level-targeting
----
 
 # Preferences vs Policies
 

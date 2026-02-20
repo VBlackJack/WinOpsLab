@@ -1,4 +1,13 @@
-﻿<!--
+---
+title: "Installer une autorite de certification"
+description: "Installation et configuration d'AD Certificate Services sur Windows Server 2022 : CA racine, CA subordonnee, standalone vs entreprise."
+tags:
+  - securite
+  - pki
+  - adcs
+  - autorite-certification
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,15 +22,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: "Installer une autorite de certification"
-description: "Installation et configuration d'AD Certificate Services sur Windows Server 2022 : CA racine, CA subordonnee, standalone vs entreprise."
-tags:
-  - securite
-  - pki
-  - adcs
-  - autorite-certification
----
 
 # Installer une autorite de certification
 

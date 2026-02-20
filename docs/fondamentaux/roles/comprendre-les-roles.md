@@ -1,4 +1,12 @@
-﻿<!--
+---
+title: Comprendre les roles
+description: Comprendre la difference entre roles, services de role et fonctionnalites dans Windows Server.
+tags:
+  - fondamentaux
+  - roles
+  - debutant
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,14 +21,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: Comprendre les roles
-description: Comprendre la difference entre roles, services de role et fonctionnalites dans Windows Server.
-tags:
-  - fondamentaux
-  - roles
-  - debutant
----
 
 # Comprendre les roles et fonctionnalites
 

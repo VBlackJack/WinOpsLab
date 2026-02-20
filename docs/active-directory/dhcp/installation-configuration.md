@@ -1,4 +1,13 @@
-﻿<!--
+---
+title: "Installation et configuration du DHCP"
+description: "Installer le role DHCP sur Windows Server 2022, autoriser le serveur dans Active Directory et effectuer la configuration de base."
+tags:
+  - DHCP
+  - Installation
+  - Windows Server 2022
+  - Active Directory
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,15 +22,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: "Installation et configuration du DHCP"
-description: "Installer le role DHCP sur Windows Server 2022, autoriser le serveur dans Active Directory et effectuer la configuration de base."
-tags:
-  - DHCP
-  - Installation
-  - Windows Server 2022
-  - Active Directory
----
 
 # Installation et configuration du DHCP
 

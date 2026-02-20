@@ -1,4 +1,14 @@
-﻿<!--
+---
+title: "Modeles de certificats"
+description: "Gestion des modeles de certificats AD CS : duplication, personnalisation, permissions, publication et modeles courants pour Windows Server 2022."
+tags:
+  - securite
+  - pki
+  - certificats
+  - modeles
+  - adcs
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,16 +23,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: "Modeles de certificats"
-description: "Gestion des modeles de certificats AD CS : duplication, personnalisation, permissions, publication et modeles courants pour Windows Server 2022."
-tags:
-  - securite
-  - pki
-  - certificats
-  - modeles
-  - adcs
----
 
 # Modeles de certificats
 

@@ -1,4 +1,12 @@
-﻿<!--
+---
+title: "Gestion des serveurs via WAC"
+description: Gerer des serveurs Windows avec Windows Admin Center - ajouter des connexions, tableau de bord, outils disponibles et gestion quotidienne.
+tags:
+  - gestion-moderne
+  - wac
+  - intermediaire
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,14 +21,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: "Gestion des serveurs via WAC"
-description: Gerer des serveurs Windows avec Windows Admin Center - ajouter des connexions, tableau de bord, outils disponibles et gestion quotidienne.
-tags:
-  - gestion-moderne
-  - wac
-  - intermediaire
----
 
 # Gestion des serveurs via WAC
 

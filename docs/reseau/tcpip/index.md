@@ -1,4 +1,8 @@
-﻿<!--
+---
+title: TCP/IP
+description: Configuration TCP/IP sur Windows Server - adressage, sous-reseaux et IPv6.
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,10 +17,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: TCP/IP
-description: Configuration TCP/IP sur Windows Server - adressage, sous-reseaux et IPv6.
----
 
 # TCP/IP
 

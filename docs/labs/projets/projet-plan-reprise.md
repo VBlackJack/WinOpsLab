@@ -1,4 +1,13 @@
-﻿<!--
+---
+title: "Projet : Plan de reprise d'activite"
+description: Projet de synthese - elaborer un plan de reprise d'activite (PRA) avec strategie de sauvegarde, basculement et documentation.
+tags:
+  - lab
+  - projet
+  - haute-disponibilite
+  - avance
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,15 +22,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: "Projet : Plan de reprise d'activite"
-description: Projet de synthese - elaborer un plan de reprise d'activite (PRA) avec strategie de sauvegarde, basculement et documentation.
-tags:
-  - lab
-  - projet
-  - haute-disponibilite
-  - avance
----
 
 # Projet : Plan de reprise d'activite (PRA)
 

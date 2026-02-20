@@ -1,4 +1,12 @@
-﻿<!--
+---
+title: Pipeline et objets
+description: Comprendre le pipeline PowerShell et la manipulation d'objets .NET.
+tags:
+  - fondamentaux
+  - powershell
+  - debutant
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,14 +21,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: Pipeline et objets
-description: Comprendre le pipeline PowerShell et la manipulation d'objets .NET.
-tags:
-  - fondamentaux
-  - powershell
-  - debutant
----
 
 # Pipeline et objets
 

@@ -1,4 +1,12 @@
-﻿<!--
+---
+title: Sites et replication
+description: Topologie des sites Active Directory et gestion de la replication inter-sites.
+tags:
+  - active-directory
+  - adds
+  - intermediaire
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,14 +21,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: Sites et replication
-description: Topologie des sites Active Directory et gestion de la replication inter-sites.
-tags:
-  - active-directory
-  - adds
-  - intermediaire
----
 
 # Sites et replication
 

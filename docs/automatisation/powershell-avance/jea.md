@@ -1,4 +1,14 @@
-﻿<!--
+---
+title: "Just Enough Administration (JEA)"
+description: "Mettre en oeuvre JEA sous Windows Server 2022 : concept du moindre privilege, capacites de role, configurations de session et comptes virtuels."
+tags:
+  - automatisation
+  - powershell
+  - jea
+  - securite
+  - windows-server
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,16 +23,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: "Just Enough Administration (JEA)"
-description: "Mettre en oeuvre JEA sous Windows Server 2022 : concept du moindre privilege, capacites de role, configurations de session et comptes virtuels."
-tags:
-  - automatisation
-  - powershell
-  - jea
-  - securite
-  - windows-server
----
 
 # Just Enough Administration (JEA)
 

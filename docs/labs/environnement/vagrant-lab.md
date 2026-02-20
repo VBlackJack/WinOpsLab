@@ -1,3 +1,12 @@
+---
+title: Lab Automatique (Vagrant)
+description: Deploiement automatise de l'environnement de lab WinOpsLab avec Vagrant et Hyper-V.
+tags:
+  - lab
+  - vagrant
+  - iac
+  - automatisation
+---
 <!--
   Copyright 2026 Julien Bombled
 
@@ -13,15 +22,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: Lab Automatique (Vagrant)
-description: Deploiement automatise de l'environnement de lab WinOpsLab avec Vagrant et Hyper-V.
-tags:
-  - lab
-  - vagrant
-  - iac
-  - automatisation
----
 
 # Lab Automatique avec Vagrant
 

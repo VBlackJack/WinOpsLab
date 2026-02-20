@@ -1,4 +1,13 @@
-﻿<!--
+---
+title: "Pare-feu Windows - Concepts"
+description: "Comprendre le Pare-feu Windows avec securite avancee (WFAS) : concepts fondamentaux, comportement par defaut et inspection avec etat."
+tags:
+  - reseau
+  - pare-feu
+  - securite
+  - windows-server
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,15 +22,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: "Pare-feu Windows - Concepts"
-description: "Comprendre le Pare-feu Windows avec securite avancee (WFAS) : concepts fondamentaux, comportement par defaut et inspection avec etat."
-tags:
-  - reseau
-  - pare-feu
-  - securite
-  - windows-server
----
 
 # Pare-feu Windows avec securite avancee (WFAS)
 

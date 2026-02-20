@@ -1,4 +1,13 @@
-﻿<!--
+---
+title: "Projet : Migration Active Directory"
+description: Projet de synthese - planifier et executer une migration Active Directory avec approbation de foret, ADMT et migration des comptes.
+tags:
+  - lab
+  - projet
+  - active-directory
+  - avance
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,15 +22,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: "Projet : Migration Active Directory"
-description: Projet de synthese - planifier et executer une migration Active Directory avec approbation de foret, ADMT et migration des comptes.
-tags:
-  - lab
-  - projet
-  - active-directory
-  - avance
----
 
 # Projet : Migration Active Directory
 

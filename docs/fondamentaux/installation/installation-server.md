@@ -1,4 +1,12 @@
-﻿<!--
+---
+title: Installation de Windows Server
+description: Guide pas a pas pour installer Windows Server 2022.
+tags:
+  - fondamentaux
+  - installation
+  - debutant
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,14 +21,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: Installation de Windows Server
-description: Guide pas a pas pour installer Windows Server 2022.
-tags:
-  - fondamentaux
-  - installation
-  - debutant
----
 
 # Installation de Windows Server
 

@@ -1,4 +1,13 @@
-﻿<!--
+---
+title: "Regles entrantes et sortantes"
+description: "Creer et gerer les regles de trafic entrant et sortant du Pare-feu Windows : types de regles, proprietes et bonnes pratiques."
+tags:
+  - reseau
+  - pare-feu
+  - securite
+  - regles
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,15 +22,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: "Regles entrantes et sortantes"
-description: "Creer et gerer les regles de trafic entrant et sortant du Pare-feu Windows : types de regles, proprietes et bonnes pratiques."
-tags:
-  - reseau
-  - pare-feu
-  - securite
-  - regles
----
 
 # Regles entrantes et sortantes
 

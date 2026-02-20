@@ -1,4 +1,14 @@
-﻿<!--
+---
+title: "Restauration systeme"
+description: "Restaurer un serveur Windows Server 2022 : Bare Metal Recovery, restauration de l'etat systeme, WinRE et procedures de recuperation."
+tags:
+  - haute-disponibilite
+  - backup
+  - restauration
+  - bare-metal-recovery
+  - windows-server
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,16 +23,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: "Restauration systeme"
-description: "Restaurer un serveur Windows Server 2022 : Bare Metal Recovery, restauration de l'etat systeme, WinRE et procedures de recuperation."
-tags:
-  - haute-disponibilite
-  - backup
-  - restauration
-  - bare-metal-recovery
-  - windows-server
----
 
 # Restauration systeme
 

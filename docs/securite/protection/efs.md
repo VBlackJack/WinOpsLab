@@ -1,4 +1,14 @@
-﻿<!--
+---
+title: "EFS - Encrypting File System"
+description: "Chiffrement de fichiers et dossiers avec EFS sur Windows Server 2022 : fonctionnement, certificats, agent de recuperation et comparaison avec BitLocker."
+tags:
+  - securite
+  - protection
+  - efs
+  - chiffrement
+  - certificats
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,16 +23,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: "EFS - Encrypting File System"
-description: "Chiffrement de fichiers et dossiers avec EFS sur Windows Server 2022 : fonctionnement, certificats, agent de recuperation et comparaison avec BitLocker."
-tags:
-  - securite
-  - protection
-  - efs
-  - chiffrement
-  - certificats
----
 
 # EFS - Encrypting File System
 

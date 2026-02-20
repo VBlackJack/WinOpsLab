@@ -1,4 +1,11 @@
-﻿<!--
+---
+title: "Certifications Microsoft"
+description: Parcours de certifications Microsoft pour les administrateurs Windows Server - AZ-800, AZ-801 et certifications associees.
+tags:
+  - ressources
+  - reference
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,13 +20,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: "Certifications Microsoft"
-description: Parcours de certifications Microsoft pour les administrateurs Windows Server - AZ-800, AZ-801 et certifications associees.
-tags:
-  - ressources
-  - reference
----
 
 # Certifications Microsoft
 

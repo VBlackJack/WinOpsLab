@@ -1,4 +1,13 @@
-﻿<!--
+---
+title: "Gestion des taches planifiees via PowerShell"
+description: "Creer, modifier et gerer les taches planifiees Windows Server 2022 avec PowerShell : New-ScheduledTask, Register-ScheduledTask, Get/Set/Unregister."
+tags:
+  - automatisation
+  - taches-planifiees
+  - powershell
+  - windows-server
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,15 +22,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: "Gestion des taches planifiees via PowerShell"
-description: "Creer, modifier et gerer les taches planifiees Windows Server 2022 avec PowerShell : New-ScheduledTask, Register-ScheduledTask, Get/Set/Unregister."
-tags:
-  - automatisation
-  - taches-planifiees
-  - powershell
-  - windows-server
----
 
 # Gestion des taches planifiees via PowerShell
 

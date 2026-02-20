@@ -1,4 +1,13 @@
-﻿<!--
+---
+title: "Lab 06 : Hyper-V"
+description: Exercice pratique - creer des machines virtuelles imbriquees, des commutateurs virtuels et gerer les checkpoints.
+tags:
+  - lab
+  - hyper-v
+  - virtualisation
+  - intermediaire
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,15 +22,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: "Lab 06 : Hyper-V"
-description: Exercice pratique - creer des machines virtuelles imbriquees, des commutateurs virtuels et gerer les checkpoints.
-tags:
-  - lab
-  - hyper-v
-  - virtualisation
-  - intermediaire
----
 
 # Lab 06 : Hyper-V
 

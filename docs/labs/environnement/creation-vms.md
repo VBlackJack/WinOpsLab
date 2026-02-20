@@ -1,4 +1,12 @@
-﻿<!--
+---
+title: "Creation des machines virtuelles"
+description: Automatiser la creation des VMs du lab WinOpsLab avec PowerShell - scripts, templates et deploiement rapide.
+tags:
+  - labs
+  - environnement
+  - intermediaire
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,14 +21,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: "Creation des machines virtuelles"
-description: Automatiser la creation des VMs du lab WinOpsLab avec PowerShell - scripts, templates et deploiement rapide.
-tags:
-  - labs
-  - environnement
-  - intermediaire
----
 
 # Creation des machines virtuelles
 

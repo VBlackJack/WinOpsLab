@@ -1,4 +1,13 @@
-﻿<!--
+---
+title: "Lab 09 : Automatisation PowerShell"
+description: Exercice pratique - ecrire des scripts PowerShell pour automatiser les taches d'administration courantes.
+tags:
+  - lab
+  - powershell
+  - automatisation
+  - intermediaire
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,15 +22,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: "Lab 09 : Automatisation PowerShell"
-description: Exercice pratique - ecrire des scripts PowerShell pour automatiser les taches d'administration courantes.
-tags:
-  - lab
-  - powershell
-  - automatisation
-  - intermediaire
----
 
 # Lab 09 : Automatisation PowerShell
 

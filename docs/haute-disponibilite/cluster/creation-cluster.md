@@ -1,4 +1,13 @@
-﻿<!--
+---
+title: "Creation d'un cluster de basculement"
+description: "Creer et configurer un cluster de basculement Windows Server 2022 via PowerShell et l'interface graphique, avec la configuration post-creation."
+tags:
+  - haute-disponibilite
+  - cluster
+  - powershell
+  - windows-server
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,15 +22,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: "Creation d'un cluster de basculement"
-description: "Creer et configurer un cluster de basculement Windows Server 2022 via PowerShell et l'interface graphique, avec la configuration post-creation."
-tags:
-  - haute-disponibilite
-  - cluster
-  - powershell
-  - windows-server
----
 
 # Creation d'un cluster de basculement
 

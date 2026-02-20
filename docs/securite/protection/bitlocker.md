@@ -1,4 +1,14 @@
-﻿<!--
+---
+title: "BitLocker sur serveur"
+description: "Activation et gestion de BitLocker sur Windows Server 2022 : chiffrement de volume, TPM, cles de recuperation et administration PowerShell."
+tags:
+  - securite
+  - protection
+  - bitlocker
+  - chiffrement
+  - tpm
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,16 +23,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: "BitLocker sur serveur"
-description: "Activation et gestion de BitLocker sur Windows Server 2022 : chiffrement de volume, TPM, cles de recuperation et administration PowerShell."
-tags:
-  - securite
-  - protection
-  - bitlocker
-  - chiffrement
-  - tpm
----
 
 # BitLocker sur serveur
 

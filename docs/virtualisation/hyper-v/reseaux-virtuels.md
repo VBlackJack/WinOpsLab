@@ -1,3 +1,13 @@
+---
+title: "Reseaux virtuels"
+description: "Commutateurs virtuels Hyper-V : External, Internal, Private, NAT et configuration VLAN pour Windows Server 2022."
+tags:
+  - virtualisation
+  - hyper-v
+  - reseau
+  - vswitch
+  - vlan
+---
 <!--
   Copyright 2026 Julien Bombled
 
@@ -13,16 +23,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: "Reseaux virtuels"
-description: "Commutateurs virtuels Hyper-V : External, Internal, Private, NAT et configuration VLAN pour Windows Server 2022."
-tags:
-  - virtualisation
-  - hyper-v
-  - reseau
-  - vswitch
-  - vlan
----
 
 # Reseaux virtuels
 

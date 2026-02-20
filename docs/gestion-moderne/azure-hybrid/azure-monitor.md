@@ -1,4 +1,13 @@
-﻿<!--
+---
+title: "Azure Monitor pour serveurs on-premises"
+description: Surveiller des serveurs Windows on-premises avec Azure Monitor - agents, Log Analytics, metriques, alertes et tableaux de bord.
+tags:
+  - gestion-moderne
+  - azure
+  - supervision
+  - intermediaire
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,15 +22,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: "Azure Monitor pour serveurs on-premises"
-description: Surveiller des serveurs Windows on-premises avec Azure Monitor - agents, Log Analytics, metriques, alertes et tableaux de bord.
-tags:
-  - gestion-moderne
-  - azure
-  - supervision
-  - intermediaire
----
 
 # Azure Monitor pour serveurs on-premises
 

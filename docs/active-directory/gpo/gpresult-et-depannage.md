@@ -1,4 +1,15 @@
-﻿<!--
+---
+title: GPResult et depannage
+description: Diagnostiquer et depanner les strategies de groupe avec gpresult, RSoP, Group Policy Modeling, les journaux d'evenements et les outils de depannage.
+tags:
+  - gpo
+  - active-directory
+  - gpresult
+  - rsop
+  - depannage
+  - troubleshooting
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,17 +24,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: GPResult et depannage
-description: Diagnostiquer et depanner les strategies de groupe avec gpresult, RSoP, Group Policy Modeling, les journaux d'evenements et les outils de depannage.
-tags:
-  - gpo
-  - active-directory
-  - gpresult
-  - rsop
-  - depannage
-  - troubleshooting
----
 
 # GPResult et depannage des GPO
 

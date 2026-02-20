@@ -1,3 +1,12 @@
+---
+title: "Concepts fondamentaux de la PKI"
+description: "Infrastructure a cles publiques : certificats numeriques, hierarchie d'autorites de certification, cycle de vie des certificats et cryptographie asymetrique."
+tags:
+  - securite
+  - pki
+  - certificats
+  - cryptographie
+---
 <!--
   Copyright 2026 Julien Bombled
 
@@ -13,15 +22,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: "Concepts fondamentaux de la PKI"
-description: "Infrastructure a cles publiques : certificats numeriques, hierarchie d'autorites de certification, cycle de vie des certificats et cryptographie asymetrique."
-tags:
-  - securite
-  - pki
-  - certificats
-  - cryptographie
----
 
 # Concepts fondamentaux de la PKI
 

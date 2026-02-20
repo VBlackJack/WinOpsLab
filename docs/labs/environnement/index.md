@@ -1,4 +1,8 @@
-﻿<!--
+---
+title: Environnement de lab
+description: Mise en place de l'environnement de lab virtualise.
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,10 +17,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: Environnement de lab
-description: Mise en place de l'environnement de lab virtualise.
----
 
 # Environnement de lab
 

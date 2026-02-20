@@ -1,4 +1,12 @@
-﻿<!--
+---
+title: "Methodologie de depannage"
+description: Adopter une approche structuree pour le depannage sur Windows Server 2022 - identifier, reproduire, isoler, resoudre et documenter.
+tags:
+  - supervision
+  - depannage
+  - debutant
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,14 +21,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: "Methodologie de depannage"
-description: Adopter une approche structuree pour le depannage sur Windows Server 2022 - identifier, reproduire, isoler, resoudre et documenter.
-tags:
-  - supervision
-  - depannage
-  - debutant
----
 
 # Methodologie de depannage
 

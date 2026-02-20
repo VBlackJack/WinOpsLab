@@ -1,4 +1,13 @@
-﻿<!--
+---
+title: Creer et lier une GPO
+description: Guide pratique pour creer, lier et configurer des GPO via la console GPMC et PowerShell sous Windows Server 2022.
+tags:
+  - gpo
+  - active-directory
+  - gpmc
+  - powershell
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,15 +22,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: Creer et lier une GPO
-description: Guide pratique pour creer, lier et configurer des GPO via la console GPMC et PowerShell sous Windows Server 2022.
-tags:
-  - gpo
-  - active-directory
-  - gpmc
-  - powershell
----
 
 # Creer et lier une GPO
 

@@ -1,3 +1,11 @@
+---
+title: Concepts DNS
+description: Fonctionnement du DNS, hierarchie des noms, types de requetes et role critique dans Active Directory.
+tags:
+  - active-directory
+  - dns
+  - fondamental
+---
 <!--
   Copyright 2026 Julien Bombled
 
@@ -13,14 +21,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: Concepts DNS
-description: Fonctionnement du DNS, hierarchie des noms, types de requetes et role critique dans Active Directory.
-tags:
-  - active-directory
-  - dns
-  - fondamental
----
 
 # Concepts DNS
 

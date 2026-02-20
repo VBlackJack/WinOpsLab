@@ -1,4 +1,14 @@
-﻿<!--
+---
+title: "IPAM (IP Address Management)"
+description: "Deployer et utiliser le role IPAM sous Windows Server 2022 : decouverte, surveillance, integration DHCP/DNS et gestion centralisee de l'espace d'adressage."
+tags:
+  - reseau
+  - ipam
+  - dhcp
+  - dns
+  - windows-server
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,16 +23,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: "IPAM (IP Address Management)"
-description: "Deployer et utiliser le role IPAM sous Windows Server 2022 : decouverte, surveillance, integration DHCP/DNS et gestion centralisee de l'espace d'adressage."
-tags:
-  - reseau
-  - ipam
-  - dhcp
-  - dns
-  - windows-server
----
 
 # IPAM (IP Address Management)
 

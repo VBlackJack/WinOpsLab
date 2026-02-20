@@ -1,4 +1,13 @@
-﻿<!--
+---
+title: "Task Scheduler (Planificateur de taches)"
+description: "Utiliser le Planificateur de taches Windows Server 2022 : triggers, actions, conditions, historique et taches d'administration courantes."
+tags:
+  - automatisation
+  - taches-planifiees
+  - task-scheduler
+  - windows-server
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,15 +22,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: "Task Scheduler (Planificateur de taches)"
-description: "Utiliser le Planificateur de taches Windows Server 2022 : triggers, actions, conditions, historique et taches d'administration courantes."
-tags:
-  - automatisation
-  - taches-planifiees
-  - task-scheduler
-  - windows-server
----
 
 # Task Scheduler (Planificateur de taches)
 

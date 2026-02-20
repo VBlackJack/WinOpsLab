@@ -1,3 +1,12 @@
+---
+title: "Azure AD Connect"
+description: Mettre en place l'identite hybride avec Azure AD Connect - synchronisation, modes d'authentification et architecture.
+tags:
+  - gestion-moderne
+  - azure
+  - identite
+  - intermediaire
+---
 <!--
   Copyright 2026 Julien Bombled
 
@@ -13,15 +22,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: "Azure AD Connect"
-description: Mettre en place l'identite hybride avec Azure AD Connect - synchronisation, modes d'authentification et architecture.
-tags:
-  - gestion-moderne
-  - azure
-  - identite
-  - intermediaire
----
 
 # Azure AD Connect
 

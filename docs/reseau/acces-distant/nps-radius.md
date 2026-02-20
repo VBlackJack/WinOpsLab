@@ -1,4 +1,14 @@
-﻿<!--
+---
+title: "NPS / RADIUS"
+description: "Deployer NPS comme serveur RADIUS sous Windows Server 2022 : politiques d'authentification, politiques de demande de connexion et integration VPN/Wi-Fi."
+tags:
+  - reseau
+  - nps
+  - radius
+  - authentification
+  - windows-server
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,16 +23,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: "NPS / RADIUS"
-description: "Deployer NPS comme serveur RADIUS sous Windows Server 2022 : politiques d'authentification, politiques de demande de connexion et integration VPN/Wi-Fi."
-tags:
-  - reseau
-  - nps
-  - radius
-  - authentification
-  - windows-server
----
 
 # NPS (Network Policy Server) / RADIUS
 

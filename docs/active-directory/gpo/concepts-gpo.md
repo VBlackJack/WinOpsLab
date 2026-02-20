@@ -1,4 +1,13 @@
-﻿<!--
+---
+title: Concepts GPO
+description: Comprendre les objets de strategie de groupe (GPO), leur ordre de traitement LSDOU, le stockage SYSVOL et les commandes essentielles.
+tags:
+  - gpo
+  - active-directory
+  - strategie-de-groupe
+  - sysvol
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,15 +22,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: Concepts GPO
-description: Comprendre les objets de strategie de groupe (GPO), leur ordre de traitement LSDOU, le stockage SYSVOL et les commandes essentielles.
-tags:
-  - gpo
-  - active-directory
-  - strategie-de-groupe
-  - sysvol
----
 
 # Concepts des strategies de groupe (GPO)
 

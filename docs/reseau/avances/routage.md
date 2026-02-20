@@ -1,4 +1,14 @@
-﻿<!--
+---
+title: "Routage"
+description: "Configurer Windows Server 2022 comme routeur : routes statiques, routage RRAS, gestion des routes via PowerShell et netsh."
+tags:
+  - reseau
+  - routage
+  - rras
+  - powershell
+  - windows-server
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,16 +23,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: "Routage"
-description: "Configurer Windows Server 2022 comme routeur : routes statiques, routage RRAS, gestion des routes via PowerShell et netsh."
-tags:
-  - reseau
-  - routage
-  - rras
-  - powershell
-  - windows-server
----
 
 # Routage sous Windows Server
 

@@ -1,4 +1,13 @@
-﻿<!--
+---
+title: "Bonnes pratiques de durcissement"
+description: "Principes fondamentaux du hardening Windows Server 2022 : desactivation des services inutiles, moindre privilege, strategie de mises a jour, securisation SMB et comptes administrateurs."
+tags:
+  - securite
+  - durcissement
+  - hardening
+  - windows-server
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,15 +22,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: "Bonnes pratiques de durcissement"
-description: "Principes fondamentaux du hardening Windows Server 2022 : desactivation des services inutiles, moindre privilege, strategie de mises a jour, securisation SMB et comptes administrateurs."
-tags:
-  - securite
-  - durcissement
-  - hardening
-  - windows-server
----
 
 # Bonnes pratiques de durcissement
 

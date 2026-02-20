@@ -1,4 +1,12 @@
-﻿<!--
+---
+title: "Syslog sur Windows"
+description: Integrer Windows Server 2022 avec des serveurs Syslog - transfert d'evenements, outils tiers et integration avec les SIEM.
+tags:
+  - supervision
+  - logs
+  - intermediaire
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,14 +21,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: "Syslog sur Windows"
-description: Integrer Windows Server 2022 avec des serveurs Syslog - transfert d'evenements, outils tiers et integration avec les SIEM.
-tags:
-  - supervision
-  - logs
-  - intermediaire
----
 
 # Syslog sur Windows
 

@@ -1,3 +1,12 @@
+---
+title: Analyse de trafic avec Pktmon
+description: Utiliser Pktmon, le sniffer de paquets natif de Windows Server 2022, pour diagnostiquer les problemes reseau sans Wireshark.
+tags:
+  - reseau
+  - depannage
+  - pktmon
+  - wireshark
+---
 <!--
   Copyright 2026 Julien Bombled
 
@@ -13,15 +22,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: Analyse de trafic avec Pktmon
-description: Utiliser Pktmon, le sniffer de paquets natif de Windows Server 2022, pour diagnostiquer les problemes reseau sans Wireshark.
-tags:
-  - reseau
-  - depannage
-  - pktmon
-  - wireshark
----
 
 # Analyse de trafic avec Pktmon
 

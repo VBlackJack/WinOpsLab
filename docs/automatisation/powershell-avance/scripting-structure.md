@@ -1,4 +1,13 @@
-﻿<!--
+---
+title: "Structure d'un script PowerShell"
+description: "Structurer un script PowerShell professionnel : bloc param, commentaires, regions, codes de sortie et template reutilisable."
+tags:
+  - automatisation
+  - powershell
+  - scripting
+  - windows-server
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,15 +22,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: "Structure d'un script PowerShell"
-description: "Structurer un script PowerShell professionnel : bloc param, commentaires, regions, codes de sortie et template reutilisable."
-tags:
-  - automatisation
-  - powershell
-  - scripting
-  - windows-server
----
 
 # Structure d'un script PowerShell
 

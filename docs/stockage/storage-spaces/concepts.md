@@ -1,3 +1,11 @@
+---
+title: Concepts de Storage Spaces
+description: Comprendre les concepts fondamentaux de Storage Spaces - pools de stockage, disques virtuels, tiers et modes de resilience.
+tags:
+  - stockage
+  - storage-spaces
+  - intermediaire
+---
 <!--
   Copyright 2026 Julien Bombled
 
@@ -13,14 +21,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: Concepts de Storage Spaces
-description: Comprendre les concepts fondamentaux de Storage Spaces - pools de stockage, disques virtuels, tiers et modes de resilience.
-tags:
-  - stockage
-  - storage-spaces
-  - intermediaire
----
 
 # Concepts de Storage Spaces
 

@@ -1,4 +1,8 @@
-﻿<!--
+---
+title: Active Directory
+description: Services d'annuaire Active Directory - AD DS, DNS, DHCP et strategies de groupe.
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,10 +17,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: Active Directory
-description: Services d'annuaire Active Directory - AD DS, DNS, DHCP et strategies de groupe.
----
 
 # Active Directory
 

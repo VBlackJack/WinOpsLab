@@ -1,3 +1,12 @@
+---
+title: Installer le premier controleur de domaine
+description: Deployer le premier controleur de domaine et creer une nouvelle foret Active Directory.
+tags:
+  - active-directory
+  - adds
+  - intermediaire
+  - powershell
+---
 <!--
   Copyright 2026 Julien Bombled
 
@@ -13,16 +22,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
-
----
-title: Installer le premier controleur de domaine
-description: Deployer le premier controleur de domaine et creer une nouvelle foret Active Directory.
-tags:
-  - active-directory
-  - adds
-  - intermediaire
-  - powershell
----
 
 # Installer le premier controleur de domaine
 

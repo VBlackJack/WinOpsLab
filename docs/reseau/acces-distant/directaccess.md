@@ -1,4 +1,14 @@
-﻿<!--
+---
+title: "DirectAccess"
+description: "Comprendre DirectAccess : concepts, technologies de transition IPv6 (6to4, Teredo, ISATAP), avantages, inconvenients et statut de depreciation."
+tags:
+  - reseau
+  - directaccess
+  - ipv6
+  - acces-distant
+  - windows-server
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,16 +23,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: "DirectAccess"
-description: "Comprendre DirectAccess : concepts, technologies de transition IPv6 (6to4, Teredo, ISATAP), avantages, inconvenients et statut de depreciation."
-tags:
-  - reseau
-  - directaccess
-  - ipv6
-  - acces-distant
-  - windows-server
----
 
 # DirectAccess
 

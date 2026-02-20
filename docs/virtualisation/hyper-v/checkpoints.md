@@ -1,4 +1,14 @@
-﻿<!--
+---
+title: "Checkpoints"
+description: "Checkpoints Hyper-V : standard vs production, creation, application, suppression et cas d'usage sur Windows Server 2022."
+tags:
+  - virtualisation
+  - hyper-v
+  - checkpoints
+  - snapshots
+  - sauvegarde
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,16 +23,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: "Checkpoints"
-description: "Checkpoints Hyper-V : standard vs production, creation, application, suppression et cas d'usage sur Windows Server 2022."
-tags:
-  - virtualisation
-  - hyper-v
-  - checkpoints
-  - snapshots
-  - sauvegarde
----
 
 # Checkpoints
 

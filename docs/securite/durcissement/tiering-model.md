@@ -1,3 +1,12 @@
+---
+title: Modele de Tiering (Red Forest)
+description: Comprendre et implementer le modele de Tiering Microsoft pour proteger Active Directory (Tier 0, 1, 2).
+tags:
+  - securite
+  - tiering
+  - active-directory
+  - red-forest
+---
 <!--
   Copyright 2026 Julien Bombled
 
@@ -13,15 +22,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: Modele de Tiering (Red Forest)
-description: Comprendre et implementer le modele de Tiering Microsoft pour proteger Active Directory (Tier 0, 1, 2).
-tags:
-  - securite
-  - tiering
-  - active-directory
-  - red-forest
----
 
 # Modele de Tiering (Enterprise Access Model)
 

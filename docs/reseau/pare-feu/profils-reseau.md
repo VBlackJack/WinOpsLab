@@ -1,4 +1,13 @@
-﻿<!--
+---
+title: "Profils reseau"
+description: "Comprendre les profils reseau du Pare-feu Windows (Domaine, Prive, Public) : detection, comportement et configuration par profil."
+tags:
+  - reseau
+  - pare-feu
+  - profils
+  - windows-server
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,15 +22,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: "Profils reseau"
-description: "Comprendre les profils reseau du Pare-feu Windows (Domaine, Prive, Public) : detection, comportement et configuration par profil."
-tags:
-  - reseau
-  - pare-feu
-  - profils
-  - windows-server
----
 
 # Profils reseau du pare-feu
 

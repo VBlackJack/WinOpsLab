@@ -1,4 +1,13 @@
-﻿<!--
+---
+title: "Basculement DHCP (Failover)"
+description: "Configurer la haute disponibilite du service DHCP avec le basculement (failover) entre deux serveurs Windows Server 2022 en mode Hot Standby ou Load Balancing."
+tags:
+  - DHCP
+  - Haute disponibilite
+  - Failover
+  - Windows Server 2022
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,15 +22,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: "Basculement DHCP (Failover)"
-description: "Configurer la haute disponibilite du service DHCP avec le basculement (failover) entre deux serveurs Windows Server 2022 en mode Hot Standby ou Load Balancing."
-tags:
-  - DHCP
-  - Haute disponibilite
-  - Failover
-  - Windows Server 2022
----
 
 # Basculement DHCP (Failover)
 

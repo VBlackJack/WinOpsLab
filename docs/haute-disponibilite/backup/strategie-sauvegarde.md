@@ -1,4 +1,13 @@
-﻿<!--
+---
+title: "Strategie de sauvegarde"
+description: "Definir une strategie de sauvegarde efficace sous Windows Server 2022 : regle 3-2-1, RPO/RTO, types de sauvegarde et planification."
+tags:
+  - haute-disponibilite
+  - backup
+  - strategie
+  - windows-server
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,15 +22,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: "Strategie de sauvegarde"
-description: "Definir une strategie de sauvegarde efficace sous Windows Server 2022 : regle 3-2-1, RPO/RTO, types de sauvegarde et planification."
-tags:
-  - haute-disponibilite
-  - backup
-  - strategie
-  - windows-server
----
 
 # Strategie de sauvegarde
 

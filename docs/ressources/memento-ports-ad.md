@@ -1,3 +1,12 @@
+---
+title: Memento - Ports Active Directory
+description: Liste de reference des ports reseau essentiels pour Active Directory et les flux de communication.
+tags:
+  - active-directory
+  - reseau
+  - securite
+  - cheat-sheet
+---
 <!--
   Copyright 2026 Julien Bombled
 
@@ -13,16 +22,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
-
----
-title: Memento - Ports Active Directory
-description: Liste de reference des ports reseau essentiels pour Active Directory et les flux de communication.
-tags:
-  - active-directory
-  - reseau
-  - securite
-  - cheat-sheet
----
 
 # Memento : Ports Active Directory
 

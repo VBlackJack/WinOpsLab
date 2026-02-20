@@ -1,4 +1,14 @@
-﻿<!--
+---
+title: "Journaux d'evenements"
+description: "Analyse des journaux Windows Server 2022 : Security, System, Application, Event IDs critiques et requetes PowerShell pour la detection d'incidents."
+tags:
+  - securite
+  - audit
+  - journaux
+  - event-log
+  - detection
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,16 +23,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: "Journaux d'evenements"
-description: "Analyse des journaux Windows Server 2022 : Security, System, Application, Event IDs critiques et requetes PowerShell pour la detection d'incidents."
-tags:
-  - securite
-  - audit
-  - journaux
-  - event-log
-  - detection
----
 
 # Journaux d'evenements
 

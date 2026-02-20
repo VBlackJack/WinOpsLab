@@ -1,4 +1,13 @@
-﻿<!--
+---
+title: "Lab 03 : DNS et DHCP"
+description: Exercice pratique - configurer les zones DNS, creer une etendue DHCP et tester la resolution de noms et l'attribution d'adresses.
+tags:
+  - lab
+  - dns
+  - dhcp
+  - debutant
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,15 +22,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: "Lab 03 : DNS et DHCP"
-description: Exercice pratique - configurer les zones DNS, creer une etendue DHCP et tester la resolution de noms et l'attribution d'adresses.
-tags:
-  - lab
-  - dns
-  - dhcp
-  - debutant
----
 
 # Lab 03 : DNS et DHCP
 

@@ -1,4 +1,12 @@
-﻿<!--
+---
+title: "Lab 02 : Premier domaine AD DS"
+description: Exercice pratique - creer un premier domaine Active Directory, promouvoir un controleur de domaine et verifier le fonctionnement.
+tags:
+  - lab
+  - active-directory
+  - debutant
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,14 +21,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: "Lab 02 : Premier domaine AD DS"
-description: Exercice pratique - creer un premier domaine Active Directory, promouvoir un controleur de domaine et verifier le fonctionnement.
-tags:
-  - lab
-  - active-directory
-  - debutant
----
 
 # Lab 02 : Premier domaine AD DS
 

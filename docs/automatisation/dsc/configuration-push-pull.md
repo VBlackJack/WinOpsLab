@@ -1,4 +1,14 @@
-﻿<!--
+---
+title: "Configuration Push et Pull"
+description: "Comprendre et configurer les modes Push et Pull de DSC : application directe, serveur Pull, configurations partielles et bonnes pratiques."
+tags:
+  - automatisation
+  - dsc
+  - push
+  - pull
+  - windows-server
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,16 +23,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: "Configuration Push et Pull"
-description: "Comprendre et configurer les modes Push et Pull de DSC : application directe, serveur Pull, configurations partielles et bonnes pratiques."
-tags:
-  - automatisation
-  - dsc
-  - push
-  - pull
-  - windows-server
----
 
 # Configuration Push et Pull
 

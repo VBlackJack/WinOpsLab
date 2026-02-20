@@ -1,4 +1,13 @@
-﻿<!--
+---
+title: "Reservations DHCP"
+description: "Creer et gerer des reservations DHCP pour attribuer des adresses IP fixes a des equipements specifiques identifies par leur adresse MAC."
+tags:
+  - DHCP
+  - Reservations
+  - Adresse MAC
+  - Windows Server 2022
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,15 +22,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: "Reservations DHCP"
-description: "Creer et gerer des reservations DHCP pour attribuer des adresses IP fixes a des equipements specifiques identifies par leur adresse MAC."
-tags:
-  - DHCP
-  - Reservations
-  - Adresse MAC
-  - Windows Server 2022
----
 
 # Reservations DHCP
 

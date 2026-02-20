@@ -1,4 +1,8 @@
-﻿<!--
+---
+title: Taches planifiees
+description: Taches planifiees Windows Server - Task Scheduler et PowerShell.
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,10 +17,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: Taches planifiees
-description: Taches planifiees Windows Server - Task Scheduler et PowerShell.
----
 
 # Taches planifiees
 

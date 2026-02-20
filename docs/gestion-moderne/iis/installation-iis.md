@@ -1,4 +1,12 @@
-﻿<!--
+---
+title: "Installation d'IIS"
+description: Installer et configurer Internet Information Services sur Windows Server 2022 - selection des roles, site par defaut et pools d'applications.
+tags:
+  - gestion-moderne
+  - iis
+  - intermediaire
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,14 +21,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: "Installation d'IIS"
-description: Installer et configurer Internet Information Services sur Windows Server 2022 - selection des roles, site par defaut et pools d'applications.
-tags:
-  - gestion-moderne
-  - iis
-  - intermediaire
----
 
 # Installation d'IIS
 

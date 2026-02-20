@@ -1,4 +1,14 @@
-﻿<!--
+---
+title: "Hyper-V Replica"
+description: "Replication de VMs Hyper-V pour la reprise d'activite : configuration, types de basculement et strategie de disaster recovery sur Windows Server 2022."
+tags:
+  - virtualisation
+  - hyper-v
+  - replica
+  - disaster-recovery
+  - haute-disponibilite
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,16 +23,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: "Hyper-V Replica"
-description: "Replication de VMs Hyper-V pour la reprise d'activite : configuration, types de basculement et strategie de disaster recovery sur Windows Server 2022."
-tags:
-  - virtualisation
-  - hyper-v
-  - replica
-  - disaster-recovery
-  - haute-disponibilite
----
 
 # Hyper-V Replica
 

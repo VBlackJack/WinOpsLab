@@ -1,3 +1,13 @@
+---
+title: "Deploiement windows_exporter avec Ansible et Mimir"
+description: "Automatiser le deploiement de Prometheus windows_exporter via Ansible et centraliser les metriques dans Grafana Mimir pour un parc Windows Server."
+tags:
+  - supervision
+  - prometheus
+  - windows-exporter
+  - mimir
+  - ansible
+---
 <!--
   Copyright 2026 Julien Bombled
 
@@ -13,16 +23,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: "Deploiement windows_exporter avec Ansible et Mimir"
-description: "Automatiser le deploiement de Prometheus windows_exporter via Ansible et centraliser les metriques dans Grafana Mimir pour un parc Windows Server."
-tags:
-  - supervision
-  - prometheus
-  - windows-exporter
-  - mimir
-  - ansible
----
 
 # Deploiement windows_exporter avec Ansible et Mimir
 

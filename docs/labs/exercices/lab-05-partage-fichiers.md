@@ -1,4 +1,13 @@
-﻿<!--
+---
+title: "Lab 05 : Partage de fichiers"
+description: Exercice pratique - configurer des partages de fichiers avec les permissions NTFS et partage selon le modele AGDLP.
+tags:
+  - lab
+  - stockage
+  - permissions
+  - intermediaire
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,15 +22,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: "Lab 05 : Partage de fichiers"
-description: Exercice pratique - configurer des partages de fichiers avec les permissions NTFS et partage selon le modele AGDLP.
-tags:
-  - lab
-  - stockage
-  - permissions
-  - intermediaire
----
 
 # Lab 05 : Partage de fichiers
 

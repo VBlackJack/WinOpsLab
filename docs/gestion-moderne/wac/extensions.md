@@ -1,4 +1,12 @@
-﻿<!--
+---
+title: "Extensions Windows Admin Center"
+description: Installer et gerer les extensions Windows Admin Center - catalogue de feeds, extensions populaires et mise a jour.
+tags:
+  - gestion-moderne
+  - wac
+  - debutant
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,14 +21,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: "Extensions Windows Admin Center"
-description: Installer et gerer les extensions Windows Admin Center - catalogue de feeds, extensions populaires et mise a jour.
-tags:
-  - gestion-moderne
-  - wac
-  - debutant
----
 
 # Extensions Windows Admin Center
 

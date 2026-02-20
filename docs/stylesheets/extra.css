@@ -56,9 +56,10 @@
   color: #ef9a9a;
 }
 
-/* Allow navigation tabs to wrap when the header is too narrow */
-.md-tabs__list {
-  flex-wrap: wrap;
+/* Fit all 13 navigation tabs on a single line */
+.md-tabs__link {
+  font-size: 0.68rem;
+  padding: 0 0.6em;
 }
 
 /* Card grid hover effect */

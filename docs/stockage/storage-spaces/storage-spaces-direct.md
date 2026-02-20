@@ -1,4 +1,13 @@
-﻿<!--
+---
+title: Storage Spaces Direct (S2D)
+description: Comprendre Storage Spaces Direct - architecture hyper-convergee, prerequis, modes de deploiement et vue d'ensemble sous Windows Server 2022.
+tags:
+  - stockage
+  - storage-spaces
+  - s2d
+  - intermediaire
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,15 +22,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: Storage Spaces Direct (S2D)
-description: Comprendre Storage Spaces Direct - architecture hyper-convergee, prerequis, modes de deploiement et vue d'ensemble sous Windows Server 2022.
-tags:
-  - stockage
-  - storage-spaces
-  - s2d
-  - intermediaire
----
 
 # Storage Spaces Direct (S2D)
 

@@ -1,4 +1,13 @@
-﻿<!--
+---
+title: "Creer une machine virtuelle"
+description: "Creation et configuration de VMs Hyper-V : Generation 1 vs 2, CPU, RAM dynamique, disques virtuels et services d'integration."
+tags:
+  - virtualisation
+  - hyper-v
+  - vm
+  - configuration
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,15 +22,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: "Creer une machine virtuelle"
-description: "Creation et configuration de VMs Hyper-V : Generation 1 vs 2, CPU, RAM dynamique, disques virtuels et services d'integration."
-tags:
-  - virtualisation
-  - hyper-v
-  - vm
-  - configuration
----
 
 # Creer une machine virtuelle
 

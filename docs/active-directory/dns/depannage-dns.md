@@ -1,3 +1,12 @@
+---
+title: Depannage DNS
+description: Methodologie de diagnostic DNS, outils, validation des enregistrements SRV et resolution des problemes courants.
+tags:
+  - active-directory
+  - dns
+  - avance
+  - powershell
+---
 <!--
   Copyright 2026 Julien Bombled
 
@@ -13,15 +22,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: Depannage DNS
-description: Methodologie de diagnostic DNS, outils, validation des enregistrements SRV et resolution des problemes courants.
-tags:
-  - active-directory
-  - dns
-  - avance
-  - powershell
----
 
 # Depannage DNS
 

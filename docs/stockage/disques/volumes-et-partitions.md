@@ -1,4 +1,12 @@
-﻿<!--
+---
+title: Volumes et partitions
+description: Creer, redimensionner et gerer les volumes et partitions sous Windows Server 2022 avec PowerShell et la console graphique.
+tags:
+  - stockage
+  - disques
+  - intermediaire
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,14 +21,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: Volumes et partitions
-description: Creer, redimensionner et gerer les volumes et partitions sous Windows Server 2022 avec PowerShell et la console graphique.
-tags:
-  - stockage
-  - disques
-  - intermediaire
----
 
 # Volumes et partitions
 

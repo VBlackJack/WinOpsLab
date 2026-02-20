@@ -1,4 +1,12 @@
-﻿<!--
+---
+title: "Lab 01 : Installation de Windows Server"
+description: Exercice pratique - installer et configurer un premier serveur Windows Server 2022.
+tags:
+  - lab
+  - fondamentaux
+  - debutant
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,14 +21,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: "Lab 01 : Installation de Windows Server"
-description: Exercice pratique - installer et configurer un premier serveur Windows Server 2022.
-tags:
-  - lab
-  - fondamentaux
-  - debutant
----
 
 # Lab 01 : Installation de Windows Server
 

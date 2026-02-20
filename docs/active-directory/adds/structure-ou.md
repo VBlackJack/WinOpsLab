@@ -1,4 +1,12 @@
-﻿<!--
+---
+title: Structure des OU
+description: Concevoir et gerer les unites d'organisation dans Active Directory.
+tags:
+  - active-directory
+  - adds
+  - intermediaire
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,14 +21,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: Structure des OU
-description: Concevoir et gerer les unites d'organisation dans Active Directory.
-tags:
-  - active-directory
-  - adds
-  - intermediaire
----
 
 # Structure des unites d'organisation (OU)
 

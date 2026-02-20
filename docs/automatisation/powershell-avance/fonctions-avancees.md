@@ -1,4 +1,13 @@
-﻿<!--
+---
+title: "Fonctions avancees PowerShell"
+description: "Creer des fonctions PowerShell avancees : CmdletBinding, validation de parametres, pipeline, types de sortie et aide integree."
+tags:
+  - automatisation
+  - powershell
+  - fonctions
+  - windows-server
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,15 +22,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: "Fonctions avancees PowerShell"
-description: "Creer des fonctions PowerShell avancees : CmdletBinding, validation de parametres, pipeline, types de sortie et aide integree."
-tags:
-  - automatisation
-  - powershell
-  - fonctions
-  - windows-server
----
 
 # Fonctions avancees PowerShell
 

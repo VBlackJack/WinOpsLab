@@ -1,4 +1,13 @@
-﻿<!--
+---
+title: "Windows Server Backup"
+description: "Installer et utiliser Windows Server Backup sous Windows Server 2022 : sauvegardes completes, incrementales, bare metal recovery et planification."
+tags:
+  - haute-disponibilite
+  - backup
+  - windows-server-backup
+  - windows-server
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,15 +22,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: "Windows Server Backup"
-description: "Installer et utiliser Windows Server Backup sous Windows Server 2022 : sauvegardes completes, incrementales, bare metal recovery et planification."
-tags:
-  - haute-disponibilite
-  - backup
-  - windows-server-backup
-  - windows-server
----
 
 # Windows Server Backup
 

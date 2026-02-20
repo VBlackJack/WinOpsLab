@@ -1,4 +1,13 @@
-﻿<!--
+---
+title: "Gestion du pare-feu via PowerShell"
+description: "Gerer integralement le Pare-feu Windows avec PowerShell : creation, modification, suppression de regles, export/import et deploiement par GPO."
+tags:
+  - reseau
+  - pare-feu
+  - powershell
+  - automatisation
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,15 +22,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: "Gestion du pare-feu via PowerShell"
-description: "Gerer integralement le Pare-feu Windows avec PowerShell : creation, modification, suppression de regles, export/import et deploiement par GPO."
-tags:
-  - reseau
-  - pare-feu
-  - powershell
-  - automatisation
----
 
 # Gestion du pare-feu via PowerShell
 

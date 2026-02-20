@@ -1,4 +1,14 @@
-﻿<!--
+---
+title: "Protection des comptes privilegies"
+description: "Modele d'administration en tiers, PAW, groupe Protected Users et Credential Guard pour proteger les comptes a privileges sur Windows Server 2022."
+tags:
+  - securite
+  - durcissement
+  - comptes-privilegies
+  - tier-model
+  - credential-guard
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,16 +23,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: "Protection des comptes privilegies"
-description: "Modele d'administration en tiers, PAW, groupe Protected Users et Credential Guard pour proteger les comptes a privileges sur Windows Server 2022."
-tags:
-  - securite
-  - durcissement
-  - comptes-privilegies
-  - tier-model
-  - credential-guard
----
 
 # Protection des comptes privilegies
 

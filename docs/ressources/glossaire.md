@@ -1,4 +1,11 @@
-﻿<!--
+---
+title: "Glossaire"
+description: Glossaire des termes Windows Server - Active Directory, DNS, DHCP, GPO, FSMO et tous les acronymes essentiels.
+tags:
+  - ressources
+  - reference
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,13 +20,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: "Glossaire"
-description: Glossaire des termes Windows Server - Active Directory, DNS, DHCP, GPO, FSMO et tous les acronymes essentiels.
-tags:
-  - ressources
-  - reference
----
 
 # Glossaire
 

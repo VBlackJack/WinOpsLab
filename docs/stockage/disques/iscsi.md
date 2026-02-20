@@ -1,4 +1,13 @@
-﻿<!--
+---
+title: iSCSI
+description: Comprendre et configurer le stockage iSCSI sous Windows Server 2022 - initiateur, cible, IQN, LUN et MPIO.
+tags:
+  - stockage
+  - disques
+  - iscsi
+  - intermediaire
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,15 +22,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: iSCSI
-description: Comprendre et configurer le stockage iSCSI sous Windows Server 2022 - initiateur, cible, IQN, LUN et MPIO.
-tags:
-  - stockage
-  - disques
-  - iscsi
-  - intermediaire
----
 
 # iSCSI
 

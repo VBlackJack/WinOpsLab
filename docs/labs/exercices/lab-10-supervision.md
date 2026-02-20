@@ -1,4 +1,12 @@
-﻿<!--
+---
+title: "Lab 10 : Supervision"
+description: Exercice pratique - mettre en place la supervision avec perfmon, collecteurs de donnees et transfert d'evenements.
+tags:
+  - lab
+  - supervision
+  - avance
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,14 +21,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: "Lab 10 : Supervision"
-description: Exercice pratique - mettre en place la supervision avec perfmon, collecteurs de donnees et transfert d'evenements.
-tags:
-  - lab
-  - supervision
-  - avance
----
 
 # Lab 10 : Supervision
 

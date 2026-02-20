@@ -1,4 +1,8 @@
-﻿<!--
+---
+title: Conteneurs
+description: Conteneurs Windows et Docker sur Windows Server.
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,10 +17,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: Conteneurs
-description: Conteneurs Windows et Docker sur Windows Server.
----
 
 # Conteneurs
 

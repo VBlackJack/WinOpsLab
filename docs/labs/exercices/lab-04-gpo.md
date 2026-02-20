@@ -1,4 +1,13 @@
-﻿<!--
+---
+title: "Lab 04 : Strategies de groupe (GPO)"
+description: Exercice pratique - creer et appliquer des GPO pour les politiques de mot de passe et les restrictions de bureau.
+tags:
+  - lab
+  - gpo
+  - active-directory
+  - intermediaire
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,15 +22,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: "Lab 04 : Strategies de groupe (GPO)"
-description: Exercice pratique - creer et appliquer des GPO pour les politiques de mot de passe et les restrictions de bureau.
-tags:
-  - lab
-  - gpo
-  - active-directory
-  - intermediaire
----
 
 # Lab 04 : Strategies de groupe (GPO)
 

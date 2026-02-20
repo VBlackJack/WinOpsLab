@@ -1,4 +1,8 @@
-﻿<!--
+---
+title: Pare-feu Windows
+description: Pare-feu Windows avec fonctions avancees de securite (WFAS).
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,10 +17,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: Pare-feu Windows
-description: Pare-feu Windows avec fonctions avancees de securite (WFAS).
----
 
 # Pare-feu Windows
 

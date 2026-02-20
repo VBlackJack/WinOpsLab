@@ -1,4 +1,12 @@
-﻿<!--
+---
+title: RSAT
+description: Remote Server Administration Tools - administrer Windows Server depuis un poste client.
+tags:
+  - fondamentaux
+  - console
+  - debutant
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,14 +21,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: RSAT
-description: Remote Server Administration Tools - administrer Windows Server depuis un poste client.
-tags:
-  - fondamentaux
-  - console
-  - debutant
----
 
 # RSAT (Remote Server Administration Tools)
 

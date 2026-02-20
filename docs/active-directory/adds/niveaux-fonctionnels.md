@@ -1,4 +1,12 @@
-﻿<!--
+---
+title: Niveaux fonctionnels
+description: Niveaux fonctionnels de la foret et du domaine Active Directory.
+tags:
+  - active-directory
+  - adds
+  - intermediaire
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,14 +21,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: Niveaux fonctionnels
-description: Niveaux fonctionnels de la foret et du domaine Active Directory.
-tags:
-  - active-directory
-  - adds
-  - intermediaire
----
 
 # Niveaux fonctionnels
 

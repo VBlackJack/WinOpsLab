@@ -1,3 +1,14 @@
+---
+title: Filtrage et heritage des GPO
+description: Maitriser l'heritage, le blocage, l'application forcee, le filtrage de securite, le filtrage WMI et le traitement en boucle (loopback) des GPO.
+tags:
+  - gpo
+  - active-directory
+  - filtrage
+  - heritage
+  - wmi
+  - loopback
+---
 <!--
   Copyright 2026 Julien Bombled
 
@@ -13,17 +24,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: Filtrage et heritage des GPO
-description: Maitriser l'heritage, le blocage, l'application forcee, le filtrage de securite, le filtrage WMI et le traitement en boucle (loopback) des GPO.
-tags:
-  - gpo
-  - active-directory
-  - filtrage
-  - heritage
-  - wmi
-  - loopback
----
 
 # Filtrage et heritage des GPO
 

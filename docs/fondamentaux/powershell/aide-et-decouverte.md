@@ -1,4 +1,12 @@
-﻿<!--
+---
+title: Aide et decouverte
+description: Utiliser le systeme d'aide PowerShell pour explorer et apprendre par soi-meme.
+tags:
+  - fondamentaux
+  - powershell
+  - debutant
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,14 +21,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: Aide et decouverte
-description: Utiliser le systeme d'aide PowerShell pour explorer et apprendre par soi-meme.
-tags:
-  - fondamentaux
-  - powershell
-  - debutant
----
 
 # Aide et decouverte
 

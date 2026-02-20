@@ -1,3 +1,12 @@
+---
+title: "Ansible pour Windows Server"
+description: "Automatiser la configuration de serveurs Windows avec Ansible : WinRM, inventaire, roles et playbooks pour un lab Windows Server 2022."
+tags:
+  - automatisation
+  - iac
+  - ansible
+  - winrm
+---
 <!--
   Copyright 2026 Julien Bombled
 
@@ -13,15 +22,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: "Ansible pour Windows Server"
-description: "Automatiser la configuration de serveurs Windows avec Ansible : WinRM, inventaire, roles et playbooks pour un lab Windows Server 2022."
-tags:
-  - automatisation
-  - iac
-  - ansible
-  - winrm
----
 
 # Ansible pour Windows Server
 

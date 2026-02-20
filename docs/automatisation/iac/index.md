@@ -1,4 +1,8 @@
-﻿<!--
+---
+title: Infrastructure as Code
+description: Infrastructure as Code - ARM, Bicep, Packer et Ansible.
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,10 +17,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: Infrastructure as Code
-description: Infrastructure as Code - ARM, Bicep, Packer et Ansible.
----
 
 # Infrastructure as Code
 

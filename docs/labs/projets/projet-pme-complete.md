@@ -1,4 +1,12 @@
-﻿<!--
+---
+title: "Projet : Infrastructure PME complete"
+description: Projet de synthese - deployer une infrastructure Windows Server complete pour une PME avec AD, DNS, DHCP, fichiers et GPO.
+tags:
+  - lab
+  - projet
+  - avance
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,14 +21,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: "Projet : Infrastructure PME complete"
-description: Projet de synthese - deployer une infrastructure Windows Server complete pour une PME avec AD, DNS, DHCP, fichiers et GPO.
-tags:
-  - lab
-  - projet
-  - avance
----
 
 # Projet : Infrastructure PME complete
 

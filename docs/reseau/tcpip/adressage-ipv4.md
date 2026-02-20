@@ -1,4 +1,13 @@
-﻿<!--
+---
+title: "Adressage IPv4"
+description: "Comprendre l'adressage IPv4 : classes, plages privees RFC 1918, notation CIDR, masques de sous-reseau et conversions binaire/decimal."
+tags:
+  - reseau
+  - ipv4
+  - tcp-ip
+  - adressage
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,15 +22,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: "Adressage IPv4"
-description: "Comprendre l'adressage IPv4 : classes, plages privees RFC 1918, notation CIDR, masques de sous-reseau et conversions binaire/decimal."
-tags:
-  - reseau
-  - ipv4
-  - tcp-ip
-  - adressage
----
 
 # Adressage IPv4
 

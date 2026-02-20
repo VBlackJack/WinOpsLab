@@ -1,4 +1,12 @@
-﻿<!--
+---
+title: "Sites et applications IIS"
+description: Creer et configurer des sites web, repertoires virtuels, applications et bindings sur IIS sous Windows Server 2022.
+tags:
+  - gestion-moderne
+  - iis
+  - intermediaire
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,14 +21,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: "Sites et applications IIS"
-description: Creer et configurer des sites web, repertoires virtuels, applications et bindings sur IIS sous Windows Server 2022.
-tags:
-  - gestion-moderne
-  - iis
-  - intermediaire
----
 
 # Sites et applications IIS
 

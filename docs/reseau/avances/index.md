@@ -1,4 +1,8 @@
-﻿<!--
+---
+title: Services reseau avances
+description: Services reseau avances - NIC Teaming, IPAM, routage.
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,10 +17,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: Services reseau avances
-description: Services reseau avances - NIC Teaming, IPAM, routage.
----
 
 # Services reseau avances
 

@@ -1,4 +1,13 @@
-﻿<!--
+---
+title: "Prerequis et validation du cluster"
+description: "Preparer l'infrastructure pour un cluster de basculement Windows Server 2022 : stockage partage, reseau, comptes AD et tests de validation."
+tags:
+  - haute-disponibilite
+  - cluster
+  - validation
+  - windows-server
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,15 +22,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: "Prerequis et validation du cluster"
-description: "Preparer l'infrastructure pour un cluster de basculement Windows Server 2022 : stockage partage, reseau, comptes AD et tests de validation."
-tags:
-  - haute-disponibilite
-  - cluster
-  - validation
-  - windows-server
----
 
 # Prerequis et validation du cluster
 

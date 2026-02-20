@@ -1,4 +1,12 @@
-﻿<!--
+---
+title: "Windows Event Forwarding (WEF/WEC)"
+description: Centraliser les journaux Windows avec Windows Event Forwarding et Windows Event Collector - architecture, abonnements et configuration par GPO.
+tags:
+  - supervision
+  - logs
+  - intermediaire
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,14 +21,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: "Windows Event Forwarding (WEF/WEC)"
-description: Centraliser les journaux Windows avec Windows Event Forwarding et Windows Event Collector - architecture, abonnements et configuration par GPO.
-tags:
-  - supervision
-  - logs
-  - intermediaire
----
 
 # Windows Event Forwarding (WEF/WEC)
 

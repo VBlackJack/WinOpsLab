@@ -1,4 +1,13 @@
-﻿<!--
+---
+title: Permissions de partage
+description: Creer des partages SMB, configurer les permissions de partage et comprendre l'interaction avec les permissions NTFS.
+tags:
+  - stockage
+  - partage
+  - smb
+  - intermediaire
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,15 +22,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: Permissions de partage
-description: Creer des partages SMB, configurer les permissions de partage et comprendre l'interaction avec les permissions NTFS.
-tags:
-  - stockage
-  - partage
-  - smb
-  - intermediaire
----
 
 # Permissions de partage
 

@@ -1,4 +1,12 @@
-﻿<!--
+---
+title: "Analyseur de performances (perfmon)"
+description: Maitriser l'Analyseur de performances Windows Server 2022 - compteurs, alertes, collecte de donnees et diagnostic des goulots d'etranglement.
+tags:
+  - supervision
+  - surveillance
+  - intermediaire
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,14 +21,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: "Analyseur de performances (perfmon)"
-description: Maitriser l'Analyseur de performances Windows Server 2022 - compteurs, alertes, collecte de donnees et diagnostic des goulots d'etranglement.
-tags:
-  - supervision
-  - surveillance
-  - intermediaire
----
 
 # Analyseur de performances (perfmon)
 

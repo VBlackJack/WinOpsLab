@@ -1,4 +1,13 @@
-﻿<!--
+---
+title: "Lab 08 : Infrastructure PKI"
+description: Exercice pratique - deployer une autorite de certification d'entreprise et emettre des certificats.
+tags:
+  - lab
+  - pki
+  - securite
+  - avance
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,15 +22,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: "Lab 08 : Infrastructure PKI"
-description: Exercice pratique - deployer une autorite de certification d'entreprise et emettre des certificats.
-tags:
-  - lab
-  - pki
-  - securite
-  - avance
----
 
 # Lab 08 : Infrastructure PKI
 

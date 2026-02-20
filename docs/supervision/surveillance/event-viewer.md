@@ -1,4 +1,12 @@
-﻿<!--
+---
+title: "Observateur d'evenements"
+description: Maitriser l'Observateur d'evenements sur Windows Server 2022 - types de journaux, vues personnalisees, filtrage, abonnements et requetes XML.
+tags:
+  - supervision
+  - surveillance
+  - intermediaire
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,14 +21,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: "Observateur d'evenements"
-description: Maitriser l'Observateur d'evenements sur Windows Server 2022 - types de journaux, vues personnalisees, filtrage, abonnements et requetes XML.
-tags:
-  - supervision
-  - surveillance
-  - intermediaire
----
 
 # Observateur d'evenements (Event Viewer)
 

@@ -1,4 +1,12 @@
-﻿<!--
+---
+title: "Concepts DHCP"
+description: "Comprendre le protocole DHCP, le processus DORA, les baux, le renouvellement et le role de l'agent relais dans un environnement Windows Server 2022."
+tags:
+  - DHCP
+  - Reseau
+  - Windows Server 2022
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,14 +21,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: "Concepts DHCP"
-description: "Comprendre le protocole DHCP, le processus DORA, les baux, le renouvellement et le role de l'agent relais dans un environnement Windows Server 2022."
-tags:
-  - DHCP
-  - Reseau
-  - Windows Server 2022
----
 
 # Concepts DHCP
 

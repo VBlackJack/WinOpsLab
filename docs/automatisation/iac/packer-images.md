@@ -1,4 +1,14 @@
-﻿<!--
+---
+title: "Packer pour les images Windows Server"
+description: "Utiliser HashiCorp Packer pour construire des images Windows Server personnalisees (golden images) : provisioners, configuration et cas d'usage."
+tags:
+  - automatisation
+  - iac
+  - packer
+  - golden-image
+  - windows-server
+---
+<!--
   Copyright 2026 Julien Bombled
 
   Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,16 +23,6 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 -->
----
-title: "Packer pour les images Windows Server"
-description: "Utiliser HashiCorp Packer pour construire des images Windows Server personnalisees (golden images) : provisioners, configuration et cas d'usage."
-tags:
-  - automatisation
-  - iac
-  - packer
-  - golden-image
-  - windows-server
----
 
 # Packer pour les images Windows Server
 

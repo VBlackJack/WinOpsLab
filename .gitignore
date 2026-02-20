@@ -15,6 +15,10 @@ __pycache__/
 *.swp
 *.swo
 
+# Claude Code
+CLAUDE.md
+.claude/
+
 # OS
 Thumbs.db
 Desktop.ini

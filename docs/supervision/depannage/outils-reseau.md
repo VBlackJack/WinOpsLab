@@ -26,6 +26,13 @@ graph LR
     E --> I[tracert / pathping]
 ```
 
+!!! example "Analogie"
+
+    Les outils reseau de depannage fonctionnent comme les **instruments d'un controleur aerien**.
+    Le ping est le radar basique (la cible est-elle la ?), le tracert est la carte de vol
+    (quel chemin emprunte le paquet ?), et nslookup est l'annuaire des codes aeroport
+    (quel nom correspond a quelle adresse ?).
+
 ## ping et Test-NetConnection
 
 ### ping (ICMP)
@@ -94,6 +101,43 @@ foreach ($server in $servers) {
         }
     }
 }
+```
+
+Resultat :
+
+```text
+# Test-NetConnection -ComputerName SRV-DC01
+ComputerName     : SRV-DC01
+RemoteAddress    : 10.0.0.10
+InterfaceAlias   : Ethernet
+SourceAddress    : 10.0.0.20
+PingSucceeded    : True
+PingReplyDetails (RTT) : 1 ms
+
+# Test-NetConnection -ComputerName SRV-DC01 -Port 389
+ComputerName     : SRV-DC01
+RemotePort       : 389
+InterfaceAlias   : Ethernet
+TcpTestSucceeded : True
+
+# Quick test multiple servers/ports
+Server      Port Status
+------      ---- ------
+SRV-DC01      53 Open
+SRV-DC01      80 Closed
+SRV-DC01     389 Open
+SRV-DC01     445 Open
+SRV-DC01    3389 Open
+SRV-FILE01    53 Closed
+SRV-FILE01    80 Closed
+SRV-FILE01   389 Closed
+SRV-FILE01   445 Open
+SRV-FILE01  3389 Open
+SRV-WEB01     53 Closed
+SRV-WEB01     80 Open
+SRV-WEB01    389 Closed
+SRV-WEB01    445 Open
+SRV-WEB01   3389 Open
 ```
 
 ## tracert et pathping
@@ -200,6 +244,26 @@ Resolve-DnsName -Name _ldap._tcp.dc._msdcs.winopslab.local -Type SRV |
     Select-Object NameTarget, Port, Priority, Weight
 ```
 
+Resultat :
+
+```text
+# Resolve-DnsName -Name SRV-DC01.lab.local
+Name                Type TTL  Section IPAddress
+----                ---- ---  ------- ---------
+SRV-DC01.lab.local  A    3600 Answer  10.0.0.10
+
+# Resolve-DnsName -Name lab.local -Type MX
+Name       Type TTL  Section NameExchange              Preference
+----       ---- ---  ------- ------------              ----------
+lab.local  MX   3600 Answer  mail.lab.local            10
+
+# Resolve-DnsName SRV records for LDAP
+NameTarget               Port Priority Weight
+----------               ---- -------- ------
+SRV-DC01.lab.local       389  0        100
+DC-01.lab.local          389  0        100
+```
+
 ## netstat et Get-NetTCPConnection
 
 ### netstat
@@ -253,6 +317,36 @@ Get-NetTCPConnection -State Established |
 Get-NetTCPConnection -LocalPort 443 |
     Select-Object LocalPort, RemoteAddress, State,
     @{N='Process';E={(Get-Process -Id $_.OwningProcess).ProcessName}}
+```
+
+Resultat :
+
+```text
+# Listening ports with process names
+LocalPort Process
+--------- -------
+       53 dns
+       80 System
+       88 lsass
+      135 svchost
+      389 lsass
+      443 httpd
+      445 System
+     3389 svchost
+     5985 svchost
+
+# Connections to a specific server
+LocalAddress LocalPort RemoteAddress  RemotePort State       OwningProcess
+------------ --------- -------------  ---------- -----       -------------
+10.0.0.20      49782   10.0.0.10          389   Established          812
+10.0.0.20      49783   10.0.0.10           88   Established          812
+
+# Process using port 443
+LocalPort RemoteAddress   State       Process
+--------- -------------   -----       -------
+      443 10.0.0.50       Established httpd
+      443 10.0.0.102      Established httpd
+      443 0.0.0.0         Listen      httpd
 ```
 
 ### Get-NetUDPEndpoint (pour UDP)
@@ -352,6 +446,57 @@ Get-NetRoute | Select-Object DestinationPrefix, NextHop, InterfaceAlias, RouteMe
 - `Get-NetTCPConnection` offre une vue detaillee des connexions avec le processus proprietaire
 - `PortQry` reste indispensable pour tester les ports UDP
 - Toujours commencer par les tests simples (ping, DNS) avant les tests complexes
+
+!!! example "Scenario pratique"
+
+    **Contexte :** Kevin, administrateur reseau, recoit un signalement : les utilisateurs du
+    site distant (10.0.1.0/24) se plaignent de lenteurs lors de l'acces au serveur de fichiers
+    SRV-FILE01 (10.0.0.30) situe au siege.
+
+    **Diagnostic :**
+
+    1. Kevin verifie d'abord la connectivite basique :
+
+    ```powershell
+    Test-NetConnection -ComputerName SRV-FILE01
+    ```
+    Resultat : `PingSucceeded: True`, RTT = 85 ms (anormalement eleve pour un lien WAN a 100 Mbps).
+
+    2. Il trace la route pour identifier le goulot :
+
+    ```powershell
+    tracert -d 10.0.0.30
+    ```
+    Resultat : la latence passe de 2 ms a 78 ms entre le hop 3 (routeur du FAI) et le hop 4.
+
+    3. Il confirme avec pathping pour mesurer les pertes :
+
+    ```powershell
+    pathping -n 10.0.0.30
+    ```
+    Resultat : 12% de perte de paquets sur le lien entre hop 3 et hop 4.
+
+    4. Il verifie que le port SMB est bien accessible :
+
+    ```powershell
+    Test-NetConnection -ComputerName SRV-FILE01 -Port 445
+    ```
+    Resultat : `TcpTestSucceeded: True` mais la latence du lien degrade les performances SMB.
+
+    **Resolution :** Kevin contacte le fournisseur d'acces pour signaler la degradation du lien WAN. En attendant, il active la compression SMB et les cliches instantanes DFS pour reduire le trafic.
+
+!!! danger "Erreurs courantes"
+
+    - **Conclure qu'un serveur est hors ligne parce que le ping echoue** : le pare-feu Windows
+      bloque ICMP par defaut sur le profil Public. Testez un port TCP specifique avec
+      `Test-NetConnection -Port` avant de conclure
+    - **Utiliser nslookup au lieu de Resolve-DnsName** : `nslookup` utilise son propre resolveur
+      DNS et peut donner des resultats differents du systeme. `Resolve-DnsName` utilise le
+      resolveur du systeme et retourne des objets PowerShell exploitables
+    - **Oublier de vider le cache DNS** : apres un changement DNS, executez `ipconfig /flushdns`
+      avant de tester, sinon l'ancien enregistrement en cache sera utilise
+    - **Ignorer les etoiles dans tracert** : `* * * Request timed out` ne signifie pas forcement
+      un probleme. Beaucoup de routeurs filtrent les paquets ICMP par politique de securite
 
 ## Pour aller plus loin
 

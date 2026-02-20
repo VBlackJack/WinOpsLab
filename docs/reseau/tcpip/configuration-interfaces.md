@@ -12,6 +12,10 @@ tags:
 
 ## Introduction
 
+!!! example "Analogie"
+
+    Configurer une interface reseau est comme brancher et regler un telephone fixe. Il faut d'abord verifier que la prise murale fonctionne (l'adaptateur est connecte), puis attribuer un numero de telephone (adresse IP), indiquer le standard (passerelle par defaut) et renseigner l'annuaire a consulter (serveurs DNS). Sans ces quatre elements, le telephone ne peut ni recevoir ni passer d'appels.
+
 La configuration correcte des interfaces reseau (NIC - Network Interface Card) est une etape fondamentale dans la mise en place d'un serveur Windows. Que ce soit pour attribuer une adresse IP statique, configurer les serveurs DNS ou modifier les proprietes d'une carte reseau, Windows Server 2022 offre plusieurs approches : PowerShell, `netsh` et l'interface graphique.
 
 !!! tip "Bonne pratique"
@@ -32,6 +36,15 @@ Get-NetAdapter | Select-Object Name, InterfaceDescription, Status, LinkSpeed
 Get-NetAdapter | Where-Object Status -eq "Up"
 ```
 
+Resultat :
+
+```text
+Name       InterfaceDescription                Status  LinkSpeed
+----       --------------------                ------  ---------
+Ethernet0  Intel(R) 82574L Gigabit Network     Up      1 Gbps
+Ethernet1  Intel(R) 82574L Gigabit Network #2  Down    0 bps
+```
+
 ### Afficher la configuration IP actuelle
 
 ```powershell
@@ -43,6 +56,18 @@ Get-NetIPConfiguration -InterfaceAlias "Ethernet0"
 
 # Detailed view with DNS and gateway
 Get-NetIPConfiguration -InterfaceAlias "Ethernet0" -Detailed
+```
+
+Resultat :
+
+```text
+InterfaceAlias       : Ethernet0
+InterfaceIndex       : 4
+InterfaceDescription : Intel(R) 82574L Gigabit Network Connection
+NetProfile.Name      : lab.local
+IPv4Address          : 10.0.0.10
+IPv4DefaultGateway   : 10.0.0.1
+DNSServer            : 10.0.0.1, 10.0.0.2
 ```
 
 ### Equivalent classique
@@ -98,6 +123,14 @@ Set-DnsClientServerAddress -InterfaceAlias "Ethernet0" `
 Get-DnsClientServerAddress -InterfaceAlias "Ethernet0" -AddressFamily IPv4
 ```
 
+Resultat :
+
+```text
+InterfaceAlias               Interface AddressFamily ServerAddresses
+--------------               --------- ------------- ---------------
+Ethernet0                            4 IPv4          {10.0.0.1, 8.8.8.8}
+```
+
 ### Modifier une adresse existante
 
 ```powershell
@@ -146,6 +179,15 @@ Get-NetIPAddress -InterfaceAlias "Ethernet0"
 Get-NetIPAddress -AddressFamily IPv4 -PrefixOrigin Manual
 ```
 
+Resultat :
+
+```text
+IPAddress         InterfaceAlias AddressFamily PrefixLength PrefixOrigin
+---------         -------------- ------------- ------------ ------------
+10.0.0.10         Ethernet0      IPv4          24           Manual
+127.0.0.1         Loopback...    IPv4          8            WellKnown
+```
+
 ### New-NetIPAddress
 
 ```powershell
@@ -190,6 +232,14 @@ Rename-NetAdapter -Name "Ethernet0" -NewName "LAN-Production"
 
 # Verify the rename
 Get-NetAdapter -Name "LAN-Production"
+```
+
+Resultat :
+
+```text
+Name            InterfaceDescription                Status  LinkSpeed
+----            --------------------                ------  ---------
+LAN-Production  Intel(R) 82574L Gigabit Network     Up      1 Gbps
 ```
 
 ### Activer/desactiver une interface
@@ -238,6 +288,22 @@ netsh interface ipv4 show config name="Ethernet0"
 
 # Display all interfaces
 netsh interface show interface
+```
+
+Resultat :
+
+```text
+Configuration for interface "Ethernet0"
+    DHCP enabled:                         No
+    IP Address:                           10.0.0.10
+    Subnet Prefix:                        10.0.0.0/24 (mask 255.255.255.0)
+    Default Gateway:                      10.0.0.1
+    Gateway Metric:                       0
+    InterfaceMetric:                      25
+    Statically Configured DNS Servers:    10.0.0.1
+                                          10.0.0.2
+    Register with which suffix:           Primary Only
+    Statically Configured WINS Servers:   None
 ```
 
 ### Configurer une adresse statique
@@ -322,6 +388,23 @@ Resolve-DnsName -Name "www.microsoft.com"
 Test-NetConnection -ComputerName "192.168.1.1" -Port 443
 ```
 
+Resultat :
+
+```text
+Source        Destination     IPV4Address      Bytes    Time(ms)
+------        -----------     -----------      -----    --------
+SRV-01        10.0.0.1        10.0.0.1         32       1
+SRV-01        10.0.0.1        10.0.0.1         32       1
+SRV-01        10.0.0.1        10.0.0.1         32       1
+SRV-01        10.0.0.1        10.0.0.1         32       1
+
+ComputerName     : 10.0.0.1
+RemoteAddress    : 10.0.0.1
+RemotePort       : 443
+InterfaceAlias   : Ethernet0
+TcpTestSucceeded : True
+```
+
 ### Verifier la table de routage
 
 ```powershell
@@ -343,6 +426,15 @@ Clear-DnsClientCache
 
 # Verify DNS server configuration
 Get-DnsClientServerAddress -AddressFamily IPv4
+```
+
+Resultat :
+
+```text
+InterfaceAlias               Interface AddressFamily ServerAddresses
+--------------               --------- ------------- ---------------
+Ethernet0                            4 IPv4          {10.0.0.1, 10.0.0.2}
+Loopback Pseudo-Interface 1         1 IPv4          {}
 ```
 
 ---
@@ -384,6 +476,113 @@ Set-DnsClientServerAddress -InterfaceAlias $newName -ServerAddresses $dnsServers
 # Verify final configuration
 Get-NetIPConfiguration -InterfaceAlias $newName
 ```
+
+Resultat :
+
+```text
+InterfaceAlias       : LAN-Production
+InterfaceIndex       : 4
+InterfaceDescription : Intel(R) 82574L Gigabit Network Connection
+NetProfile.Name      : lab.local
+IPv4Address          : 192.168.1.10
+IPv4DefaultGateway   : 192.168.1.1
+DNSServer            : 192.168.1.1, 192.168.1.2
+```
+
+---
+
+## Scenario pratique
+
+!!! example "Scenario pratique"
+
+    **Contexte** : Fatima, administratrice systeme, deploie un nouveau serveur de fichiers SRV-FILE dans le lab. Le serveur est installe en mode Server Core (sans interface graphique). Elle doit configurer l'interface reseau avec une adresse statique.
+
+    **Etapes** :
+
+    1. Fatima se connecte en console et liste les interfaces disponibles :
+
+        ```powershell
+        Get-NetAdapter | Select-Object Name, Status, LinkSpeed
+        ```
+
+        Resultat :
+
+        ```text
+        Name       Status LinkSpeed
+        ----       ------ ---------
+        Ethernet0  Up     1 Gbps
+        Ethernet1  Down   0 bps
+        ```
+
+    2. Elle renomme l'interface pour plus de clarte :
+
+        ```powershell
+        Rename-NetAdapter -Name "Ethernet0" -NewName "LAN-Serveurs"
+        ```
+
+    3. Elle desactive DHCP et attribue l'adresse statique :
+
+        ```powershell
+        Set-NetIPInterface -InterfaceAlias "LAN-Serveurs" -Dhcp Disabled
+        New-NetIPAddress -InterfaceAlias "LAN-Serveurs" `
+            -IPAddress "10.0.0.20" -PrefixLength 24 -DefaultGateway "10.0.0.1"
+        ```
+
+    4. Elle configure les serveurs DNS (DC-01 et DC-02) :
+
+        ```powershell
+        Set-DnsClientServerAddress -InterfaceAlias "LAN-Serveurs" `
+            -ServerAddresses "10.0.0.10", "10.0.0.11"
+        ```
+
+    5. Elle verifie la configuration complete :
+
+        ```powershell
+        Get-NetIPConfiguration -InterfaceAlias "LAN-Serveurs"
+        ```
+
+        Resultat :
+
+        ```text
+        InterfaceAlias       : LAN-Serveurs
+        InterfaceIndex       : 4
+        IPv4Address          : 10.0.0.20
+        IPv4DefaultGateway   : 10.0.0.1
+        DNSServer            : 10.0.0.10, 10.0.0.11
+        ```
+
+    6. Elle teste la connectivite vers le controleur de domaine :
+
+        ```powershell
+        Test-Connection -ComputerName DC-01 -Count 2
+        ```
+
+        Resultat :
+
+        ```text
+        Source   Destination IPV4Address Bytes Time(ms)
+        ------   ----------- ----------- ----- --------
+        SRV-FILE DC-01       10.0.0.10   32    1
+        SRV-FILE DC-01       10.0.0.10   32    1
+        ```
+
+    **Resolution** : la configuration est complete et fonctionnelle. Le serveur peut maintenant etre joint au domaine `lab.local`.
+
+---
+
+## Erreurs courantes
+
+!!! danger "Erreurs courantes"
+
+    1. **Oublier de desactiver DHCP avant d'attribuer une IP statique** : sur certaines configurations, `New-NetIPAddress` peut echouer ou cohabiter avec une adresse DHCP, causant des conflits. Desactivez toujours DHCP d'abord avec `Set-NetIPInterface -Dhcp Disabled`.
+
+    2. **Configurer les DNS en pointant vers soi-meme en premier** : un serveur membre ne doit pas pointer vers lui-meme en premier DNS. Il doit pointer vers un controleur de domaine. Seuls les DC pointent vers eux-memes, et uniquement en deuxieme position.
+
+    3. **Oublier la passerelle par defaut** : sans passerelle, le serveur ne peut communiquer qu'avec les machines de son propre sous-reseau. Tout trafic inter-sous-reseaux ou Internet echouera silencieusement.
+
+    4. **Ne pas renommer les interfaces** : sur un serveur avec plusieurs cartes reseau (NIC teaming, separation LAN/SAN), laisser les noms par defaut (Ethernet0, Ethernet1) rend le depannage tres confus. Renommez-les selon leur role (`LAN-Production`, `iSCSI-Storage`, `Heartbeat`).
+
+    5. **Confondre netsh et PowerShell** : melanger les deux approches dans un meme script peut causer des conflits. Choisissez l'une ou l'autre methode et restez coherent. PowerShell est recommande pour Windows Server 2022.
 
 ---
 

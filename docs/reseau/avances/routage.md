@@ -24,6 +24,10 @@ Windows Server 2022 peut fonctionner comme un **routeur** logiciel, acheminant l
 
 ---
 
+!!! example "Analogie"
+
+    Le routage IP fonctionne exactement comme le **tri postal dans un centre de distribution**. Chaque paquet (lettre) porte une adresse de destination. Le routeur (le centre de tri) consulte sa table de routage (le repertoire des codes postaux) pour determiner vers quel bureau de poste local (interface reseau) envoyer le paquet. Si aucune correspondance n'est trouvee, le paquet est envoye via la route par defaut (le bureau central) qui saura le rediriger.
+
 ## Concepts fondamentaux
 
 ### Table de routage
@@ -78,6 +82,18 @@ Get-NetRoute -DestinationPrefix "0.0.0.0/0"
 
 # Display routes for a specific interface
 Get-NetRoute -InterfaceAlias "Ethernet0" -AddressFamily IPv4
+```
+
+Resultat :
+
+```text
+DestinationPrefix  NextHop      RouteMetric InterfaceAlias
+-----------------  -------      ----------- --------------
+0.0.0.0/0          10.0.0.1              10 Ethernet0
+10.0.0.0/24        0.0.0.0              256 Ethernet0
+10.0.1.0/24        0.0.0.0              256 Ethernet1
+10.0.2.0/24        10.0.0.1              20 Ethernet0
+127.0.0.0/8        0.0.0.0              256 Loopback Pseudo-Interface 1
 ```
 
 ### Via la commande classique
@@ -163,6 +179,16 @@ Get-NetIPInterface | Select-Object InterfaceAlias, AddressFamily, Forwarding |
     Format-Table -AutoSize
 ```
 
+Resultat :
+
+```text
+InterfaceAlias                 AddressFamily Forwarding
+--------------                 ------------- ----------
+Ethernet0                               IPv4    Enabled
+Ethernet1                               IPv4    Enabled
+Loopback Pseudo-Interface 1             IPv4   Disabled
+```
+
 ### Methode 2 : Registre (global)
 
 ```powershell
@@ -204,6 +230,14 @@ Install-RemoteAccess -VpnType RoutingOnly
 
 # Verify RRAS is running
 Get-Service RemoteAccess | Select-Object Name, Status
+```
+
+Resultat :
+
+```text
+Name          Status
+----          ------
+RemoteAccess  Running
 ```
 
 ### Console de gestion RRAS
@@ -323,6 +357,26 @@ Test-Connection -ComputerName "10.0.2.50" -Traceroute
 Test-NetConnection -ComputerName "10.0.2.50" -Port 445
 ```
 
+Resultat :
+
+```text
+Source      Destination  Bytes  Time(ms)
+------      -----------  -----  --------
+SRV-01      10.0.2.50    32     2
+SRV-01      10.0.2.50    32     1
+SRV-01      10.0.2.50    32     1
+SRV-01      10.0.2.50    32     1
+
+Hop  Hostname       Address
+---  --------       -------
+  1  SRV-RTR01      10.0.0.1
+  2  10.0.2.50      10.0.2.50
+
+ComputerName     : 10.0.2.50
+RemotePort       : 445
+TcpTestSucceeded : True
+```
+
 ### Verifier le routage
 
 ```powershell
@@ -381,6 +435,66 @@ netsh trace stop
 | Diagnostics          | `Test-Connection -Traceroute` pour suivre le chemin des paquets |
 
 ---
+
+!!! example "Scenario pratique"
+
+    **Contexte** : Nathalie, administratrice reseau, doit configurer `SRV-RTR01` (10.0.0.1) comme routeur entre le VLAN Serveurs (10.0.0.0/24) et le VLAN DMZ (10.0.2.0/24) dans le domaine `lab.local`. Le serveur dispose de deux interfaces reseau.
+
+    **Solution** :
+
+    ```powershell
+    # Step 1: Configure IP on each interface
+    New-NetIPAddress -InterfaceAlias "Ethernet0" -IPAddress "10.0.0.1" -PrefixLength 24
+    New-NetIPAddress -InterfaceAlias "Ethernet1" -IPAddress "10.0.2.1" -PrefixLength 24
+
+    # Step 2: Enable IP forwarding
+    Set-NetIPInterface -InterfaceAlias "Ethernet0" -Forwarding Enabled
+    Set-NetIPInterface -InterfaceAlias "Ethernet1" -Forwarding Enabled
+
+    # Step 3: Verify
+    Get-NetIPInterface -AddressFamily IPv4 |
+        Select-Object InterfaceAlias, Forwarding | Format-Table -AutoSize
+    ```
+
+    ```text
+    InterfaceAlias Forwarding
+    -------------- ----------
+    Ethernet0         Enabled
+    Ethernet1         Enabled
+    ```
+
+    ```powershell
+    # Step 4: Test routing from a machine in VLAN Servers vers DMZ
+    Test-Connection -ComputerName "10.0.2.50" -Count 2 -Source "10.0.0.15"
+    ```
+
+    ```text
+    Source    Destination  Bytes  Time(ms)
+    ------   -----------  -----  --------
+    SRV-01   10.0.2.50    32     1
+    SRV-01   10.0.2.50    32     1
+    ```
+
+    ```powershell
+    # Step 5: Verify route on client machines (default gateway should point to SRV-RTR01)
+    Get-NetRoute -DestinationPrefix "0.0.0.0/0"
+    ```
+
+    ```text
+    DestinationPrefix  NextHop   InterfaceAlias RouteMetric
+    -----------------  -------   -------------- -----------
+    0.0.0.0/0          10.0.0.1  Ethernet0               10
+    ```
+
+    Le routage entre les deux VLAN est operationnel.
+
+!!! danger "Erreurs courantes"
+
+    - **Oublier d'activer IP Forwarding** : par defaut, Windows Server ne route pas le trafic entre ses interfaces. Sans `Set-NetIPInterface -Forwarding Enabled`, les paquets ne traverseront pas le serveur.
+    - **Ne pas configurer la passerelle par defaut sur les clients** : les postes de chaque sous-reseau doivent avoir comme passerelle l'adresse IP du serveur routeur sur leur interface locale.
+    - **Creer des routes non persistantes** : la commande `route add` (sans `-p`) cree des routes qui disparaissent au redemarrage. Utiliser `route -p add` ou `New-NetRoute` (persistant par defaut).
+    - **Confondre metrique et priorite** : une metrique basse signifie une priorite haute. Si deux routes vers la meme destination existent avec des metriques differentes, celle avec la metrique la plus basse sera utilisee.
+    - **Ignorer le pare-feu lors du routage** : meme si le routage fonctionne, le pare-feu Windows peut bloquer le trafic en transit. Verifier que les regles de pare-feu autorisent le trafic entre les sous-reseaux.
 
 ## Pour aller plus loin
 

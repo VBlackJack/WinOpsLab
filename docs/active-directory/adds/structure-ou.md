@@ -13,6 +13,10 @@ tags:
 
 ## Qu'est-ce qu'une OU ?
 
+!!! example "Analogie"
+
+    Une OU fonctionne comme les **tiroirs d'un classeur de bureau**. Le classeur est le domaine, et chaque tiroir (OU) regroupe un type de documents : un tiroir pour le personnel, un pour les equipements, un pour les contrats. Vous pouvez creer des sous-dossiers dans chaque tiroir pour affiner le rangement (sous-OU). Et surtout, vous pouvez confier la cle d'un tiroir specifique a un collegue (delegation) sans lui donner acces aux autres.
+
 Une **OU** (Organizational Unit / Unite d'Organisation) est un conteneur dans Active Directory qui permet de :
 
 - **Organiser** les objets (utilisateurs, ordinateurs, groupes) de maniere logique
@@ -121,6 +125,22 @@ lab.local
     Get-ADOrganizationalUnit -Filter * | Select-Object Name, DistinguishedName
     ```
 
+    Resultat :
+
+    ```text
+    Name                DistinguishedName
+    ----                -----------------
+    Domain Controllers  OU=Domain Controllers,DC=lab,DC=local
+    Utilisateurs        OU=Utilisateurs,DC=lab,DC=local
+    Ordinateurs         OU=Ordinateurs,DC=lab,DC=local
+    Serveurs            OU=Serveurs,DC=lab,DC=local
+    Groupes             OU=Groupes,DC=lab,DC=local
+    IT                  OU=IT,OU=Utilisateurs,DC=lab,DC=local
+    Comptabilite        OU=Comptabilite,OU=Utilisateurs,DC=lab,DC=local
+    Postes              OU=Postes,OU=Ordinateurs,DC=lab,DC=local
+    Portables           OU=Portables,OU=Ordinateurs,DC=lab,DC=local
+    ```
+
 === "GUI (dsa.msc)"
 
     1. Ouvrir **Active Directory Users and Computers** (`dsa.msc`)
@@ -140,6 +160,22 @@ Get-ADOrganizationalUnit -Filter * |
 # To delete a protected OU, first disable protection
 Set-ADOrganizationalUnit -Identity "OU=Test,DC=lab,DC=local" -ProtectedFromAccidentalDeletion $false
 Remove-ADOrganizationalUnit -Identity "OU=Test,DC=lab,DC=local" -Confirm:$false
+```
+
+Resultat :
+
+```text
+Name               ProtectedFromAccidentalDeletion
+----               -------------------------------
+Domain Controllers                            True
+Utilisateurs                                  True
+Ordinateurs                                   True
+Serveurs                                      True
+Groupes                                       True
+IT                                           False
+Comptabilite                                 False
+Postes                                       False
+Portables                                    False
 ```
 
 !!! tip "Voir les OU protegees dans la GUI"
@@ -190,6 +226,58 @@ L'un des avantages majeurs des OU est la delegation :
 - Creez vos propres OU plutot que d'utiliser les conteneurs par defaut
 - Protegez les OU contre la suppression accidentelle
 - Concevez la structure selon vos besoins d'administration et de GPO
+
+!!! example "Scenario pratique"
+
+    **Contexte :** Claire, administratrice AD chez une PME de 80 personnes, constate que toutes les GPO sont appliquees au domaine entier. Le service comptabilite se plaint que la restriction d'acces a Internet (destinee aux postes d'accueil) leur est aussi appliquee. En verifiant, Claire decouvre que tous les utilisateurs et ordinateurs sont dans les conteneurs par defaut `Users` et `Computers`.
+
+    **Diagnostic :**
+
+    ```powershell
+    # Check where users are located
+    Get-ADUser -Filter * | Group-Object { ($_.DistinguishedName -split ',',2)[1] } |
+        Select-Object Count, Name
+    ```
+
+    Resultat :
+
+    ```text
+    Count Name
+    ----- ----
+       12 CN=Users,DC=lab,DC=local
+       68 CN=Users,DC=lab,DC=local
+    ```
+
+    Tous les comptes sont dans le conteneur par defaut `CN=Users` qui ne supporte pas le lien direct de GPO.
+
+    **Solution :**
+
+    ```powershell
+    # Step 1: Create the OU structure
+    New-ADOrganizationalUnit -Name "Utilisateurs" -Path "DC=lab,DC=local" -ProtectedFromAccidentalDeletion $true
+    New-ADOrganizationalUnit -Name "Comptabilite" -Path "OU=Utilisateurs,DC=lab,DC=local"
+    New-ADOrganizationalUnit -Name "Accueil" -Path "OU=Utilisateurs,DC=lab,DC=local"
+
+    # Step 2: Move accounting users to their OU
+    Get-ADUser -Filter { Department -eq "Comptabilite" } | ForEach-Object {
+        Move-ADObject -Identity $_.DistinguishedName -TargetPath "OU=Comptabilite,OU=Utilisateurs,DC=lab,DC=local"
+    }
+
+    # Step 3: Redirect the default container for future users
+    redirusr "OU=Utilisateurs,DC=lab,DC=local"
+    ```
+
+    Claire peut maintenant lier la GPO de restriction Internet uniquement a l'OU `Accueil`, sans affecter la comptabilite.
+
+!!! danger "Erreurs courantes"
+
+    1. **Laisser les objets dans les conteneurs par defaut** (`CN=Users`, `CN=Computers`) : ces conteneurs ne supportent pas le lien direct de GPO, ce qui empeche un ciblage precis des strategies de groupe.
+
+    2. **Creer une structure trop profonde** : plus de 3-4 niveaux d'imbrication rend l'administration complexe et ralentit les requetes LDAP. Gardez une hierarchie simple et lisible.
+
+    3. **Oublier la protection contre la suppression** : sans l'option `ProtectedFromAccidentalDeletion`, un clic malheureux peut supprimer une OU et tous ses objets enfants (utilisateurs, ordinateurs, groupes).
+
+    4. **Confondre OU et groupe de securite** : les OU servent a organiser et appliquer des GPO, les groupes servent a attribuer des permissions. Un utilisateur est dans une seule OU mais peut etre membre de plusieurs groupes.
 
 ## Pour aller plus loin
 

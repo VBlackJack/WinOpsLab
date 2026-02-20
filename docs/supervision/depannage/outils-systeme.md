@@ -30,6 +30,13 @@ graph TD
     E --> L[Moniteur de fiabilite]
 ```
 
+!!! example "Analogie"
+
+    Les outils systeme de depannage sont comme la **boite a outils d'un plombier**. Chaque outil
+    a un usage precis : la cle a molette (Gestionnaire des taches) pour les interventions rapides,
+    le manometre (SFC/DISM) pour verifier la pression interne, et le carnet de maintenance
+    (Moniteur de fiabilite) pour consulter l'historique des reparations.
+
 ## Gestionnaire des taches (Task Manager)
 
 Le Gestionnaire des taches (`taskmgr.exe`) offre une vue instantanee de l'activite du systeme.
@@ -66,6 +73,24 @@ Stop-Process -Id 1234 -Force
 
 # Kill a process by name
 Stop-Process -Name "notepad" -Force
+```
+
+Resultat :
+
+```text
+# Top 10 CPU-consuming processes
+Name                Id      CPU MemoryMB
+----                --      --- --------
+w3wp              4872 1523.45   512.30
+sqlservr          2108  987.23  2048.75
+svchost           1024  245.67   128.40
+lsass              812  112.34    98.20
+csrss              456   89.12    42.10
+WmiPrvSE          3256   78.45    85.60
+dns               1580   56.78   156.30
+dfsrs             2340   45.23    234.50
+ismserv           3012   34.56    67.80
+spoolsv           1876   23.45    45.20
 ```
 
 !!! tip "Performance > Details"
@@ -161,6 +186,22 @@ Get-CimInstance Win32_PnPSignedDriver |
     Sort-Object DeviceName
 ```
 
+Resultat :
+
+```text
+# Get-ComputerInfo
+CsName                : SRV-01
+WindowsProductName    : Windows Server 2022 Standard
+OsVersion             : 10.0.20348
+OsArchitecture        : 64 bits
+CsTotalPhysicalMemory : 17179869184
+
+# Get-CimInstance Win32_Processor
+Name                                NumberOfCores NumberOfLogicalProcessors MaxClockSpeed
+----                                ------------- ------------------------ -------------
+Intel(R) Xeon(R) Silver 4214R CPU            4                        8          2400
+```
+
 ## SFC (System File Checker)
 
 SFC verifie et repare les fichiers systeme proteges de Windows.
@@ -196,6 +237,24 @@ sfc /scannow /offbootdir=D:\ /offwindir=D:\Windows
 # Filter SFC results from CBS log
 Select-String -Path "C:\Windows\Logs\CBS\CBS.log" -Pattern "\[SR\]" |
     Select-Object -Last 50
+```
+
+Resultat :
+
+```text
+# sfc /scannow
+Beginning system scan.  This process will take some time.
+Beginning verification phase of system scan.
+Verification 100% complete.
+Windows Resource Protection found corrupt files and successfully repaired them.
+For online repairs, details are included in the CBS log file located at
+C:\Windows\Logs\CBS\CBS.log.
+
+# Select-String CBS.log
+2026-02-20 14:22:10, Info   [SR] Verifying 100 components
+2026-02-20 14:22:10, Info   [SR] Beginning Verify and Repair transaction
+2026-02-20 14:22:35, Info   [SR] Repairing corrupted file [ml:248] C:\Windows\System32\drivers\ntfs.sys
+2026-02-20 14:22:36, Info   [SR] Repair complete
 ```
 
 ## DISM (Deployment Image Servicing and Management)
@@ -274,6 +333,21 @@ Get-CimInstance Win32_ReliabilityStabilityMetrics |
     Select-Object -First 7 TimeGenerated, SystemStabilityIndex
 ```
 
+Resultat :
+
+```text
+# Win32_ReliabilityStabilityMetrics
+TimeGenerated          SystemStabilityIndex
+-------------          --------------------
+2026-02-20 00:00:00    7.23
+2026-02-19 00:00:00    7.45
+2026-02-18 00:00:00    8.12
+2026-02-17 00:00:00    8.56
+2026-02-16 00:00:00    9.01
+2026-02-15 00:00:00    9.34
+2026-02-14 00:00:00    9.78
+```
+
 ## Autres outils complementaires
 
 ### Windows Memory Diagnostic
@@ -328,6 +402,56 @@ Get-WindowsUpdateLog  # Generates readable WindowsUpdate.log on desktop
 - **SFC** repare les fichiers systeme corrompus ; **DISM** repare le magasin de composants
 - Toujours executer DISM avant SFC si SFC echoue a reparer
 - Le **Moniteur de fiabilite** offre une chronologie visuelle des incidents sur plusieurs semaines
+
+!!! example "Scenario pratique"
+
+    **Contexte :** Nathalie, administratrice systeme, constate que le serveur SRV-01 affiche des
+    erreurs applicatives aleatoires depuis l'installation d'une mise a jour Windows la semaine
+    precedente. Certaines DLL semblent corrompues.
+
+    **Diagnostic :**
+
+    1. Nathalie verifie d'abord le Moniteur de fiabilite pour voir la chronologie :
+
+    ```powershell
+    perfmon /rel
+    ```
+    L'indice de stabilite est passe de 9.5 a 6.2 depuis le jour de la mise a jour.
+
+    2. Elle lance DISM pour verifier le magasin de composants :
+
+    ```powershell
+    DISM /Online /Cleanup-Image /ScanHealth
+    ```
+    Resultat : `Component Store corruption detected.`
+
+    3. Elle repare le magasin de composants :
+
+    ```powershell
+    DISM /Online /Cleanup-Image /RestoreHealth
+    ```
+
+    4. Puis elle lance SFC pour reparer les fichiers systeme :
+
+    ```powershell
+    sfc /scannow
+    ```
+    Resultat : 3 fichiers corrompus detectes et repares avec succes.
+
+    5. Apres redemarrage, les erreurs disparaissent et l'indice de stabilite remonte progressivement.
+
+    **Resolution :** L'enchainement DISM puis SFC a corrige les fichiers corrompus. Nathalie documente l'incident et prevoit de surveiller les prochaines mises a jour plus attentivement.
+
+!!! danger "Erreurs courantes"
+
+    - **Lancer SFC avant DISM** : si le magasin de composants est corrompu, SFC ne peut pas
+      reparer car il n'a pas de source saine. Toujours faire DISM /RestoreHealth d'abord
+    - **Utiliser msconfig en production sur un DC** : le demarrage diagnostic desactive les
+      services AD DS, DNS et DHCP, ce qui impacte tout le domaine
+    - **Ignorer le Moniteur de fiabilite** : cet outil offre une vue chronologique claire
+      qui permet de correler un incident avec un evenement (installation, mise a jour, crash)
+    - **Tuer un processus systeme sans comprendre** : arreter `csrss.exe` ou `lsass.exe`
+      provoque un ecran bleu immediat. Verifiez toujours la nature du processus avant de l'arreter
 
 ## Pour aller plus loin
 

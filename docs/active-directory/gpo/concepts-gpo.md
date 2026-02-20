@@ -14,6 +14,10 @@ tags:
 
 ## Qu'est-ce qu'un objet de strategie de groupe (GPO) ?
 
+!!! example "Analogie"
+
+    Imaginez une entreprise ou le directeur affiche des regles sur le tableau d'entree : « pas de telephone en reunion », « badge obligatoire ». Chaque employe qui passe devant le panneau recoit automatiquement les memes consignes. Une GPO fonctionne de la meme maniere : elle affiche des regles de configuration que chaque ordinateur ou utilisateur du domaine lit et applique automatiquement.
+
 Un **Group Policy Object (GPO)** est un ensemble de parametres de configuration geres
 de facon centralisee dans Active Directory. Les GPO permettent aux administrateurs de
 controler l'environnement de travail des utilisateurs et des ordinateurs du domaine
@@ -35,6 +39,10 @@ Chaque GPO contient deux grandes sections :
 ---
 
 ## Ordre de traitement : LSDOU
+
+!!! example "Analogie"
+
+    Pensez a un courrier qui traverse plusieurs bureaux de poste avant d'arriver a destination : chaque bureau peut ajouter un tampon. Si deux bureaux apposent un tampon contradictoire, c'est le dernier bureau (le plus proche du destinataire) qui fait foi. LSDOU fonctionne ainsi : le dernier niveau applique a le dernier mot.
 
 Les GPO sont appliquees dans un ordre precis appele **LSDOU** :
 
@@ -162,6 +170,18 @@ contient :
     3. Cliquer droit sur une GPO > **Properties** > onglet **Details**
     4. Le champ **Unique ID** correspond au GUID du dossier SYSVOL
 
+Resultat :
+
+```text
+DisplayName                           Id                                   GpoStatus        CreationTime
+-----------                           --                                   ---------        ------------
+Default Domain Policy                 31b2f340-016d-11d2-945f-00c04fb984f9 AllSettingsEnabled 12/01/2025 09:15:30
+Default Domain Controllers Policy     6ac1786c-016f-11d2-945f-00c04fae2b69 AllSettingsEnabled 12/01/2025 09:15:30
+SEC - Security Baseline               a3f2b8c1-4d5e-4f6a-8b9c-1d2e3f4a5b6c AllSettingsEnabled 15/01/2025 14:22:10
+CFG - Desktop Restrictions            b7c9d1e2-3f4a-5b6c-9d0e-2a3b4c5d6e7f UserSettingsOnly   20/01/2025 10:45:00
+CFG - Mapped Drives                   c8d0e1f2-4a5b-6c7d-0e1f-3b4c5d6e7f8a AllSettingsEnabled 22/01/2025 16:30:45
+```
+
 ---
 
 ## Commande gpupdate
@@ -194,6 +214,15 @@ strategies de groupe sur un poste, sans attendre le cycle automatique.
     2. Selectionner **Group Policy Update...**
     3. Confirmer pour forcer le rafraichissement sur tous les ordinateurs de l'OU
 
+Resultat :
+
+```text
+Updating policy...
+
+Computer Policy update has completed successfully.
+User Policy update has completed successfully.
+```
+
 !!! tip "gpupdate vs gpupdate /force"
 
     - `gpupdate` : applique uniquement les parametres **nouveaux ou modifies**
@@ -218,6 +247,68 @@ A la creation du domaine, deux GPO sont automatiquement creees :
     parametres de politique de mot de passe et de verrouillage de compte.
     Pour tous les autres besoins, creez de **nouvelles GPO** dediees.
     Cela facilite le depannage et evite les effets de bord.
+
+---
+
+## Scenario pratique
+
+!!! example "Scenario pratique"
+
+    **Contexte** : Sophie, administratrice systeme chez une PME, vient de creer une GPO `CFG - Fond d'ecran Entreprise` pour imposer le fond d'ecran corporate a tous les postes de l'OU `Siege`. Apres une heure, les utilisateurs signalent qu'ils n'ont toujours pas le nouveau fond d'ecran.
+
+    **Diagnostic** :
+
+    1. Sophie se connecte sur un poste concerne et execute :
+
+        ```powershell
+        gpresult /r /scope:user
+        ```
+
+    2. La GPO `CFG - Fond d'ecran Entreprise` n'apparait pas dans les GPO appliquees. Elle verifie le lien :
+
+        ```powershell
+        (Get-GPInheritance -Target "OU=Siege,DC=lab,DC=local").GpoLinks |
+            Select-Object DisplayName, Enabled
+        ```
+
+        Resultat :
+
+        ```text
+        DisplayName                    Enabled
+        -----------                    -------
+        CFG - Desktop Settings         True
+        ```
+
+    3. La GPO n'est pas liee. Sophie la lie correctement :
+
+        ```powershell
+        New-GPLink -Name "CFG - Fond d'ecran Entreprise" `
+            -Target "OU=Siege,DC=lab,DC=local"
+        ```
+
+    4. Elle force le rafraichissement sur un poste de test :
+
+        ```powershell
+        gpupdate /force
+        ```
+
+    **Resolution** : la GPO etait creee dans le conteneur Group Policy Objects mais n'avait jamais ete liee a l'OU. Apres liaison et rafraichissement, le fond d'ecran s'applique correctement.
+
+---
+
+## Erreurs courantes
+
+!!! danger "Erreurs courantes"
+
+    1. **Oublier de lier la GPO** : creer une GPO ne suffit pas, elle doit etre **liee** a un conteneur (Site, Domaine ou OU) pour prendre effet. C'est l'erreur la plus frequente chez les debutants.
+
+    2. **Confondre l'ordre LSDOU** : penser que la GPO de domaine ecrase celle de l'OU, alors que c'est l'inverse. La derniere appliquee (OU enfant) l'emporte.
+
+    3. **Modifier les GPO par defaut pour tout** : la Default Domain Policy doit etre reservee aux politiques de mot de passe et de verrouillage. Ajouter des parametres divers complique le depannage et cree des effets de bord.
+
+    4. **Ne pas desactiver la section inutilisee** : une GPO qui ne contient que des parametres Computer devrait avoir la section User desactivee (et inversement). Cela accelere le traitement et evite les confusions.
+
+    5. **Oublier la replication SYSVOL** : apres modification d'une GPO, les changements doivent se repliquer sur tous les DC. Tester immediatement sur un poste qui contacte un autre DC peut donner de faux resultats.
 
 ---
 

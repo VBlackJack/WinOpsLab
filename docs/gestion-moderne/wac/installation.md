@@ -25,6 +25,10 @@ graph TD
     C --> G[Port 6516 par defaut]
 ```
 
+!!! example "Analogie"
+
+    Windows Admin Center, c'est comme passer des visites physiques dans chaque bureau de votre entreprise pour verifier le travail de chaque employe, a ouvrir une application web unique depuis votre poste qui vous donne une vue d'ensemble de tous les bureaux en meme temps. Plus besoin de se deplacer.
+
 ## Modes d'installation
 
 | Mode | Cible | Port par defaut | Usage |
@@ -95,6 +99,23 @@ Get-NetTCPConnection -LocalPort 443 -State Listen -ErrorAction SilentlyContinue
 
 # Verify the WAC URL is accessible
 Test-NetConnection -ComputerName localhost -Port 443
+```
+
+Resultat :
+
+```text
+Name                        Status  StartType
+----                        ------  ---------
+ServerManagementGateway     Running Automatic
+
+LocalAddress  LocalPort RemoteAddress RemotePort State
+------------  --------- ------------- ---------- -----
+0.0.0.0       443       0.0.0.0       0          Listen
+
+ComputerName : localhost
+RemoteAddress : 127.0.0.1
+RemotePort   : 443
+TcpTestSucceeded : True
 ```
 
 ## Configuration du certificat
@@ -188,9 +209,51 @@ Add-LocalGroupMember -Group "Windows Admin Center Gateway Users" -Member "WINOPS
 Add-LocalGroupMember -Group "Windows Admin Center Gateway Administrators" -Member "WINOPSLAB\AdminsSenior"
 ```
 
+Resultat :
+
+```text
+# Aucune sortie = succes. Pour verifier :
+# Get-LocalGroupMember -Group "Windows Admin Center Gateway Users"
+
+ObjectClass Name                   PrincipalSource
+----------- ----                   ---------------
+Group       WINOPSLAB\AdminsIT     ActiveDirectory
+```
+
 ### Integration avec Active Directory
 
 En environnement de domaine, WAC utilise l'authentification Kerberos. Les groupes AD peuvent etre ajoutes directement aux roles WAC.
+
+!!! example "Scenario pratique"
+
+    **Context :** Sophie, nouvelle responsable IT dans une PME de 80 personnes, herite d'un parc de 6 serveurs Windows administres via RDP et des MMC lancees individuellement. Elle souhaite centraliser l'administration avec WAC.
+
+    **Etape 1 : Preparer un serveur dedie**
+
+    Sophie choisit SRV-01 (Windows Server 2022, 4 Go RAM) comme gateway WAC. Elle s'assure qu'il n'heberge aucun autre role critique.
+
+    **Etape 2 : Installation silencieuse**
+
+    ```powershell
+    msiexec /i "WindowsAdminCenter.msi" /qn /L*v "C:\Logs\wac-install.log" `
+        SME_PORT=443 `
+        SSL_CERTIFICATE_OPTION=generate
+    ```
+
+    **Etape 3 : Verifier que le service demarre**
+
+    ```powershell
+    Get-Service ServerManagementGateway | Select-Object Name, Status
+    Test-NetConnection -ComputerName localhost -Port 443
+    ```
+
+    **Etape 4 : Configurer l'acces**
+
+    Sophie ajoute le groupe `lab\AdminsIT` en tant que Gateway Users et `lab\AdminsSenior` en Gateway Administrators. Elle informe l'equipe : l'URL est `https://SRV-01.lab.local`.
+
+    **Etape 5 : Remplacement du certificat auto-signe**
+
+    Pour eviter les avertissements de securite, Sophie demande un certificat a la CA interne avec le nom `SRV-01.lab.local` et met a jour WAC via une reinstallation silencieuse en specifiant le thumbprint. Desormais, les navigateurs ne signalent aucune alerte.
 
 ## Mise a jour de WAC
 
@@ -203,6 +266,18 @@ Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\ServerManagementGateway" |
 # WAC preserves settings and connections during the upgrade
 msiexec /i "WindowsAdminCenter-NEW.msi" /qn /L*v "C:\Logs\wac-upgrade.log" SME_PORT=443
 ```
+
+!!! danger "Erreurs courantes"
+
+    **Installer WAC sur un controleur de domaine.** Microsoft deconseille formellement cette pratique. En cas de compromission de l'interface WAC (accessible depuis le reseau), l'attaquant se retrouve directement sur le DC. Toujours utiliser un serveur dedie.
+
+    **Oublier de configurer WinRM sur les serveurs a gerer.** Si `Enable-PSRemoting` n'a pas ete execute sur les serveurs cibles, WAC affiche une erreur de connexion sans indication claire. Tester avec `Test-WSMan -ComputerName SRV-DC01` depuis le serveur WAC.
+
+    **Utiliser le certificat auto-signe en production.** Le certificat auto-signe expire apres 60 jours. Apres expiration, WAC devient inaccessible jusqu'a reinstallation. Toujours utiliser un certificat emis par une CA interne ou publique.
+
+    **Ne pas ouvrir les ports WinRM sur le pare-feu des serveurs geres.** WAC necessite les ports 5985 (WinRM HTTP) et 5986 (WinRM HTTPS) entre le serveur WAC et les serveurs cibles. Un pare-feu intermediaire bloquant ces ports rend les serveurs injoignables depuis WAC.
+
+    **Confondre le compte de connexion WAC et les droits sur les serveurs geres.** WAC utilise Kerberos pour s'authentifier : si le compte connecte a WAC n'est pas administrateur local du serveur cible, certains outils WAC seront desactives ou en erreur.
 
 ## Points cles a retenir
 

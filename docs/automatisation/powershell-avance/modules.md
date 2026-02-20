@@ -16,6 +16,10 @@ tags:
 
 Un **module PowerShell** est un package reutilisable qui regroupe des fonctions, des cmdlets, des variables et des ressources. Les modules permettent d'organiser le code, de le partager et de le versionner. C'est le mecanisme standard pour distribuer des outils PowerShell.
 
+!!! example "Analogie"
+
+    Un module PowerShell est comme une boite a outils specialisee : un electricien a sa boite avec des pinces, des tournevis isoles et un testeur de tension (module `NetworkingDsc`), tandis qu'un plombier a la sienne avec des cles et des joints (module `StorageDsc`). Le manifeste `.psd1` est l'etiquette sur la boite qui liste le contenu et la version. La PowerShell Gallery est le magasin ou l'on achete ces boites pretes a l'emploi.
+
 ## Types de modules
 
 | Type | Extension | Description |
@@ -30,6 +34,14 @@ Un **module PowerShell** est un package reutilisable qui regroupe des fonctions,
 ```powershell
 # List module search paths
 $env:PSModulePath -split ";"
+```
+
+Resultat :
+
+```text
+C:\Users\admin\Documents\WindowsPowerShell\Modules
+C:\Program Files\WindowsPowerShell\Modules
+C:\Windows\System32\WindowsPowerShell\v1.0\Modules
 ```
 
 | Emplacement | Portee | Chemin typique |
@@ -238,6 +250,24 @@ Remove-Module MonModule
 Import-Module MonModule -Force
 ```
 
+Resultat (Import-Module -Verbose) :
+
+```text
+VERBOSE: Loading module from path 'C:\Program Files\WindowsPowerShell\Modules\MonModule\MonModule.psd1'.
+VERBOSE: Loading module from path 'C:\Program Files\WindowsPowerShell\Modules\MonModule\MonModule.psm1'.
+VERBOSE: Importing function 'Get-ServerDiskSpace'.
+VERBOSE: Importing function 'Get-ServerHealth'.
+```
+
+Resultat (Get-Command -Module MonModule) :
+
+```text
+CommandType     Name                    Version    Source
+-----------     ----                    -------    ------
+Function        Get-ServerDiskSpace     1.0.0      MonModule
+Function        Get-ServerHealth        1.0.0      MonModule
+```
+
 ## Installer un module depuis la PowerShell Gallery
 
 La **PowerShell Gallery** (PSGallery) est le depot public de modules PowerShell.
@@ -257,6 +287,25 @@ Update-Module -Name PSWindowsUpdate
 
 # List installed modules
 Get-InstalledModule
+```
+
+Resultat (Find-Module) :
+
+```text
+Name                           Version Author
+----                           ------- ------
+ActiveDirectoryDsc             6.4.0   DSC Community
+PSActiveDirectoryCmdlets       1.0.2   Joe Smith
+ActiveDirectoryManagementTools 1.3.0   Julien Bombled
+```
+
+Resultat (Get-InstalledModule) :
+
+```text
+Version Name               Repository Description
+------- ----               ---------- -----------
+2.4.0   PSWindowsUpdate    PSGallery  This module contain cmdlets to manage Windows Update Client.
+6.4.0   ActiveDirectoryDsc PSGallery  DSC resources for configuring and managing Active Directory.
 ```
 
 ### Configurer un depot prive
@@ -284,6 +333,14 @@ Test-ModuleManifest -Path ".\MonModule\MonModule.psd1"
 Publish-Module -Path ".\MonModule" -NuGetApiKey "YOUR-API-KEY" -Repository PSGallery
 ```
 
+Resultat (Test-ModuleManifest) :
+
+```text
+ModuleType Version    Name          ExportedCommands
+---------- -------    ----          ----------------
+Script     1.0.0      MonModule     {Get-ServerDiskSpace, Get-ServerHealth}
+```
+
 ### Vers un depot prive
 
 ```powershell
@@ -306,6 +363,16 @@ Suivez le **Semantic Versioning** (SemVer) :
 Update-ModuleManifest -Path ".\MonModule\MonModule.psd1" -ModuleVersion "1.1.0"
 ```
 
+Resultat :
+
+```text
+PS C:\Modules> Test-ModuleManifest -Path ".\MonModule\MonModule.psd1"
+
+ModuleType Version    Name          ExportedCommands
+---------- -------    ----          ----------------
+Script     1.1.0      MonModule     {Get-ServerDiskSpace, Get-ServerHealth}
+```
+
 ## Points cles a retenir
 
 - Un module regroupe des fonctions reutilisables dans un package versionne
@@ -314,6 +381,60 @@ Update-ModuleManifest -Path ".\MonModule\MonModule.psd1" -ModuleVersion "1.1.0"
 - Listez explicitement les fonctions dans `FunctionsToExport` (jamais `'*'`)
 - La PowerShell Gallery est le depot public ; configurez un depot NuGet prive pour l'entreprise
 - Suivez le Semantic Versioning pour le numerotage des versions
+
+!!! example "Scenario pratique"
+
+    **Claire**, administratrice systeme, a cree plusieurs fonctions utiles dans un fichier `utils.ps1` qu'elle copie manuellement sur chaque serveur. Un collegue modifie sa copie locale, ce qui provoque des differences de comportement entre les serveurs.
+
+    **Diagnostic :**
+
+    1. Verifier les versions du fichier sur les serveurs :
+    ```powershell
+    $servers = @("SRV-01", "SRV-02", "DC-01")
+    Invoke-Command -ComputerName $servers -ScriptBlock {
+        (Get-Item "C:\Scripts\utils.ps1").LastWriteTime
+    } | Format-Table PSComputerName, LastWriteTime
+    ```
+    Resultat :
+    ```text
+    PSComputerName LastWriteTime
+    -------------- -------------
+    SRV-01         12/15/2025 2:30:00 PM
+    SRV-02         1/8/2026 9:15:00 AM
+    DC-01          11/22/2025 4:45:00 PM
+    ```
+    Les dates sont toutes differentes -- les fichiers ont diverge.
+
+    2. Convertir le fichier en module avec un manifeste versionne :
+    ```powershell
+    New-ModuleManifest -Path "C:\Modules\LabTools\LabTools.psd1" `
+        -RootModule "LabTools.psm1" `
+        -ModuleVersion "1.0.0" `
+        -Author "Claire" `
+        -FunctionsToExport @("Get-ServerDiskSpace", "Test-ServerConnection")
+    ```
+    Resultat :
+    ```text
+    PS C:\Modules> Test-ModuleManifest .\LabTools\LabTools.psd1
+    ModuleType Version Name      ExportedCommands
+    ---------- ------- ----      ----------------
+    Script     1.0.0   LabTools  {Get-ServerDiskSpace, Test-ServerConnection}
+    ```
+
+    3. Publier sur le depot NuGet interne pour une distribution centralisee :
+    ```powershell
+    Publish-Module -Path "C:\Modules\LabTools" -Repository "InternalRepo"
+    ```
+
+    **Resolution :** En convertissant le fichier en module versionne et en le publiant sur un depot interne, Claire garantit que tous les serveurs utilisent la meme version. Les mises a jour se font avec `Update-Module`.
+
+!!! danger "Erreurs courantes"
+
+    - **Utiliser `'*'` dans `FunctionsToExport`** : le wildcard force PowerShell a charger et analyser tout le module pour decouvrir les fonctions, ce qui ralentit significativement l'import. Listez toujours les fonctions explicitement.
+    - **Oublier le manifeste `.psd1`** : un module sans manifeste fonctionne mais ne peut pas etre publie, versionne ni avoir de dependances. Creez toujours un manifeste avec `New-ModuleManifest`.
+    - **Placer le module hors de `$env:PSModulePath`** : PowerShell ne decouvre automatiquement que les modules dans les chemins de `$env:PSModulePath`. Un module place ailleurs necessite un chemin complet pour l'import.
+    - **Ne pas exporter les fonctions dans le `.psm1`** : sans `Export-ModuleMember`, toutes les fonctions sont exportees par defaut. Cela expose les fonctions privees qui ne sont pas destinees a etre utilisees directement.
+    - **Confondre `Remove-Module` et desinstallation** : `Remove-Module` retire le module de la session active mais ne le desinstalle pas. Utilisez `Uninstall-Module` pour supprimer physiquement un module installe via `Install-Module`.
 
 ## Pour aller plus loin
 

@@ -14,6 +14,10 @@ tags:
 
 ## Qu'est-ce que BranchCache ?
 
+!!! example "Analogie"
+
+    Imaginez une entreprise avec un siege et des succursales. Le siege possede une **photocopieuse centrale** avec tous les documents de reference. Sans BranchCache, chaque employe de succursale doit appeler le siege et demander l'envoi par courrier (WAN) d'une copie a chaque fois qu'il a besoin d'un document. Avec BranchCache, la premiere copie recue est archivee dans **une armoire locale** (le cache). Quand un collegue demande le meme document, on lui donne la copie locale instantanement au lieu de rappeler le siege.
+
 BranchCache est une technologie d'optimisation de la bande passante WAN integree a Windows Server. Elle permet aux ordinateurs des sites distants (succursales) de mettre en cache le contenu provenant de serveurs du site central, reduisant ainsi le trafic WAN et ameliorant les temps de reponse.
 
 ### Le probleme des succursales
@@ -105,6 +109,10 @@ BranchCache fonctionne avec les protocoles suivants :
 
 ## Modes de fonctionnement
 
+!!! example "Analogie"
+
+    Le mode **distribue**, c'est quand chaque employe de la succursale garde ses photocopies dans **son propre tiroir** et les partage avec ses collegues a la demande (pair-a-pair). Le mode **heberge**, c'est quand la succursale possede une **armoire centrale partagee** geree par un responsable : tout le monde y range ses copies et tout le monde peut y acceder, meme quand l'employe qui a fait la premiere copie est absent.
+
 ### Mode distribue (Distributed Cache)
 
 Dans le mode distribue, le cache est reparti entre les ordinateurs clients de la succursale. Aucun serveur supplementaire n'est necessaire.
@@ -181,6 +189,14 @@ graph TB
 ```powershell
 # Install BranchCache feature on the content server
 Install-WindowsFeature BranchCache -IncludeManagementTools
+```
+
+Resultat :
+
+```text
+Success Restart Needed Exit Code      Feature Result
+------- -------------- ---------      --------------
+True    No             Success        {BranchCache}
 ```
 
 ### Activer BranchCache sur les partages de fichiers
@@ -310,6 +326,14 @@ Get-BCStatus | Select-Object BranchCacheIsEnabled,
 Get-BCStatus -Verbose
 ```
 
+Resultat :
+
+```text
+BranchCacheIsEnabled     : True
+BranchCacheServiceStatus : Running
+CurrentClientMode        : DistributedCache
+```
+
 ### Statistiques du cache
 
 ```powershell
@@ -320,6 +344,13 @@ Get-BCDataCache | Select-Object CurrentActiveCacheSize,
 
 # View cache contents
 Get-BCDataCacheExtension
+```
+
+Resultat :
+
+```text
+CurrentActiveCacheSize              : 1.24 GB
+MaxCacheSizeAsPercentageOfDiskVolume : 5
 ```
 
 ### Compteurs de performance
@@ -335,6 +366,16 @@ Les compteurs de performance BranchCache sont disponibles dans Performance Monit
 ```powershell
 # Quick check of BranchCache performance counters
 Get-Counter -Counter "\BranchCache\*" -SampleInterval 5 -MaxSamples 3
+```
+
+Resultat :
+
+```text
+Timestamp                 CounterSamples
+---------                 --------------
+2026-02-20 10:15:30       \\PC-LYON01\BranchCache\Bytes From Cache :     847249408
+                          \\PC-LYON01\BranchCache\Bytes From Server :    125829120
+                          \\PC-LYON01\BranchCache\Cache Hit Ratio :      87.12
 ```
 
 ### Vider le cache
@@ -410,6 +451,95 @@ BranchCache se combine naturellement avec DFS Namespaces :
 - Le **pre-hashing** (`Publish-BCFileContent`) permet de remplir le cache avant le premier acces
 - Deployez la configuration par **GPO** pour un deploiement a grande echelle
 - Combinez avec **DFS Namespaces** pour une experience transparente multi-sites
+
+!!! example "Scenario pratique"
+
+    **Contexte :** Isabelle, responsable IT d'une entreprise avec un siege a Paris et 3 succursales, constate que les utilisateurs de la succursale de Bordeaux (8 postes, lien WAN 5 Mbps) se plaignent de temps d'ouverture de fichiers tres lents depuis le serveur de fichiers du siege.
+
+    **Diagnostic :**
+
+    ```powershell
+    # On a Bordeaux workstation, check if BranchCache is enabled
+    Get-BCStatus | Select-Object BranchCacheIsEnabled, CurrentClientMode
+    ```
+
+    Resultat :
+
+    ```text
+    BranchCacheIsEnabled CurrentClientMode
+    -------------------- -----------------
+                   False     Disabled
+    ```
+
+    BranchCache n'est pas active sur les postes.
+
+    **Solution :** Deployer BranchCache en mode distribue (pas de serveur local a Bordeaux).
+
+    ```powershell
+    # On the file server (Paris): install BranchCache and enable hash publication
+    Install-WindowsFeature BranchCache, FS-BranchCache -IncludeManagementTools
+
+    # Enable BranchCache on the main shares
+    Set-SmbShare -Name "Applications" -CachingMode BranchCache -Confirm:$false
+    Set-SmbShare -Name "Commun" -CachingMode BranchCache -Confirm:$false
+    ```
+
+    Resultat :
+
+    ```text
+    Success Restart Needed Exit Code      Feature Result
+    ------- -------------- ---------      --------------
+    True    No             Success        {BranchCache, BranchCache for Network Files}
+    ```
+
+    Sur les postes de Bordeaux (via GPO ou manuellement) :
+
+    ```powershell
+    # Enable BranchCache in distributed mode
+    Enable-BCDistributed
+
+    # Set cache to 10% of disk space
+    Set-BCCache -Percentage 10
+
+    # Verify
+    Get-BCStatus | Select-Object BranchCacheIsEnabled, CurrentClientMode
+    ```
+
+    Resultat :
+
+    ```text
+    BranchCacheIsEnabled CurrentClientMode
+    -------------------- -----------------
+                    True  DistributedCache
+    ```
+
+    Apres quelques jours d'utilisation, Isabelle verifie l'efficacite :
+
+    ```powershell
+    Get-Counter -Counter "\BranchCache\Cache Hit Ratio" -SampleInterval 5 -MaxSamples 1
+    ```
+
+    Resultat :
+
+    ```text
+    Timestamp                 CounterSamples
+    ---------                 --------------
+    2026-02-20 14:30:00       \\PC-BDX01\BranchCache\Cache Hit Ratio : 82.45
+    ```
+
+    82% des fichiers sont servis depuis le cache local. Le lien WAN est soulage et les temps d'ouverture sont passes de 15 secondes a moins de 2 secondes pour les fichiers deja en cache.
+
+!!! danger "Erreurs courantes"
+
+    1. **Oublier d'activer la publication de hashes sur le serveur** : BranchCache cote client ne suffit pas. Le serveur de contenu doit publier les metadonnees (hashes) via la GPO "Hash Publication for BranchCache" ou le role FS-BranchCache. Sans cela, aucun contenu n'est mis en cache.
+
+    2. **Choisir le mode heberge sans serveur local** : le mode heberge necessite un serveur Windows Server dans la succursale. Si ce serveur n'existe pas, utilisez le mode distribue qui ne necessite que les postes clients.
+
+    3. **Laisser la taille de cache par defaut (5%)** : sur un poste avec un petit disque SSD de 128 Go, 5% ne represente que 6,4 Go. Pour des partages volumineux, augmentez la taille du cache avec `Set-BCCache -Percentage 10` ou une valeur fixe.
+
+    4. **Ne pas verifier la compatibilite des versions SMB** : BranchCache necessite SMB 2.1 ou superieur. Les anciens clients Windows XP ou les peripheriques NAS non compatibles ne beneficient pas du cache.
+
+    5. **Oublier de pre-charger le cache pour les deploiements** : sans pre-hashing (`Publish-BCFileContent`), le premier acces a chaque fichier transite toujours par le WAN. Pour les mises a jour logicielles ou les images de deploiement, pre-chargez le cache pour un benefice immediat.
 
 ## Pour aller plus loin
 

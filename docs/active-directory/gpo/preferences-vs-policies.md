@@ -15,6 +15,10 @@ tags:
 
 ## Vue d'ensemble
 
+!!! example "Analogie"
+
+    Imaginez un hotel. Les **Policies** sont les regles de l'etablissement : interdiction de fumer, horaires du petit-dejeuner. Le client ne peut pas les changer. Les **Preferences** sont les reglages de la chambre : temperature du thermostat, orientation de la lampe. Le client peut les ajuster a sa convenance. Si le client quitte l'hotel, les regles disparaissent (Policies = pas de tatouage), mais le thermostat reste tel que le client l'a laisse (Preferences = tatouage).
+
 L'editeur de GPO (GPME) contient deux grandes branches sous chaque section
 (Computer Configuration et User Configuration) :
 
@@ -135,6 +139,15 @@ Chaque element de Preference propose quatre actions :
     }
     ```
 
+    Resultat :
+
+    ```text
+    Name Status
+    ---- ------
+    S    OK
+    U    OK
+    ```
+
 === "GUI (gpmc.msc)"
 
     1. Editer la GPO > **User Configuration** > **Preferences** >
@@ -182,6 +195,14 @@ des taches de tous les utilisateurs cibles.
 # This shows the equivalent manual registry write:
 Set-ItemProperty -Path "HKCU:\Software\MonApplication" `
     -Name "ConfigValue" -Value "Production" -Type String
+```
+
+Resultat :
+
+```text
+ConfigValue : Production
+PSPath      : Microsoft.PowerShell.Core\Registry::HKEY_CURRENT_USER\Software\MonApplication
+PSProvider  : Microsoft.PowerShell.Core\Registry
 ```
 
 ### Taches planifiees
@@ -276,6 +297,61 @@ separee.
     ainsi la politique prevue. Voir aussi le
     [filtrage de securite](filtrage-et-heritage.md) pour le controle d'acces
     aux GPO.
+
+---
+
+## Scenario pratique
+
+!!! example "Scenario pratique"
+
+    **Contexte** : Claire, administratrice systeme, doit deployer un lecteur reseau `S:` vers `\\SRV-FILE\Partage` pour tous les utilisateurs du siege, mais uniquement pour les membres du groupe `GRP_Siege`. Elle hesite entre un script de logon (Policy) et une Drive Map (Preference).
+
+    **Analyse** :
+
+    - Les utilisateurs doivent pouvoir **deconnecter** temporairement le lecteur s'ils le souhaitent.
+    - Le lecteur doit etre **recree** a chaque ouverture de session s'il a ete supprime.
+    - Le deploiement doit cibler uniquement `GRP_Siege`, sans creer une GPO separee.
+
+    **Solution** : Claire choisit les **Preferences Drive Maps** avec l'action **Update** et un ciblage par element (Item-Level Targeting) sur le groupe de securite.
+
+    1. Elle edite la GPO `CFG - Mapped Drives` > **User Configuration** > **Preferences** > **Drive Maps** > **New Mapped Drive**
+    2. Configuration :
+        - **Action** : Update
+        - **Location** : `\\SRV-FILE\Partage`
+        - **Drive Letter** : `S:`
+    3. Onglet **Common** > cocher **Item-level targeting** > **Targeting** > **New Item** > **Security Group** > `GRP_Siege`
+    4. Elle verifie avec un membre du groupe :
+
+        ```powershell
+        gpupdate /force
+        Get-PSDrive -PSProvider FileSystem | Where-Object { $_.Name -eq "S" }
+        ```
+
+        Resultat :
+
+        ```text
+        Name           Used (GB)     Free (GB) Provider      Root
+        ----           ---------     --------- --------      ----
+        S                  45.2         154.8  FileSystem    \\SRV-FILE\Partage
+        ```
+
+    **Conclusion** : les Preferences avec Item-Level Targeting offrent plus de flexibilite qu'un script de logon, permettent un ciblage fin sans filtrage de securite supplementaire, et l'action Update garantit la recreation du lecteur a chaque session.
+
+---
+
+## Erreurs courantes
+
+!!! danger "Erreurs courantes"
+
+    1. **Utiliser les Preferences pour des parametres de securite** : les Preferences sont modifiables par l'utilisateur. Imposer le verrouillage de session via une Preference au lieu d'une Policy permet a l'utilisateur de contourner la restriction.
+
+    2. **Oublier le tatouage des Preferences** : contrairement aux Policies, les Preferences persistent dans le registre meme apres retrait de la GPO. Si vous deployez une cle de registre par Preference et retirez ensuite la GPO, la cle reste en place.
+
+    3. **Choisir l'action Create au lieu de Update** : l'action Create ne cree l'element que s'il n'existe pas. Si l'utilisateur supprime le lecteur reseau, il ne sera pas recree au prochain cycle. L'action Update recree ou met a jour systematiquement.
+
+    4. **Ne pas activer le contexte de securite de l'utilisateur** : pour les Drive Maps, oublier de cocher **Run in logged-on user's security context** peut empecher l'acces aux partages qui requierent l'identite de l'utilisateur.
+
+    5. **Confondre Policies et Preferences dans le registre** : les Policies ecrivent sous `HKLM\SOFTWARE\Policies\` ou `HKCU\SOFTWARE\Policies\`, tandis que les Preferences ecrivent dans les cles standard. Chercher une valeur de Preference sous la branche Policies ne donnera rien.
 
 ---
 

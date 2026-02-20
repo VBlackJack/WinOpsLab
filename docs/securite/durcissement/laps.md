@@ -19,6 +19,10 @@ LAPS permet de gerer automatiquement les mots de passe des comptes administrateu
 
 ## Pourquoi LAPS ?
 
+!!! example "Analogie"
+
+    Imaginez un immeuble ou toutes les portes d'appartement utilisent la meme cle. Si un cambrioleur copie une seule cle, il a acces a tous les logements. LAPS, c'est comme donner une serrure unique a chaque porte, avec un gardien de confiance (Active Directory) qui conserve les doubles dans un coffre-fort.
+
 Sans LAPS, les administrateurs deploient souvent le meme mot de passe administrateur local sur toutes les machines. Ce scenario cree un risque majeur :
 
 ```mermaid
@@ -76,6 +80,16 @@ Import-Module AdmPwd.PS
 Update-AdmPwdADSchema
 ```
 
+Resultat :
+
+```text
+Operation            DistinguishedName
+---------            -----------------
+AddSchemaAttribute   CN=ms-Mcs-AdmPwd,CN=Schema,CN=Configuration,DC=lab,DC=local
+AddSchemaAttribute   CN=ms-Mcs-AdmPwdExpirationTime,CN=Schema,CN=Configuration,DC=lab,DC=local
+ModifySchemaClass    CN=Computer,CN=Schema,CN=Configuration,DC=lab,DC=local
+```
+
 ### Etape 2 : configuration des permissions
 
 ```powershell
@@ -93,6 +107,20 @@ Set-AdmPwdResetPasswordPermission -OrgUnit "OU=Servers,DC=lab,DC=local" `
 
 # Verify current permissions
 Find-AdmPwdExtendedRights -OrgUnit "OU=Servers,DC=lab,DC=local"
+```
+
+Resultat :
+
+```text
+Name                    Permission        DistinguishedName
+----                    ----------        -----------------
+SELF                    SELF permission   OU=Servers,DC=lab,DC=local
+LAB\LAPS-Password-Re... Read password    OU=Servers,DC=lab,DC=local
+LAB\LAPS-Password-Re... Reset password   OU=Servers,DC=lab,DC=local
+
+ObjectDN                          ExtendedRightHolders
+--------                          --------------------
+OU=Servers,DC=lab,DC=local        {LAB\LAPS-Password-Readers, LAB\Domain Admins}
 ```
 
 !!! danger "Securite des permissions"
@@ -143,6 +171,21 @@ Get-ADComputer -Filter * -SearchBase "OU=Servers,DC=lab,DC=local" -Properties ms
     Select-Object Name,
         @{N='Password';E={$_.'ms-Mcs-AdmPwd'}},
         @{N='Expiration';E={[datetime]::FromFileTime($_.'ms-Mcs-AdmPwdExpirationTime')}}
+```
+
+Resultat :
+
+```text
+ComputerName  Password                          ExpirationTimestamp
+------------  --------                          -------------------
+SRV-01        x7$kL9#mQ2pR5vW8                  2025-03-15 14:30:00
+
+Name       Password              Expiration
+----       --------              ----------
+SRV-01     x7$kL9#mQ2pR5vW8      15/03/2025 14:30:00
+SRV-02     Bn4&tY6!hJ8wZ1qF      22/03/2025 09:15:00
+DC-01      (acces refuse)
+SRV-APP01  pM3@vK7#sD9nL2xR      01/04/2025 11:00:00
 ```
 
 ### Via l'interface graphique
@@ -224,6 +267,17 @@ Get-ADComputer -Filter * -SearchBase "OU=Servers,DC=lab,DC=local" |
     } | Format-Table -AutoSize
 ```
 
+Resultat :
+
+```text
+Computer    Password              Expiration
+--------    --------              ----------
+SRV-01      G8#xL5mP2@wK9nR      2025-03-20 10:00:00
+SRV-02      Yt4&bN7!qJ3vF6sD      2025-03-25 16:45:00
+SRV-APP01   zW1$hM8#kR5tQ9pL      2025-04-01 08:30:00
+DC-01       N/A                    N/A
+```
+
 ### Chiffrement des mots de passe
 
 Windows LAPS supporte le chiffrement des mots de passe stockes dans AD :
@@ -260,6 +314,69 @@ Get-ADComputer -Filter * -SearchBase "OU=Servers,DC=lab,DC=local" `
     Where-Object { -not $_.'ms-Mcs-AdmPwd' } |
     Select-Object Name
 ```
+
+Resultat :
+
+```text
+Name            Expiration
+----            ----------
+SRV-02          12/01/2025 09:15:00
+
+Name
+----
+SRV-TEST03
+SRV-DEV02
+```
+
+---
+
+## Scenario pratique
+
+!!! example "Scenario pratique"
+
+    **Contexte** : Caroline, administratrice systeme, doit intervenir en urgence sur le serveur `SRV-02` (10.0.0.12) dont le service applicatif est bloque. Elle doit se connecter avec le compte administrateur local mais ne connait pas le mot de passe (LAPS est deploye).
+
+    **Recuperation du mot de passe** :
+
+    ```powershell
+    # Retrieve the LAPS password for SRV-02
+    Get-LapsADPassword -Identity "SRV-02" -AsPlainText
+    ```
+
+    Resultat :
+
+    ```text
+    ComputerName  : SRV-02
+    Account       : Administrator
+    Password      : Yt4&bN7!qJ3vF6sD
+    PasswordUpdateTime : 2025-02-20 10:00:00
+    ExpirationTimestamp : 2025-03-25 16:45:00
+    Source        : EncryptedPassword
+    DecryptionStatus : Success
+    AuthorizedDecryptor : LAB\LAPS-Password-Readers
+    ```
+
+    Caroline utilise ce mot de passe pour se connecter en local, resout le probleme, puis force la rotation du mot de passe par securite :
+
+    ```powershell
+    # Force password rotation after intervention
+    Reset-LapsPassword -Identity "SRV-02"
+    Invoke-GPUpdate -Computer "SRV-02" -Force
+    ```
+
+    Le mot de passe est immediatement regenere et l'ancien ne fonctionne plus.
+
+---
+
+!!! danger "Erreurs courantes"
+
+    1. **Deployer LAPS sans configurer les permissions de lecture** : si aucun groupe n'a le droit de lire les mots de passe, vous ne pourrez plus vous connecter en local sur les machines gerees. Configurez les groupes `LAPS-Password-Readers` AVANT de deployer le client.
+
+    2. **Utiliser LAPS Legacy sans chiffrement sur un reseau non securise** : avec LAPS Legacy, les mots de passe sont stockes en clair dans l'attribut `ms-Mcs-AdmPwd`. Toute personne ayant les droits `All Extended Rights` sur l'OU peut les lire. Migrez vers Windows LAPS pour le chiffrement.
+
+    3. **Oublier d'etendre le schema AD avant le deploiement** : le client LAPS ne peut pas ecrire le mot de passe sans les attributs `ms-Mcs-AdmPwd` et `ms-Mcs-AdmPwdExpirationTime`. L'extension du schema est un prerequis obligatoire.
+
+    4. **Ne pas surveiller les machines sans mot de passe LAPS** : les machines nouvellement jointes au domaine ou celles ou le client n'est pas installe restent vulnerables. Mettez en place un audit regulier pour detecter les machines non couvertes.
 
 ---
 

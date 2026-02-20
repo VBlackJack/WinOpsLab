@@ -13,6 +13,10 @@ tags:
 
 ## Le systeme d'aide integre
 
+!!! example "Analogie"
+
+    Le systeme d'aide de PowerShell fonctionne comme le mode d'emploi integre d'un appareil electromenager. Au lieu de chercher la notice sur Internet, vous appuyez sur un bouton et l'appareil vous explique lui-meme comment il fonctionne. `Get-Help` est ce bouton.
+
 PowerShell dispose d'un systeme d'aide complet qui vous permet d'apprendre n'importe quelle cmdlet sans quitter la console.
 
 ### Mettre a jour l'aide
@@ -22,6 +26,14 @@ La premiere fois, telechargez les fichiers d'aide complets :
 ```powershell
 # Download and install the latest help files (requires admin)
 Update-Help -Force -ErrorAction SilentlyContinue
+```
+
+Resultat :
+
+```text
+PS C:\> Update-Help -Force -ErrorAction SilentlyContinue
+# (Telechargement en cours... aucune sortie visible si tout se passe bien)
+# Des avertissements peuvent apparaitre pour certains modules sans aide en ligne
 ```
 
 ### Get-Help : la commande indispensable
@@ -44,6 +56,29 @@ Get-Help Get-Service -ShowWindow
 
 # Online help (opens in the browser)
 Get-Help Get-Service -Online
+```
+
+Resultat (extrait de `Get-Help Get-Service`) :
+
+```text
+NAME
+    Get-Service
+
+SYNOPSIS
+    Gets the services on a local or remote computer.
+
+SYNTAX
+    Get-Service [[-Name] <String[]>] [-ComputerName <String[]>]
+    [-DependentServices] [-Exclude <String[]>] [-Include <String[]>]
+    [-RequiredServices] [<CommonParameters>]
+
+DESCRIPTION
+    The Get-Service cmdlet gets objects that represent the services on a
+    computer, including running and stopped services.
+    ...
+
+RELATED LINKS
+    Online Version: https://learn.microsoft.com/...
 ```
 
 !!! tip "Raccourci"
@@ -100,6 +135,24 @@ Get-Command -Module "DnsServer"
 (Get-Command -CommandType Cmdlet).Count
 ```
 
+Resultat (extrait de `Get-Command *service*`) :
+
+```text
+CommandType     Name                              Version    Source
+-----------     ----                              -------    ------
+Cmdlet          Get-Service                       3.1.0.0    Microsoft.PowerShell.Management
+Cmdlet          New-Service                       3.1.0.0    Microsoft.PowerShell.Management
+Cmdlet          Restart-Service                   3.1.0.0    Microsoft.PowerShell.Management
+Cmdlet          Resume-Service                    3.1.0.0    Microsoft.PowerShell.Management
+Cmdlet          Set-Service                       3.1.0.0    Microsoft.PowerShell.Management
+Cmdlet          Start-Service                     3.1.0.0    Microsoft.PowerShell.Management
+Cmdlet          Stop-Service                      3.1.0.0    Microsoft.PowerShell.Management
+Cmdlet          Suspend-Service                   3.1.0.0    Microsoft.PowerShell.Management
+
+PS C:\> (Get-Command -CommandType Cmdlet).Count
+1638
+```
+
 ### Exploration par module
 
 ```powershell
@@ -114,6 +167,21 @@ Import-Module "ActiveDirectory"
 
 # Find modules available online
 Find-Module -Name "*ActiveDirectory*"
+```
+
+Resultat (extrait de `Get-Module -ListAvailable`) :
+
+```text
+    Directory: C:\Windows\system32\WindowsPowerShell\v1.0\Modules
+
+ModuleType Version    Name                          ExportedCommands
+---------- -------    ----                          ----------------
+Manifest   1.0.0.0    ActiveDirectory               {Add-ADGroupMember, Get-ADUser...}
+Manifest   2.0.0.0    DnsServer                     {Add-DnsServerResourceRecord...}
+Manifest   2.0.0.0    NetAdapter                    {Get-NetAdapter, Set-NetAdapter...}
+Manifest   1.0.0.0    NetTCPIP                      {Get-NetIPAddress, New-NetIPAddress...}
+Script     1.0.0.0    ServerManager                 {Get-WindowsFeature, Install-WindowsFeature...}
+...
 ```
 
 ### Decouvrir les proprietes d'un objet
@@ -131,6 +199,32 @@ Get-Service -Name "WinRM" | Format-List *
 # What type of object does a cmdlet return?
 (Get-Service)[0].GetType().FullName
 ```
+
+Resultat (extrait de `Get-Service | Get-Member -MemberType Property`) :
+
+```text
+   TypeName: System.ServiceProcess.ServiceController
+
+Name                MemberType Definition
+----                ---------- ----------
+CanPauseAndContinue Property   bool CanPauseAndContinue {get;}
+CanShutdown         Property   bool CanShutdown {get;}
+CanStop             Property   bool CanStop {get;}
+DependentServices   Property   ServiceController[] DependentServices {get;}
+DisplayName         Property   string DisplayName {get;set;}
+MachineName         Property   string MachineName {get;set;}
+ServiceName         Property   string ServiceName {get;set;}
+ServiceType         Property   ServiceType ServiceType {get;}
+StartType           Property   ServiceStartMode StartType {get;}
+Status              Property   ServiceControllerStatus Status {get;}
+
+PS C:\> (Get-Service)[0].GetType().FullName
+System.ServiceProcess.ServiceController
+```
+
+!!! example "Analogie"
+
+    `Get-Member` est comme une radiographie : il revele la structure interne d'un objet. Tout comme un medecin utilise une radio pour voir les os sous la peau, `Get-Member` vous montre les proprietes et methodes cachees derriere chaque resultat PowerShell.
 
 ## Techniques de decouverte
 
@@ -160,6 +254,20 @@ Invoke-History -Id 5
 # F7: display history popup (Windows Terminal)
 ```
 
+Resultat :
+
+```text
+PS C:\> Get-History
+
+  Id CommandLine
+  -- -----------
+   1 Get-Service
+   2 Get-Service -Name "WinRM"
+   3 Get-Help Get-Service -Examples
+   4 Get-Command *DNS*
+   5 Get-NetIPConfiguration
+```
+
 ### Wildcards
 
 ```powershell
@@ -170,6 +278,20 @@ Get-ChildItem -Path "C:\Windows\*.log"
 
 # Use ? for single character matching
 Get-ChildItem -Path "C:\Windows\System3?"
+```
+
+Resultat :
+
+```text
+PS C:\> Get-Service -Name "Win*"
+
+Status   Name               DisplayName
+------   ----               -----------
+Running  WinDefend          Microsoft Defender Antivirus Service
+Running  WinHttpAutoProx... WinHTTP Web Proxy Auto-Discovery Se...
+Running  Winmgmt            Windows Management Instrumentation
+Running  WinRM              Windows Remote Management (WS-Manag...
+Stopped  WinHttpAutoProx... WinHTTP Web Proxy Auto-Discovery Se...
 ```
 
 ## About_* : documentation conceptuelle
@@ -203,6 +325,60 @@ Get-Help about_Execution_Policies    # Script execution policies
 | Commandes d'un module | `Get-Command -Module <module>` |
 | Modules disponibles | `Get-Module -ListAvailable` |
 | Documentation conceptuelle | `Get-Help about_<sujet>` |
+
+!!! example "Scenario pratique"
+
+    **Contexte** : Thomas, technicien reseau, doit configurer les regles de pare-feu sur `SRV-01` mais ne connait pas les cmdlets PowerShell pour le firewall.
+
+    **Etape 1** : Chercher les cmdlets liees au pare-feu
+
+    ```powershell
+    Get-Command *firewall*
+    ```
+
+    ```text
+    CommandType     Name                                    Version    Source
+    -----------     ----                                    -------    ------
+    Function        Copy-NetFirewallRule                    2.0.0.0    NetSecurity
+    Function        Get-NetFirewallProfile                  2.0.0.0    NetSecurity
+    Function        Get-NetFirewallRule                     2.0.0.0    NetSecurity
+    Function        New-NetFirewallRule                     2.0.0.0    NetSecurity
+    Function        Remove-NetFirewallRule                  2.0.0.0    NetSecurity
+    Function        Set-NetFirewallProfile                  2.0.0.0    NetSecurity
+    ...
+    ```
+
+    **Etape 2** : Consulter l'aide avec des exemples concrets
+
+    ```powershell
+    Get-Help New-NetFirewallRule -Examples
+    ```
+
+    ```text
+    EXAMPLE 1
+        New-NetFirewallRule -DisplayName "Allow Inbound Telnet" -Direction Inbound
+        -Program %SystemRoot%\System32\tlntsvr.exe -RemoteAddress LocalSubnet
+        -Action Allow
+    ...
+    ```
+
+    **Etape 3** : Decouvrir les proprietes d'une regle existante
+
+    ```powershell
+    Get-NetFirewallRule -DisplayName "Windows Remote Management*" | Format-List *
+    ```
+
+    Thomas a trouve toutes les informations necessaires sans quitter la console ni ouvrir un navigateur.
+
+!!! danger "Erreurs courantes"
+
+    1. **Oublier de lancer `Update-Help`** : sans cette commande, `Get-Help` affiche une aide minimale generee automatiquement. Lancez `Update-Help -Force` une premiere fois pour obtenir la documentation complete.
+
+    2. **Confondre `Get-Help` et `Get-Command`** : `Get-Command` sert a *trouver* une cmdlet par son nom. `Get-Help` sert a *comprendre* comment l'utiliser. Les deux sont complementaires.
+
+    3. **Ne pas utiliser `-Examples`** : la section d'exemples est souvent la plus utile pour comprendre rapidement une cmdlet. `Get-Help <cmdlet> -Examples` devrait etre votre premier reflexe.
+
+    4. **Ignorer `Get-Member`** : beaucoup de debutants ne savent pas quelles proprietes un objet possede. Prenez l'habitude de taper `| Get-Member` apres n'importe quelle cmdlet pour decouvrir ses proprietes.
 
 ## Points cles a retenir
 

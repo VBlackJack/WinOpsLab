@@ -12,6 +12,10 @@ tags:
 
 ## Introduction
 
+!!! example "Analogie"
+
+    Le subnetting est comparable au decoupage d'un grand open space en bureaux individuels avec des cloisons. L'open space (le reseau d'origine) est divise en espaces plus petits (sous-reseaux), chacun avec sa propre porte d'entree (adresse reseau) et son propre interphone (broadcast). Les cloisons (le masque) definissent la taille de chaque bureau.
+
 Le **subnetting** (decoupage en sous-reseaux) consiste a diviser un reseau IP en segments plus petits. Cette technique est essentielle en administration reseau pour optimiser l'utilisation de l'espace d'adressage, ameliorer la securite par segmentation et reduire le trafic de broadcast.
 
 !!! info "Pourquoi decouper en sous-reseaux ?"
@@ -165,9 +169,24 @@ function Get-SubnetInfo {
 Get-SubnetInfo -IPAddress "192.168.1.150" -PrefixLength 26
 ```
 
+Resultat :
+
+```text
+IPAddress      : 192.168.1.150
+PrefixLength   : 26
+SubnetMask     : 255.255.255.192
+NetworkAddress : 192.168.1.128
+Broadcast      : 192.168.1.191
+UsableHosts    : 62
+```
+
 ---
 
 ## VLSM (Variable Length Subnet Masking)
+
+!!! example "Analogie"
+
+    Avec le subnetting classique, on decoupe un terrain en parcelles egales, meme si certaines ne sont pas utilisees. Le VLSM est comme un architecte qui adapte la taille de chaque piece a son usage : une grande salle de reunion pour 200 personnes, un bureau moyen pour 50, et un petit local technique pour 2. On ne gaspille pas d'espace.
 
 Le **VLSM** permet d'utiliser des masques de longueur differente au sein d'un meme reseau. Contrairement au subnetting classique (ou tous les sous-reseaux ont la meme taille), le VLSM adapte la taille de chaque sous-reseau au nombre reel d'hotes necessaires.
 
@@ -279,6 +298,64 @@ Reseau de depart : **10.0.0.0/24** (256 adresses)
 | 256 - valeur du dernier octet du masque    | Taille du bloc (pas d'incrementation)    |
 | IP AND masque                              | Adresse reseau                           |
 | Adresse reseau + taille du bloc - 1        | Adresse de broadcast                     |
+
+---
+
+## Scenario pratique
+
+!!! example "Scenario pratique"
+
+    **Contexte** : Emilie, administratrice reseau, doit planifier le plan d'adressage du nouveau site de Lyon. Le siege lui a attribue le reseau `10.0.10.0/24`. Elle doit heberger trois segments : serveurs (10 machines), postes utilisateurs (80 machines) et un lien VPN inter-sites (2 adresses).
+
+    **Analyse VLSM** (par ordre decroissant de taille) :
+
+    1. **Postes utilisateurs** (80 hotes) :
+        - 2^h - 2 >= 80, donc h = 7, prefixe = /25 (126 hotes)
+        - Sous-reseau : `10.0.10.0/25` (10.0.10.1 - 10.0.10.126)
+
+    2. **Serveurs** (10 hotes) :
+        - 2^h - 2 >= 10, donc h = 4, prefixe = /28 (14 hotes)
+        - Sous-reseau : `10.0.10.128/28` (10.0.10.129 - 10.0.10.142)
+
+    3. **Lien VPN** (2 hotes) :
+        - 2^h - 2 >= 2, donc h = 2, prefixe = /30 (2 hotes)
+        - Sous-reseau : `10.0.10.144/30` (10.0.10.145 - 10.0.10.146)
+
+    **Verification avec PowerShell** :
+
+    ```powershell
+    Get-SubnetInfo -IPAddress "10.0.10.0" -PrefixLength 25
+    Get-SubnetInfo -IPAddress "10.0.10.128" -PrefixLength 28
+    Get-SubnetInfo -IPAddress "10.0.10.144" -PrefixLength 30
+    ```
+
+    Resultat :
+
+    ```text
+    IPAddress      PrefixLength SubnetMask        NetworkAddress Broadcast      UsableHosts
+    ---------      ------------ ----------        -------------- ---------      -----------
+    10.0.10.0      25           255.255.255.128   10.0.10.0      10.0.10.127    126
+    10.0.10.128    28           255.255.255.240   10.0.10.128    10.0.10.143    14
+    10.0.10.144    30           255.255.255.252   10.0.10.144    10.0.10.147    2
+    ```
+
+    **Espace restant** : `10.0.10.148` a `10.0.10.255` (disponible pour de futures extensions).
+
+---
+
+## Erreurs courantes
+
+!!! danger "Erreurs courantes"
+
+    1. **Oublier de soustraire 2 pour les hotes** : un /24 offre 256 adresses mais seulement **254** utilisables (adresse reseau + broadcast). Dimensionner un sous-reseau /26 pour 64 machines echouera car seules 62 sont disponibles.
+
+    2. **Commencer le VLSM par le plus petit besoin** : allouer d'abord les petits sous-reseaux fragmente l'espace d'adressage et peut empecher l'allocation des gros blocs contigus. Toujours commencer par le plus grand besoin.
+
+    3. **Creer des sous-reseaux qui se chevauchent** : en VLSM, chaque nouveau sous-reseau doit commencer apres la fin du precedent. Un chevauchement cause des conflits de routage imprevisibles.
+
+    4. **Confondre la taille du bloc et le nombre d'hotes** : pour un /26, la taille du bloc est 64 mais le nombre d'hotes utilisables est 62. Ce sont deux valeurs distinctes.
+
+    5. **Ne pas prevoir de marge de croissance** : dimensionner un sous-reseau au plus juste (exactement le nombre d'hotes actuels) ne laisse aucune place pour l'evolution. Prevoyez au moins 20 a 30% de marge.
 
 ---
 

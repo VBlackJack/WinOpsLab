@@ -13,6 +13,10 @@ tags:
 
 ## Principe de la redirection DNS
 
+!!! example "Analogie"
+
+    Imaginez un standard telephonique d'entreprise. Quand quelqu'un appelle un numero interne, le standard repond directement. Mais quand on appelle un numero externe, le standard transfère l'appel vers l'operateur telephonique. Un redirecteur conditionnel, c'est comme une regle speciale : "Pour tous les appels vers la filiale de Lyon, transferer directement vers le standard de Lyon au lieu de passer par l'operateur."
+
 Quand un serveur DNS recoit une requete pour un domaine dont il n'est **pas autoritaire**, il doit trouver la reponse ailleurs. Deux mecanismes existent :
 
 1. **Indications de racine** (Root Hints) : le serveur contacte les serveurs racine d'Internet pour resoudre le nom de proche en proche
@@ -62,6 +66,14 @@ Les **redirecteurs standards** s'appliquent a **toutes les requetes** que le ser
     Remove-DnsServerForwarder `
         -IPAddress "8.8.4.4" `
         -ComputerName "SRV-DC01"
+    ```
+
+    Resultat :
+
+    ```text
+    IPAddress        EnableReordering  Timeout  UseRootHint
+    ---------        ----------------  -------  -----------
+    {8.8.8.8, 1.1.1.1}  True          3        True
     ```
 
 === "GUI"
@@ -138,6 +150,16 @@ Le serveur DNS verifie d'abord les zones locales, puis les redirecteurs conditio
         -ComputerName "SRV-DC01"
     ```
 
+    Resultat :
+
+    ```text
+    # Verification avec Get-DnsServerZone
+    ZoneName          ZoneType    IsDsIntegrated  MasterServers         DirectoryPartitionName
+    --------          --------    --------------  -------------         ----------------------
+    partner.com       Forwarder   True            {10.10.0.1, 10.10.0.2}  ForestDnsZones.lab.local
+    external.local    Forwarder   False           {172.16.0.1}
+    ```
+
 === "GUI"
 
     1. Ouvrir **DNS Manager**
@@ -166,6 +188,15 @@ Set-DnsServerConditionalForwarderZone `
 
 # Remove a conditional forwarder
 Remove-DnsServerZone -Name "partner.com" -ComputerName "SRV-DC01" -Force
+```
+
+Resultat :
+
+```text
+ZoneName          ZoneType    IsDsIntegrated  MasterServers              DirectoryPartitionName
+--------          --------    --------------  -------------              ----------------------
+partner.com       Forwarder   True            {10.10.0.1, 10.10.0.2}    ForestDnsZones.lab.local
+external.local    Forwarder   False           {172.16.0.1}
 ```
 
 ### Stocker dans Active Directory
@@ -283,6 +314,64 @@ Resolve-DnsName -Name "srv-dc01.partner.com" -Type A -DnsOnly -Server "SRV-DC01"
 # Trace the resolution path
 Resolve-DnsName -Name "srv-dc01.partner.com" -Type A -Server "SRV-DC01" -DnssecOk
 ```
+
+Resultat :
+
+```text
+Name                           Type   TTL   Section    IPAddress
+----                           ----   ---   -------    ---------
+srv-dc01.partner.com           A      3600  Answer     10.10.0.1
+```
+
+!!! example "Scenario pratique"
+
+    **Situation** : Thomas, administrateur reseau, met en place une relation d'approbation entre la foret `lab.local` et la foret `filiale.groupe.local`. Les utilisateurs de `lab.local` ne parviennent pas a acceder aux ressources de `filiale.groupe.local`. L'erreur indique que le domaine est introuvable.
+
+    **Diagnostic** :
+
+    ```powershell
+    # Etape 1 : Tester la resolution du domaine partenaire
+    Resolve-DnsName -Name "filiale.groupe.local" -Type A -DnsOnly -Server "DC-01"
+    ```
+
+    Resultat : erreur "DNS name does not exist". Le serveur DNS local ne sait pas resoudre ce domaine.
+
+    ```powershell
+    # Etape 2 : Verifier s'il existe un redirecteur conditionnel
+    Get-DnsServerZone -ComputerName "DC-01" | Where-Object { $_.ZoneType -eq "Forwarder" }
+    ```
+
+    Resultat : aucun redirecteur conditionnel n'est configure pour `filiale.groupe.local`.
+
+    ```powershell
+    # Etape 3 : Verifier la connectivite vers les DNS de la filiale
+    Test-NetConnection -ComputerName "10.50.0.1" -Port 53
+    ```
+
+    Resultat : la connectivite TCP 53 fonctionne.
+
+    **Solution** :
+
+    ```powershell
+    # Creer le redirecteur conditionnel avec replication sur la foret
+    Add-DnsServerConditionalForwarderZone `
+        -Name "filiale.groupe.local" `
+        -MasterServers "10.50.0.1", "10.50.0.2" `
+        -ReplicationScope "Forest" `
+        -ComputerName "DC-01"
+
+    # Verifier la resolution
+    Resolve-DnsName -Name "srv-dc01.filiale.groupe.local" -Type A -DnsOnly -Server "DC-01"
+    ```
+
+    La relation d'approbation peut maintenant etre etablie et les utilisateurs accedent aux ressources partagees.
+
+!!! danger "Erreurs courantes"
+
+    - **Oublier d'ouvrir le port 53 sur le pare-feu entre les deux reseaux** : le redirecteur conditionnel est configure, mais le trafic DNS est bloque. Verifiez toujours la connectivite avec `Test-NetConnection -Port 53` avant de configurer le redirecteur.
+    - **Ne pas stocker le redirecteur conditionnel dans AD** : sans stockage AD, le redirecteur n'existe que sur le serveur local. Si les clients interrogent un autre DC, la resolution echoue. Utilisez toujours `-ReplicationScope "Forest"` ou `"Domain"`.
+    - **Configurer un redirecteur conditionnel pour un domaine deja present en zone locale** : les zones locales ont priorite sur les redirecteurs conditionnels. Si une zone `partner.com` existe localement (meme vide), le redirecteur conditionnel ne sera jamais utilise.
+    - **Utiliser des redirecteurs standards au lieu de redirecteurs conditionnels** : les redirecteurs standards s'appliquent a toutes les requetes non resolues. Pour un domaine partenaire specifique, un redirecteur conditionnel est plus precis et plus performant.
 
 ## Points cles a retenir
 

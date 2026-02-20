@@ -13,6 +13,10 @@ tags:
 
 ## Qu'est-ce qu'Active Directory ?
 
+!!! example "Analogie"
+
+    Imaginez un **annuaire telephonique d'entreprise** geant : il contient le nom, le poste, le service et le badge d'acces de chaque employe. Quand quelqu'un veut entrer dans un bureau, le gardien (le controleur de domaine) consulte cet annuaire pour verifier son identite et ses droits. Active Directory joue exactement ce role pour tout le reseau.
+
 **Active Directory Domain Services** (AD DS) est le service d'annuaire de Microsoft. Il fournit :
 
 - **Authentification** : verifier l'identite des utilisateurs (Kerberos)
@@ -37,6 +41,10 @@ graph TD
     F --> J[PC-JEAN-01]
     G --> K[SRV-FS-01]
 ```
+
+!!! example "Analogie"
+
+    La hierarchie AD fonctionne comme un **groupe d'entreprises**. La foret est le groupe (ex: « Groupe Duval SA »), chaque domaine est une filiale (« Duval Paris », « Duval Lyon »), et les OU sont les departements au sein de chaque filiale (Comptabilite, IT, RH). Tous partagent la meme charte interne (le schema), mais chacun a sa propre direction locale.
 
 ### Foret (Forest)
 
@@ -100,6 +108,10 @@ CN=Jean Dupont,OU=Utilisateurs,DC=lab,DC=local
 
 ### Kerberos
 
+!!! example "Analogie"
+
+    Kerberos fonctionne comme un **systeme de bracelets dans un festival**. A l'entree (le KDC), vous montrez votre billet (mot de passe) et recevez un bracelet general (TGT). Ensuite, a chaque scene (serveur), vous presentez votre bracelet pour obtenir un pass specifique (ticket de service) sans jamais re-montrer votre billet original.
+
 Kerberos est le protocole d'authentification par defaut :
 
 ```mermaid
@@ -149,6 +161,14 @@ Get-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\NTDS\Parameters"
     Select-Object "DSA Database file", "Database log files path"
 ```
 
+Resultat :
+
+```text
+DSA Database file       Database log files path
+-----------------       -----------------------
+C:\Windows\NTDS\ntds.dit C:\Windows\NTDS
+```
+
 ## Roles FSMO
 
 Certaines operations ne peuvent etre effectuees que par un seul DC. Ces roles s'appellent **FSMO** (Flexible Single Master Operations) :
@@ -177,6 +197,24 @@ Get-ADDomain | Select-Object PDCEmulator, RIDMaster, InfrastructureMaster
 Get-ADForest | Select-Object SchemaMaster, DomainNamingMaster
 ```
 
+Resultat :
+
+```text
+Schema master               DC-01.lab.local
+Domain naming master        DC-01.lab.local
+PDC                         DC-01.lab.local
+RID pool manager            DC-01.lab.local
+Infrastructure master       DC-01.lab.local
+The command completed successfully.
+
+PDCEmulator           : DC-01.lab.local
+RIDMaster             : DC-01.lab.local
+InfrastructureMaster  : DC-01.lab.local
+
+SchemaMaster          : DC-01.lab.local
+DomainNamingMaster    : DC-01.lab.local
+```
+
 ## Catalogue global (GC)
 
 Le **Global Catalog** est une copie partielle en lecture seule de tous les objets de la foret :
@@ -189,6 +227,14 @@ Le **Global Catalog** est une copie partielle en lecture seule de tous les objet
 ```powershell
 # Check if a DC is a Global Catalog
 Get-ADDomainController -Identity "DC-01" | Select-Object Name, IsGlobalCatalog
+```
+
+Resultat :
+
+```text
+Name  IsGlobalCatalog
+----  ---------------
+DC-01            True
 ```
 
 ## Schema AD
@@ -213,6 +259,61 @@ Le **schema** definit les types d'objets et leurs attributs :
 - Chaque domaine a besoin d'au moins 2 DC pour la redondance
 - DNS est obligatoire pour le fonctionnement d'AD
 - Les 5 roles FSMO sont repartis entre les DC
+
+!!! example "Scenario pratique"
+
+    **Contexte :** Sophie, administratrice systeme, constate que certains utilisateurs ne parviennent plus a s'authentifier sur le domaine `lab.local` depuis ce matin. Les postes affichent « The trust relationship between this workstation and the primary domain failed ».
+
+    **Diagnostic :**
+
+    ```powershell
+    # Check if the DC is reachable and AD services are running
+    Get-Service -Name "NTDS", "DNS", "Kerberos" -ComputerName DC-01
+
+    # Verify Kerberos tickets on a client machine
+    klist
+
+    # Check time synchronization (Kerberos tolerance: 5 minutes)
+    w32tm /query /status
+    ```
+
+    Resultat :
+
+    ```text
+    Leap Indicator: 0 (no warning)
+    Stratum: 4
+    Last Successful Sync Time: 2025-03-15 07:12:00
+    Source: DC-01.lab.local
+    ```
+
+    Sophie decouvre que l'horloge du PDC Emulator a derive de **7 minutes** par rapport a la source NTP externe. Les tickets Kerberos sont refuses a cause du decalage.
+
+    **Solution :**
+
+    ```powershell
+    # On the PDC Emulator (DC-01), reconfigure NTP source
+    w32tm /config /manualpeerlist:"pool.ntp.org" /syncfromflags:MANUAL /reliable:YES /update
+
+    # Force synchronization
+    w32tm /resync /force
+
+    # On affected clients, force resync
+    w32tm /resync
+    ```
+
+    Apres la resynchronisation, les authentifications Kerberos reprennent normalement.
+
+!!! danger "Erreurs courantes"
+
+    1. **Confondre foret et domaine** : la foret est la frontiere de securite absolue, pas le domaine. Un administrateur de domaine n'a pas les droits sur les autres domaines de la foret, mais un compromis de la foret affecte tous les domaines.
+
+    2. **Negliger le DNS** : AD est totalement dependant du DNS. Si les enregistrements SRV (`_ldap._tcp.dc._msdcs.lab.local`) sont absents ou incorrects, les clients ne trouvent pas les DC et l'authentification echoue.
+
+    3. **Ignorer le decalage horaire** : Kerberos tolere au maximum 5 minutes de difference. Un serveur dont l'horloge derive provoque des echecs d'authentification silencieux difficiles a diagnostiquer.
+
+    4. **Ne deployer qu'un seul DC** : un domaine avec un seul controleur est un point de defaillance unique. La perte de ce DC signifie la perte totale de l'authentification pour tous les utilisateurs.
+
+    5. **Modifier le schema sans necessite** : les modifications du schema sont repliquees a toute la foret et sont irreversibles. Ne modifiez le schema que pour des applications validees (Exchange, SCCM).
 
 ## Pour aller plus loin
 

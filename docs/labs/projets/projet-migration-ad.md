@@ -20,6 +20,15 @@ tags:
 
 <span class="level-advanced">Avance</span>
 
+!!! example "Analogie"
+
+    Migrer un domaine Active Directory, c'est comme fusionner deux entreprises avec chacune
+    leur badge d'acces (SID) : on ne peut pas annuler les anciens badges du premier jour,
+    car les employes de DataSoft ont encore des fichiers et des acces sur leurs anciens
+    serveurs. L'approbation de foret est le protocole d'accord entre les deux DRH. ADMT avec
+    le SID History, c'est le systeme qui permet aux ex-employes DataSoft de garder leur ancien
+    badge valide en parallele du nouveau — jusqu'a ce que tous les acces aient ete migres.
+
 ## Contexte
 
 L'entreprise **TechNova** (domaine `technova.local`) a rachete la societe **DataSoft** (domaine `datasoft.local`). Vous devez migrer les utilisateurs, groupes et ressources de DataSoft vers le domaine TechNova.
@@ -196,6 +205,18 @@ graph LR
     # Remove-ADTrust -Identity "datasoft.local" -Confirm:$false
     ```
 
+    Resultat attendu apres validation de l'approbation :
+
+    ```text
+    # Get-ADTrust -Filter * | Select-Object Name, Direction, TrustType
+    Name            Direction  TrustType
+    ----            ---------  ---------
+    datasoft.local  BiDirectional  Forest
+
+    # Write-Output "Migrated users: $migratedUsers"
+    Migrated users: 42
+    ```
+
 ## Risques et mitigations
 
 | Risque | Mitigation |
@@ -212,6 +233,35 @@ graph LR
 - **ADMT** avec le **SID History** garantit la continuite d'acces aux ressources
 - Une **phase pilote** est indispensable avant la migration en masse
 - La documentation et la communication avec les utilisateurs sont essentielles
+
+!!! warning "Pieges frequents dans ce projet"
+
+    1. **DNS conditionnel non configure avant l'approbation** : sans redirecteur conditionnel
+       mutuel, la creation de l'approbation de foret echoue avec "The domain name datasoft.local
+       cannot be resolved". Configurer les redirecteurs DNS dans les DEUX sens (technova vers
+       datasoft ET datasoft vers technova) et valider avec `Resolve-DnsName` avant de tenter
+       l'approbation.
+
+    2. **Migration des utilisateurs avant les groupes** : ADMT migre les membres de groupe
+       en meme temps que les utilisateurs, mais si les groupes cibles n'existent pas encore
+       dans technova.local, les appartenances sont perdues. Toujours migrer les groupes globaux
+       en premier (Etape 1 du tableau de migration).
+
+    3. **Conflits de SamAccountName** : si un utilisateur "jean.dupont" existe deja dans
+       technova.local, ADMT echoue sur cet objet. Preparer une convention de nommage pour les
+       conflits (ex: prefixe "ds-" pour les comptes DataSoft migres : "ds-jean.dupont") et
+       documenter les cas de doublon dans la phase pilote.
+
+    4. **SID History non active sur le domaine cible** : pour qu'ADMT puisse copier les SID
+       source, `SIDHistory` doit etre autorise sur technova.local. Verifier avec
+       `Get-ADDomain | Select-Object AllowedDNSSuffixes` et activer si necessaire avec
+       `netdom trust technova.local /domain:datasoft.local /enablesidhistory:yes`.
+
+    5. **Phase pilote ignoree** : sauter directement a la migration en masse apres avoir
+       verifie uniquement la connexion reseau est le risque majeur de ce projet. La phase
+       pilote sur 5 a 10 utilisateurs representatifs (avec acces aux partages, boites mail,
+       applications) est la seule garantie reelle que la migration fonctionnera correctement
+       a grande echelle.
 
 ## Pour aller plus loin
 

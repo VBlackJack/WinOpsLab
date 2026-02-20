@@ -18,6 +18,10 @@ Un script PowerShell bien structure est plus facile a lire, a maintenir et a deb
 
 ## Anatomie d'un script
 
+!!! example "Analogie"
+
+    Pensez a un script PowerShell comme a une recette de cuisine professionnelle : il y a d'abord la liste des ingredients (parametres), puis les ustensiles necessaires (modules requis), les etapes preparatoires (variables), les instructions de cuisson (logique principale) et enfin le nettoyage du plan de travail (bloc finally). Sans cette structure, meme un bon cuisinier produit un resultat imprevisible.
+
 Un script PowerShell bien organise suit une structure logique :
 
 ```mermaid
@@ -69,6 +73,34 @@ Get-Help .\Deploy-Application.ps1 -Full
 Get-Help .\Deploy-Application.ps1 -Examples
 ```
 
+Resultat :
+
+```text
+NAME
+    C:\Scripts\Deploy-Application.ps1
+
+SYNOPSIS
+    Brief description of what the script does.
+
+SYNTAX
+    C:\Scripts\Deploy-Application.ps1 [-ServerName] <String[]> [-LogPath <String>] [<CommonParameters>]
+
+DESCRIPTION
+    Detailed description of the script functionality,
+    including prerequisites and expected behavior.
+
+PARAMETERS
+    -ServerName <String[]>
+        The target server name or FQDN.
+
+    -LogPath <String>
+        Path to the log file. Defaults to C:\Logs.
+
+EXAMPLES
+    .\Deploy-Application.ps1 -ServerName "SRV01" -LogPath "D:\Logs"
+    Deploys the application to SRV01 with custom log path.
+```
+
 ## Directive #Requires
 
 La directive `#Requires` garantit que le script ne s'execute que si les conditions sont remplies.
@@ -77,6 +109,15 @@ La directive `#Requires` garantit que le script ne s'execute que si les conditio
 #Requires -Version 5.1
 #Requires -RunAsAdministrator
 #Requires -Modules ActiveDirectory, DhcpServer
+```
+
+Resultat (si une condition n'est pas remplie) :
+
+```text
+The script 'Deploy-Application.ps1' cannot be run because the following modules that are specified by the
+#Requires statements of the script are missing: DhcpServer.
+    + CategoryInfo          : ResourceUnavailable: (Deploy-Application.ps1:String) [], ScriptRequiresException
+    + FullyQualifiedErrorId : ScriptRequiresMissingModules
 ```
 
 | Directive | Description |
@@ -206,6 +247,14 @@ if ($LASTEXITCODE -ne 0) {
 }
 ```
 
+Resultat :
+
+```text
+Deployment failed with exit code 3
+    + CategoryInfo          : NotSpecified: (:) [Write-Error], WriteErrorException
+    + FullyQualifiedErrorId : Microsoft.PowerShell.Commands.WriteErrorException
+```
+
 ## Template complet
 
 Voici un template reutilisable pour les scripts d'administration :
@@ -320,6 +369,19 @@ finally {
 Get-Verb | Sort-Object Verb
 ```
 
+Resultat :
+
+```text
+Verb        AliasPrefix Group          Description
+----        ----------- -----          -----------
+Add         a           Common         Adds a resource to a container
+Approve     ap          Lifecycle      Confirms or agrees to the status of a resource
+Clear       cl          Common         Removes all the resources from a container
+Close       cs          Common         Changes the state of a resource to make it inaccessible
+Compare     cr          Data           Evaluates the data from one resource against data from another
+...
+```
+
 ### Autres recommandations
 
 - Utilisez `Set-StrictMode -Version Latest` pour detecter les variables non declarees
@@ -339,6 +401,65 @@ Get-Verb | Sort-Object Verb
 - Les **regions** organisent le code visuellement dans l'editeur
 - Utilisez des **codes de sortie** conventionnels (0 = succes)
 - Adoptez un template standard pour la coherence entre vos scripts
+
+!!! example "Scenario pratique"
+
+    **Sophie**, administratrice systeme, doit deployer un script de sauvegarde sur 15 serveurs Windows Server 2022. Le script fonctionne lorsqu'elle le lance manuellement, mais echoue systematiquement lorsqu'il est planifie via le Task Scheduler.
+
+    **Diagnostic :**
+
+    1. Verifier la structure du script -- pas de bloc `param()` ni de `#Requires` :
+    ```powershell
+    Get-Help C:\Scripts\Backup-Server.ps1 -Full
+    ```
+    Resultat :
+    ```text
+    NAME
+        C:\Scripts\Backup-Server.ps1
+    SYNOPSIS
+    DESCRIPTION
+    PARAMETERS
+        <None>
+    ```
+    Le script n'a aucune aide ni parametrisation.
+
+    2. Ajouter la structure professionnelle au script :
+    ```powershell
+    #Requires -Version 5.1
+    #Requires -RunAsAdministrator
+    #Requires -Modules ServerManager
+
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [string[]]$ServerName,
+        [string]$LogPath = "C:\Logs"
+    )
+
+    Set-StrictMode -Version Latest
+    $ErrorActionPreference = "Stop"
+    $exitCode = 0
+    ```
+
+    3. Tester le code de sortie pour le Task Scheduler :
+    ```powershell
+    & C:\Scripts\Backup-Server.ps1 -ServerName "SRV-01"
+    Write-Output "Exit code: $LASTEXITCODE"
+    ```
+    Resultat :
+    ```text
+    Exit code: 0
+    ```
+
+    **Resolution :** Le script restructure avec `#Requires -RunAsAdministrator` et un code de sortie explicite permet au Task Scheduler de detecter les echecs et de relancer la tache automatiquement.
+
+!!! danger "Erreurs courantes"
+
+    - **Oublier `[CmdletBinding()]`** : sans cet attribut, le script ne supporte pas `-Verbose`, `-Debug` ni `-ErrorAction`. Ajoutez-le systematiquement, meme pour les scripts simples.
+    - **Placer du code avant le bloc `param()`** : le bloc `param()` doit etre la premiere instruction executable du script (apres les commentaires et `#Requires`). Toute ligne de code avant `param()` provoque une erreur de syntaxe.
+    - **Utiliser des alias dans les scripts** : `%`, `?`, `select`, `ft` peuvent ne pas exister sur PowerShell Core Linux. Ecrivez `ForEach-Object`, `Where-Object`, `Select-Object`, `Format-Table`.
+    - **Ne pas definir de code de sortie** : sans `exit $exitCode`, le Task Scheduler recoit toujours 0, meme en cas d'echec. Le planificateur ne peut alors pas distinguer succes et echec.
+    - **Ignorer `Set-StrictMode`** : sans ce reglage, les fautes de frappe dans les noms de variables passent inapercues et provoquent des comportements imprevisibles.
 
 ## Pour aller plus loin
 

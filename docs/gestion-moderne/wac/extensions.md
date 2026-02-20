@@ -15,6 +15,10 @@ tags:
 
 Windows Admin Center est modulaire : ses fonctionnalites sont etendues via des **extensions**. Microsoft et des partenaires publient regulierement de nouvelles extensions pour ajouter des outils de gestion, des integrations cloud et des fonctionnalites de surveillance.
 
+!!! example "Analogie"
+
+    Les extensions WAC fonctionnent comme les applications d'un telephone. Le telephone de base permet de passer des appels, mais c'est l'ajout d'applications (GPS, messagerie, banque) qui lui donne toute sa valeur. WAC est le telephone, les extensions sont les applications.
+
 ## Types d'extensions
 
 | Type | Description | Exemple |
@@ -124,6 +128,21 @@ WAC expose une API PowerShell pour la gestion des extensions :
 # Settings > Extensions > Installed Extensions
 ```
 
+Resultat :
+
+```text
+# Via Parametres > Extensions > Extensions installees dans l'interface WAC :
+
+Nom                         Version   Statut
+--------------------------  --------  ------------------
+Active Directory            2.3.1     Installe
+DNS                         2.1.4     Installe
+DHCP                        1.9.2     Installe
+Remote Desktop              1.5.0     Installe - Mise a jour disponible (1.6.1)
+Azure Hybrid Services       3.2.0     Installe
+Security                    2.0.5     Installe
+```
+
 ## Developpement d'extensions personnalisees
 
 Le SDK Windows Admin Center permet de creer des extensions personnalisees :
@@ -141,6 +160,38 @@ Les cas d'usage pour des extensions personnalisees :
 - Integration avec des outils internes
 - Automatisation de taches recurrentes
 - Gestion de logiciels tiers installes sur les serveurs
+
+!!! example "Scenario pratique"
+
+    **Context :** Laura, administratrice systeme, vient d'installer WAC. Elle souhaite pouvoir gerer Active Directory directement depuis WAC sans ouvrir ADUC sur son poste.
+
+    **Etape 1 : Acceder au gestionnaire d'extensions**
+
+    Laura ouvre `https://SRV-01.lab.local`, clique sur l'engrenage en haut a droite, puis sur **Extensions**.
+
+    **Etape 2 : Installer l'extension Active Directory**
+
+    Elle clique sur l'onglet **Extensions disponibles**, recherche "Active Directory", puis clique sur **Installer**. L'extension se telecharge et s'active automatiquement (30 secondes environ).
+
+    **Etape 3 : Installer Remote Desktop pour administrer les serveurs Core**
+
+    Toujours dans les extensions disponibles, Laura installe egalement **Remote Desktop**. Elle peut maintenant ouvrir une session RDP directement dans le navigateur sans client RDP installe sur son poste.
+
+    **Etape 4 : Activer les mises a jour automatiques**
+
+    Dans **Parametres** > **Extensions**, elle coche **Mettre a jour automatiquement les extensions**. Desormais, les nouvelles versions s'installent sans intervention manuelle.
+
+    **Resultat :** Laura gere maintenant les utilisateurs AD, les GPO, le DNS et le DHCP entierement depuis WAC. Le nombre d'outils ouverts sur son poste a ete divise par cinq.
+
+!!! danger "Erreurs courantes"
+
+    **Installer des extensions depuis des feeds NuGet non verifies.** Les extensions ont acces complet aux serveurs geres. Une extension malveillante pourrait executer du code sur tous les serveurs administres via WAC. Utiliser uniquement le feed officiel Microsoft ou des sources internes validees.
+
+    **Ne pas mettre a jour les extensions.** Les anciennes versions d'extensions peuvent contenir des vulnerabilites ou des bugs de compatibilite avec les nouvelles versions de WAC. Activer les mises a jour automatiques ou verifier manuellement chaque mois.
+
+    **Confondre extension "Tool" et extension "Solution".** Une extension Tool apparait dans le volet gauche lors de la connexion a un serveur. Une extension Solution est une page autonome accessible depuis la page d'accueil de WAC. Si une extension n'apparait pas la ou on l'attend, verifier son type.
+
+    **Desinstaller une extension en cours d'utilisation.** Si d'autres administrateurs utilisent WAC au meme moment, la desinstallation d'une extension peut provoquer des erreurs dans leurs sessions actives. Communiquer avant toute modification des extensions en production.
 
 ## Points cles a retenir
 

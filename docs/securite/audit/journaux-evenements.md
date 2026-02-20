@@ -17,6 +17,10 @@ Les journaux d'evenements Windows sont la source principale d'information pour l
 
 ---
 
+!!! example "Analogie"
+
+    Les journaux d'evenements sont comme les boites noires d'un avion : ils enregistrent tout ce qui se passe sur le serveur. En cas d'incident, ce sont les premieres pieces a analyser pour comprendre ce qui s'est passe, quand, et par qui. Sans ces enregistrements, une investigation forensique est impossible.
+
 ## Les journaux principaux
 
 | Journal | Chemin | Contenu |
@@ -34,6 +38,19 @@ Get-WinEvent -ListLog * | Where-Object { $_.RecordCount -gt 0 } |
     Select-Object LogName, RecordCount, MaximumSizeInBytes |
     Sort-Object RecordCount -Descending |
     Format-Table -AutoSize
+```
+
+Resultat :
+
+```text
+LogName                                       RecordCount  MaximumSizeInBytes
+-------                                       -----------  ------------------
+Security                                        125847         4294967296
+Microsoft-Windows-PowerShell/Operational         34219         1073741824
+System                                           18432         1073741824
+Application                                      12105         1073741824
+Microsoft-Windows-TaskScheduler/Operational        4521          104857600
+Microsoft-Windows-Sysmon/Operational               3892          104857600
 ```
 
 ---
@@ -82,6 +99,18 @@ Get-WinEvent -FilterHashtable @{
     } | Format-Table -AutoSize
 ```
 
+Resultat :
+
+```text
+Time                  Account        Domain     LogonType  SourceIP
+----                  -------        ------     ---------  --------
+2025-02-20 09:32:14   T1-jdupont     LAB        10         10.0.0.50
+2025-02-20 09:30:01   SRV-01$        LAB        3          10.0.0.10
+2025-02-20 09:28:45   svc-backup     LAB        5          -
+2025-02-20 09:15:22   T1-mlambert    LAB        10         10.0.0.51
+2025-02-20 08:00:00   SYSTEM         NT AUT...  5          -
+```
+
 ```powershell
 # Query failed logons (Event 4625) - Brute force detection
 Get-WinEvent -FilterHashtable @{
@@ -97,6 +126,19 @@ Get-WinEvent -FilterHashtable @{
             Reason   = $xml.Event.EventData.Data | Where-Object { $_.Name -eq 'SubStatus' } | Select-Object -ExpandProperty '#text'
         }
     } | Format-Table -AutoSize
+```
+
+Resultat :
+
+```text
+Time                  Account        SourceIP       Reason
+----                  -------        --------       ------
+2025-02-20 09:35:12   admin          10.0.0.99      0xC000006A
+2025-02-20 09:35:10   admin          10.0.0.99      0xC000006A
+2025-02-20 09:35:08   administrator  10.0.0.99      0xC000006A
+2025-02-20 09:35:05   Administrator  10.0.0.99      0xC000006A
+2025-02-20 09:35:02   root           10.0.0.99      0xC0000064
+2025-02-20 09:34:58   sa             10.0.0.99      0xC0000064
 ```
 
 ### Sous-statuts d'echec de connexion (4625)
@@ -146,6 +188,15 @@ $privilegedGroupEvents | ForEach-Object {
 } | Format-Table -AutoSize
 ```
 
+Resultat :
+
+```text
+Time                  EventId  GroupName         MemberAdded                          ChangedBy
+----                  -------  ---------         -----------                          ---------
+2025-02-19 16:42:30   4728     Domain Admins     CN=T0-rmartin,OU=Tier0,...           T0-jdupont
+2025-02-18 11:15:00   4732     Administrators    CN=svc-monitoring,OU=Services,...    T1-mlambert
+```
+
 ### Autres evenements critiques
 
 | Event ID | Journal | Description |
@@ -171,6 +222,18 @@ Get-WinEvent -FilterHashtable @{
     Select-Object TimeCreated, Message
 ```
 
+Resultat :
+
+```text
+TimeCreated            Message
+-----------            -------
+2025-02-15 03:22:47    The audit log was cleared.
+                        Subject:
+                          Security ID: LAB\unknown-user
+                          Account Name: unknown-user
+                          Logon ID: 0x3E7
+```
+
 ---
 
 ## Event IDs cles - System Log
@@ -191,6 +254,19 @@ Get-WinEvent -FilterHashtable @{
 } -MaxEvents 10 |
     Select-Object TimeCreated, Id, Message |
     Format-Table -Wrap
+```
+
+Resultat :
+
+```text
+TimeCreated            Id    Message
+-----------            --    -------
+2025-02-18 02:15:33    6008  The previous system shutdown at 02:14:12 on
+                              18/02/2025 was unexpected.
+2025-02-10 22:00:05    1074  The process C:\Windows\system32\shutdown.exe (SRV-01)
+                              has initiated the restart of computer SRV-01 on behalf
+                              of user LAB\T1-jdupont for the following reason:
+                              Operating System: Service pack (Planned)
 ```
 
 ---
@@ -247,6 +323,87 @@ winrm quickconfig -q
 # Add the collector to the Event Log Readers local group on source servers
 Add-LocalGroupMember -Group "Event Log Readers" -Member "LAB\WEF-Collector$"
 ```
+
+Resultat :
+
+```text
+Windows Event Collector service is already running.
+WinRM service is already running on this machine.
+WinRM is already set up for remote management on this computer.
+```
+
+---
+
+## Scenario pratique
+
+!!! example "Scenario pratique"
+
+    **Contexte** : Karim, analyste securite, recoit une alerte a 3h du matin : le compte `svc-backup` est utilise pour des connexions RDP inhabituelles sur le serveur `SRV-01` (10.0.0.11) depuis une adresse IP inconnue. Il doit investiguer rapidement.
+
+    **Investigation** :
+
+    ```powershell
+    # Step 1: Find all RDP logons (LogonType 10) for svc-backup
+    Get-WinEvent -ComputerName "SRV-01" -FilterXPath `
+        "*[System[EventID=4624] and EventData[Data[@Name='TargetUserName']='svc-backup'] and EventData[Data[@Name='LogonType']='10']]" `
+        -MaxEvents 20 |
+        ForEach-Object {
+            $xml = [xml]$_.ToXml()
+            [PSCustomObject]@{
+                Time     = $_.TimeCreated
+                SourceIP = $xml.Event.EventData.Data | Where-Object { $_.Name -eq 'IpAddress' } | Select-Object -ExpandProperty '#text'
+            }
+        }
+    ```
+
+    Resultat :
+
+    ```text
+    Time                   SourceIP
+    ----                   --------
+    2025-02-20 03:14:22    10.0.0.99
+    2025-02-20 03:02:15    10.0.0.99
+    2025-02-20 02:55:08    10.0.0.99
+    ```
+
+    **Analyse** : l'adresse `10.0.0.99` n'appartient pas au reseau d'administration. Le compte de service `svc-backup` ne devrait jamais se connecter en RDP.
+
+    ```powershell
+    # Step 2: Check if any privileged group changes occurred
+    Get-WinEvent -ComputerName "DC-01" -FilterHashtable @{
+        LogName = 'Security'; Id = @(4728, 4732, 4756)
+        StartTime = (Get-Date).AddHours(-6)
+    } | ForEach-Object {
+        $xml = [xml]$_.ToXml()
+        [PSCustomObject]@{
+            Time      = $_.TimeCreated
+            Group     = $xml.Event.EventData.Data | Where-Object { $_.Name -eq 'TargetUserName' } | Select-Object -ExpandProperty '#text'
+            ChangedBy = $xml.Event.EventData.Data | Where-Object { $_.Name -eq 'SubjectUserName' } | Select-Object -ExpandProperty '#text'
+        }
+    }
+    ```
+
+    Resultat :
+
+    ```text
+    Time                   Group              ChangedBy
+    ----                   -----              ---------
+    2025-02-20 03:16:45    Administrators     svc-backup
+    ```
+
+    **Conclusion** : le compte `svc-backup` a ete compromis et utilise pour s'ajouter au groupe Administrators local. Karim desactive immediatement le compte, isole le serveur et lance une investigation forensique complete.
+
+---
+
+!!! danger "Erreurs courantes"
+
+    1. **Ignorer les echecs de connexion repetitifs (Event 4625)** : des centaines de 4625 en quelques minutes depuis la meme IP signalent une attaque par brute force. Configurez des alertes automatiques sur ce pattern.
+
+    2. **Ne pas surveiller l'Event 1102 (journal efface)** : un journal de securite efface est un indicateur fort de compromission. Centralisez les journaux via WEF ou SIEM pour en conserver une copie meme si l'attaquant efface le journal local.
+
+    3. **Confondre les Logon Types** : un LogonType 10 (RDP) sur un compte de service est anormal. Un LogonType 3 (reseau) depuis une IP externe est suspect. Apprenez a interpreter les types de connexion en contexte.
+
+    4. **Analyser uniquement le journal Security** : les journaux System (Event 7045 - nouveau service), PowerShell (ScriptBlock Logging) et Sysmon fournissent des informations complementaires essentielles pour reconstituer une attaque.
 
 ---
 

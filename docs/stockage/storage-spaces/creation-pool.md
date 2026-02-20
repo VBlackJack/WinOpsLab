@@ -11,6 +11,10 @@ tags:
 
 <span class="level-intermediate">Intermediaire</span> · Temps estime : 30 minutes
 
+!!! example "Analogie"
+
+    Creer un pool de stockage, c'est comme amenager une **bibliotheque**. D'abord, vous rassemblez toutes vos etageres vides (les disques physiques) dans une meme piece (le pool). Ensuite, vous creez des rayons thematiques (les disques virtuels) avec des regles de rangement : certains livres importants sont en double exemplaire (miroir), tandis que les archives sont rangees avec un index de reconstruction (parite). Enfin, vous etiquetez chaque rayon (le formatage et la lettre de lecteur).
+
 ## Processus de creation d'un pool de stockage
 
 ```mermaid
@@ -46,6 +50,17 @@ Get-PhysicalDisk -CanPool $true |
         @{N='SizeGB';E={[math]::Round($_.Size/1GB,2)}},
         CanPool |
     Format-Table -AutoSize
+```
+
+Resultat :
+
+```text
+DeviceId FriendlyName MediaType SizeGB CanPool
+-------- ------------ --------- ------ -------
+1        ATA Disk 1   HDD       500.00    True
+2        ATA Disk 2   HDD       500.00    True
+3        ATA Disk 3   HDD       500.00    True
+4        ATA Disk 4   SSD       200.00    True
 ```
 
 !!! tip "Disques non eligibles"
@@ -150,6 +165,14 @@ New-VirtualDisk -StoragePoolFriendlyName "PoolDonnees" `
     Format-Volume -FileSystem NTFS -NewFileSystemLabel "Applications" -Confirm:$false
 ```
 
+Resultat :
+
+```text
+DriveLetter FileSystemLabel FileSystem DriveType HealthStatus SizeRemaining    Size
+----------- --------------- ---------- --------- ------------ -------------    ----
+E           Applications    NTFS       Fixed     Healthy         99.87 GB   99.97 GB
+```
+
 ## Creation avec les tiers de stockage
 
 Si votre pool contient des disques SSD et HDD, vous pouvez creer un disque virtuel avec tiers automatiques.
@@ -166,6 +189,25 @@ Get-PhysicalDisk -StoragePool (Get-StoragePool -FriendlyName "PoolDonnees") |
 # View available storage tiers
 Get-StorageTier -MediaType SSD | Select-Object FriendlyName, MediaType, ResiliencySettingName
 Get-StorageTier -MediaType HDD | Select-Object FriendlyName, MediaType, ResiliencySettingName
+```
+
+Resultat :
+
+```text
+FriendlyName MediaType SizeGB
+------------ --------- ------
+ATA Disk 1   HDD       500.00
+ATA Disk 2   HDD       500.00
+ATA Disk 3   HDD       500.00
+ATA Disk 4   SSD       200.00
+
+FriendlyName             MediaType ResiliencySettingName
+------------             --------- --------------------
+PoolDonnees-SSD-Mirror   SSD       Mirror
+PoolDonnees-SSD-Parity   SSD       Parity
+
+PoolDonnees-HDD-Mirror   HDD       Mirror
+PoolDonnees-HDD-Parity   HDD       Parity
 ```
 
 ### Creer un disque virtuel avec tiers
@@ -240,6 +282,27 @@ Get-PhysicalDisk -StoragePool (Get-StoragePool -FriendlyName "PoolDonnees") |
     Select-Object FriendlyName, HealthStatus, OperationalStatus, Usage,
         @{N='SizeGB';E={[math]::Round($_.Size/1GB,2)}} |
     Format-Table -AutoSize
+```
+
+Resultat :
+
+```text
+FriendlyName HealthStatus OperationalStatus SizeGB AllocatedGB FreeGB
+------------ ------------ ----------------- ------ ----------- ------
+PoolDonnees  Healthy      OK                1700.00      350.00 1350.00
+
+FriendlyName HealthStatus OperationalStatus ResiliencySettingName SizeGB UsedGB
+------------ ------------ ----------------- -------------------- ------ ------
+VD-Mirror    Healthy      OK                Mirror               100.00 200.00
+VD-Parity    Healthy      OK                Parity               500.00 667.00
+VD-Apps      Healthy      OK                Mirror               100.00 200.00
+
+FriendlyName HealthStatus OperationalStatus Usage       SizeGB
+------------ ------------ ----------------- -----       ------
+ATA Disk 1   Healthy      OK                Auto-Select 500.00
+ATA Disk 2   Healthy      OK                Auto-Select 500.00
+ATA Disk 3   Healthy      OK                Auto-Select 500.00
+ATA Disk 4   Healthy      OK                Auto-Select 200.00
 ```
 
 ### Ajouter un disque au pool
@@ -354,6 +417,71 @@ New-VirtualDisk -StoragePoolFriendlyName "Pool-HyperV" `
 - Le **provisioning dynamique** (Thin) necessite une surveillance de l'espace du pool
 - Les pools peuvent etre etendus a chaud en ajoutant de nouveaux disques physiques
 - Utilisez `Get-StoragePool`, `Get-VirtualDisk`, `Get-PhysicalDisk` pour surveiller l'etat
+
+!!! example "Scenario pratique"
+
+    **Contexte :** Nicolas, administrateur systeme, recoit une alerte : le disque virtuel `VD-Partages` sur SRV-01 est passe en etat `Degraded`. Un des disques physiques du pool a une defaillance.
+
+    **Diagnostic :**
+
+    ```powershell
+    # Check virtual disk health
+    Get-VirtualDisk | Select-Object FriendlyName, HealthStatus, OperationalStatus
+
+    # Identify the faulty physical disk
+    Get-PhysicalDisk -StoragePool (Get-StoragePool -FriendlyName "Pool-Fichiers") |
+        Select-Object FriendlyName, HealthStatus, OperationalStatus, Usage |
+        Format-Table -AutoSize
+    ```
+
+    Resultat :
+
+    ```text
+    FriendlyName  HealthStatus OperationalStatus
+    ------------  ------------ -----------------
+    VD-Partages   Warning      Degraded
+
+    FriendlyName HealthStatus OperationalStatus Usage
+    ------------ ------------ ----------------- -----
+    ATA Disk 1   Healthy      OK                Auto-Select
+    ATA Disk 2   Warning      Predictive Failure Auto-Select
+    ATA Disk 3   Healthy      OK                Auto-Select
+    ATA Disk 4   Healthy      OK                Auto-Select
+    ```
+
+    Le disque 2 est en defaillance predictive (S.M.A.R.T.).
+
+    **Solution :**
+
+    ```powershell
+    # Mark the failing disk as retired to migrate data away
+    Set-PhysicalDisk -FriendlyName "ATA Disk 2" -Usage Retired
+
+    # Add a replacement disk to the pool
+    $newDisk = Get-PhysicalDisk -CanPool $true
+    Add-PhysicalDisk -StoragePoolFriendlyName "Pool-Fichiers" -PhysicalDisks $newDisk
+
+    # Trigger repair of the virtual disk
+    Repair-VirtualDisk -FriendlyName "VD-Partages"
+
+    # Once repair completes, remove the old disk
+    Remove-PhysicalDisk -StoragePoolFriendlyName "Pool-Fichiers" `
+        -PhysicalDisks (Get-PhysicalDisk -FriendlyName "ATA Disk 2")
+    ```
+
+    Le pool reconstruit automatiquement les donnees sur le nouveau disque. Le volume reste accessible pendant toute l'operation.
+
+!!! danger "Erreurs courantes"
+
+    1. **Tenter d'ajouter un disque initialise au pool** : seuls les disques sans partition peuvent etre ajoutes. Utilisez `Clear-Disk -Number X -RemoveData -RemoveOEM` pour nettoyer un disque avant de l'ajouter.
+
+    2. **Creer un pool avec un seul disque en mode miroir** : le miroir necessite au minimum 2 disques physiques. PowerShell retournera une erreur si le nombre de disques est insuffisant pour le mode de resilience choisi.
+
+    3. **Retirer un disque sans verifier l'espace restant** : si les disques restants n'ont pas assez d'espace pour accueillir les donnees migrees tout en respectant la resilience, l'operation echoue et le pool reste degrade.
+
+    4. **Oublier d'etendre la partition apres avoir etendu le disque virtuel** : `Resize-VirtualDisk` agrandit le disque virtuel, mais la partition NTFS conserve sa taille d'origine. Il faut ensuite etendre la partition avec `Resize-Partition`.
+
+    5. **Melanger des disques de tailles tres differentes** : dans un pool en miroir, un disque de 500 Go et un disque de 4 To signifient que seulement 500 Go de l'espace sera protege en miroir sur les deux disques. Privilegiez des disques de taille identique pour une utilisation optimale.
 
 ## Pour aller plus loin
 

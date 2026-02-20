@@ -17,6 +17,10 @@ tags:
 
 Savoir sauvegarder est essentiel, mais savoir **restaurer** est critique. Ce chapitre couvre les differentes methodes de restauration sous Windows Server 2022, depuis la restauration de fichiers individuels jusqu'a la reconstruction complete d'un serveur (Bare Metal Recovery).
 
+!!! example "Analogie"
+
+    La restauration systeme, c'est comme un service de sinistres pour une maison. Selon l'ampleur du degat, on intervient differemment : pour une vitre cassee (fichier supprime), un vitrier suffit ; pour un incendie partiel (systeme corrompu), on fait appel a des specialistes pour restaurer les pieces touchees ; pour une maison entierement detruite (serveur inutilisable), il faut tout reconstruire a partir des plans d'architecte et des fondations. Chaque niveau d'intervention necessite des outils et des procedures differents.
+
 ## Types de restauration
 
 ```mermaid
@@ -49,6 +53,22 @@ wbadmin start recovery `
     -items:"D:\Data\ImportantFile.xlsx" `
     -recoveryTarget:"D:\Restored" `
     -quiet
+```
+
+Resultat :
+
+```text
+wbadmin 1.0 - Backup command-line tool
+(C) Copyright Microsoft Corporation. All rights reserved.
+
+Backup time: 20/02/2026 22:00:00, Backup target: Disk labeled 'BackupDisk'
+Version identifier: 02/20/2026-22:00
+Can recover: Volume(s), File(s), Application(s), Bare Metal Recovery, System State
+
+Retrieving volume information...
+Starting recovery of D:\Data\ImportantFile.xlsx to D:\Restored ...
+Successfully recovered D:\Data\ImportantFile.xlsx to D:\Restored.
+The recovery operation completed successfully.
 ```
 
 ### Via l'interface graphique
@@ -189,6 +209,21 @@ reagentc /boottore
 Restart-Computer -Force
 ```
 
+Resultat :
+
+```text
+Windows Recovery Environment (Windows RE) and system reset configuration
+Information:
+
+    Windows RE status:         Enabled
+    Windows RE location:       \\?\GLOBALROOT\device\harddisk0\partition4\Recovery\WindowsRE
+    Boot Configuration Data (BCD) identifier: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+    Recovery image location:
+    Recovery image index:      0
+    Custom image location:
+    Custom image index:        0
+```
+
 ### Outils disponibles dans WinRE
 
 | Outil | Description |
@@ -260,6 +295,77 @@ Apres la restauration :
 - [ ] Verifier la replication AD (si controleur de domaine)
 - [ ] Appliquer les mises a jour manquantes
 - [ ] Documenter l'operation effectuee
+
+!!! example "Scenario pratique"
+
+    **Contexte :** Valerie administre `DC-01` (controleur de domaine unique du domaine `lab.local`). Un matin, elle est alertee : apres une mise a jour nocturne, le serveur ne demarre plus et affiche un ecran bleu. Les utilisateurs ne peuvent plus s'authentifier ni acceder aux ressources du domaine.
+
+    **Probleme :** DC-01 ne demarre pas. La derniere sauvegarde BMR date de la veille a 22h00, stockee sur un disque USB externe (`BackupDisk`).
+
+    **Solution :** Valerie procede a une restauration BMR depuis le media d'installation Windows Server.
+
+    **Etape 1 :** Demarrer depuis le DVD/USB d'installation Windows Server 2022
+    - Ecran de selection de la langue : cliquer **Suivant**
+    - Cliquer **Repair your computer** (bas gauche)
+    - Choisir **Troubleshoot** > **System Image Recovery**
+
+    **Etape 2 :** L'assistant detecte la sauvegarde sur `BackupDisk` :
+
+    ```text
+    Select a system image backup
+    The following system image was automatically selected because it is the latest available:
+      Location  : Disk labeled 'BackupDisk'
+      Date       : 20/02/2026, 22:47:11
+      Computer   : DC-01
+    ```
+
+    **Etape 3 :** Valerie confirme les options (Format and repartition disks : Non, car le disque systeme est intact) et lance la restauration.
+
+    ```text
+    Restoring disk...
+    Windows is restoring your computer. This may take a while.
+    Estimated time: 47 minutes.
+    [===========>          ] 55% complete
+    ```
+
+    **Etape 4 :** Apres redemarrage, Valerie verifie les services AD :
+
+    ```powershell
+    # Verify AD DS service
+    Get-Service ADWS, NTDS, Netlogon, DNS | Format-Table Name, Status
+
+    # Check replication
+    repadmin /showrepl
+    ```
+
+    ```text
+    Name     Status
+    ----     ------
+    ADWS     Running
+    NTDS     Running
+    Netlogon Running
+    DNS      Running
+
+    Replication Summary Start Time: 2026-02-20 10:15:32
+    ...
+    Source DSA          Last Success Time    Delta
+    -------             -----------------    -----
+    DC-01               2026-02-20 10:15:30  0d.00h:00m:30s (no error)
+    ```
+
+    La restauration complete a pris 58 minutes — en dessous du RTO de 2 heures defini avec la direction.
+
+!!! danger "Erreurs courantes"
+
+    **Restauration system state DC sans mode DSRM** — Sur un controleur de domaine, tenter une restauration de l'etat systeme depuis Windows normal (pas DSRM) echoue car le service NTDS est en cours d'utilisation. Redemarrez toujours en mode DSRM (`bcdedit /set safeboot dsrepair`) avant la restauration.
+
+    **Oublier de desactiver le mode DSRM apres restauration** — Apres la restauration, si on oublie `bcdedit /deletevalue safeboot`, le serveur redemarre en mode DSRM a chaque fois et ne rejoint pas le domaine normalement.
+
+    **Restauration authoritative par erreur** — La restauration authoritative est irreversible sur le plan de la replication : elle ecrase les donnees des autres DC pour les objets concernes. Ne l'utilisez que si des objets ont ete deliberement supprimes et ne peuvent pas etre recuperes via la corbeille AD.
+
+    **Materiel incompatible lors du BMR** — Si le nouveau serveur a un controleur de stockage different, Windows peut ne pas trouver les disques apres restauration. Injectez les pilotes depuis WinRE avant de lancer la restauration (`Troubleshoot > Advanced Options > Install drivers`).
+
+    **Sauvegarde reseau inaccessible lors du BMR** — WinRE doit pouvoir acceder au partage reseau pendant la restauration. Verifiez que les identifiants de connexion (stockes a part, pas seulement dans WSB) sont disponibles et que le reseau est configure dans WinRE.
 
 ## Points cles a retenir
 

@@ -47,6 +47,13 @@ flowchart TD
 
 ## Instructions
 
+!!! example "Analogie"
+
+    Installer un serveur, c'est comme amenager un appartement neuf : avant de meubler (les roles),
+    il faut d'abord choisir le bon plan (GUI ou Core), poser les fondations (renommage, IP statique)
+    et brancher les prises (DNS, gestion a distance). Un appartement mal configure au depart
+    necessite des travaux couteux une fois les meubles en place.
+
 ### Partie 1 : Creer les machines virtuelles
 
 1. Ouvrir le Gestionnaire Hyper-V
@@ -103,6 +110,18 @@ Sur chaque serveur, effectuer les taches suivantes :
     Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
     ```
 
+    Resultat attendu :
+
+    ```text
+    # Get-NetIPAddress -InterfaceAlias "Ethernet" -AddressFamily IPv4
+    IPAddress         : 192.168.10.10
+    InterfaceAlias    : Ethernet
+    PrefixLength      : 24
+    PrefixOrigin      : Manual
+    SuffixOrigin      : Manual
+    AddressState      : Preferred
+    ```
+
 ??? success "Solution - SRV-CORE"
 
     ```powershell
@@ -137,6 +156,29 @@ Sur chaque serveur, effectuer les taches suivantes :
     3. `sconfig` - un menu texte interactif pour les taches de configuration courantes.
     4. Le renommage apres jonction au domaine necessite des operations supplementaires sur le DC.
        Il est plus simple de renommer le serveur avant de le joindre.
+
+!!! warning "Pieges frequents dans ce lab"
+
+    1. **Mauvais ordre de configuration** : renommer le serveur AVANT de configurer l'IP statique
+       et le DNS. Si vous faites le contraire apres la jonction au domaine, le renommage echoue
+       silencieusement ou necessite des etapes supplementaires sur le DC.
+
+    2. **Interface reseau mal identifiee** : sur une VM Hyper-V, l'alias de l'interface reseau
+       n'est pas toujours "Ethernet". Verifier avec `Get-NetAdapter` avant d'executer
+       `New-NetIPAddress` pour eviter une erreur "Interface not found".
+
+    3. **Oublier de redemarrer apres Rename-Computer** : `Rename-Computer -Restart` redemarrage
+       est inclus dans le parametre, mais si vous l'omettez et configurez l'IP avant le redemarrage,
+       le nom d'hote dans les logs et l'AD sera incorrect.
+
+    4. **Server Core sans sconfig** : tenter de tout configurer en PowerShell pure sans avoir
+       verifie que WinRM est actif. Sur Server Core, `Enable-PSRemoting -Force` est indispensable
+       avant toute gestion a distance, y compris depuis Server Manager sur SRV-GUI.
+
+    5. **ISO non montee sur la bonne VM** : avec deux VMs creees simultanement, verifier dans
+       Hyper-V Manager que l'ISO est bien montee sur la VM correcte avant le premier demarrage.
+       Une installation de Desktop Experience sur SRV-CORE (ou inversement) implique de tout
+       recommencer depuis l'etape de creation de VM.
 
 ## Nettoyage
 

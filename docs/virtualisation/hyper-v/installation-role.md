@@ -18,6 +18,10 @@ Hyper-V est l'hyperviseur de type 1 integre a Windows Server. Il permet de creer
 
 ## Prerequis materiels
 
+!!! example "Analogie"
+
+    Imaginez un immeuble de bureaux. Le **serveur physique** est le batiment lui-meme, et **Hyper-V** est le systeme de cloisons modulables qui permet de diviser chaque etage en bureaux independants (les VMs). Avant d'installer ces cloisons, il faut verifier que la structure du batiment (le processeur et le BIOS) supporte bien ce type d'amenagement.
+
 ### Configuration minimale
 
 | Composant | Exigence |
@@ -39,6 +43,17 @@ Get-ComputerInfo | Select-Object HyperVisorPresent, HyperVRequirementVMMonitorMo
 systeminfo | Select-String "Hyper-V"
 ```
 
+Resultat :
+
+```text
+HyperVisorPresent                                   : True
+HyperVRequirementVMMonitorModeExtensions            : True
+HyperVRequirementSecondLevelAddressTranslation       : True
+HyperVRequirementDataExecutionPreventionAvailable    : True
+
+Hyper-V Requirements:      A hypervisor has been detected. Features required for Hyper-V will not be displayed.
+```
+
 !!! warning "BIOS/UEFI"
 
     Si les extensions de virtualisation (VT-x/AMD-V) sont desactivees dans le BIOS, l'installation du role echouera. Verifiez et activez ces options avant de commencer.
@@ -55,6 +70,20 @@ Install-WindowsFeature -Name Hyper-V -IncludeManagementTools -Restart
 
 # Verify installation after reboot
 Get-WindowsFeature Hyper-V
+```
+
+Resultat :
+
+```text
+Success Restart Needed Exit Code      Feature Result
+------- -------------- ---------      --------------
+True    Yes            SuccessRest... {Hyper-V}
+
+WARNING: You must restart this server to finish the installation process.
+
+Display Name                                            Name       Install State
+------------                                            ----       -------------
+[X] Hyper-V                                             Hyper-V    Installed
 ```
 
 ### Via Server Manager
@@ -82,6 +111,25 @@ Get-VMHost | Select-Object Name, LogicalProcessorCount, MemoryCapacity,
     VirtualHardDiskPath, VirtualMachinePath
 ```
 
+Resultat :
+
+```text
+Name   Status  StartType
+----   ------  ---------
+vmms   Running Automatic
+vmcompute Running Automatic
+
+ModuleType Version    Name
+---------- -------    ----
+Binary     2.0.0.0    Hyper-V
+
+Name          : SRV-HV01
+LogicalProcessorCount : 8
+MemoryCapacity        : 34359738368
+VirtualHardDiskPath   : C:\ProgramData\Microsoft\Windows\Hyper-V\Virtual Hard Disks
+VirtualMachinePath    : C:\ProgramData\Microsoft\Windows\Hyper-V
+```
+
 ---
 
 ## Configuration post-installation
@@ -101,6 +149,14 @@ New-Item -Path "D:\Hyper-V\Virtual Machines" -ItemType Directory -Force
 Get-VMHost | Select-Object VirtualHardDiskPath, VirtualMachinePath
 ```
 
+Resultat :
+
+```text
+VirtualHardDiskPath                      VirtualMachinePath
+-------------------                      ------------------
+D:\Hyper-V\Virtual Hard Disks            D:\Hyper-V\Virtual Machines
+```
+
 !!! tip "Bonne pratique"
 
     Stockez les fichiers de VMs sur un volume **dedie** (pas sur le volume systeme C:). Utilisez un disque SSD ou NVMe pour de meilleures performances I/O.
@@ -116,11 +172,24 @@ Get-VMHostNumaNode | Select-Object NodeId, MemoryAvailable, ProcessorsAvailabili
 Set-VMHost -NumaSpanningEnabled $true
 ```
 
+Resultat :
+
+```text
+NodeId MemoryAvailable ProcessorsAvailability
+------ --------------- ----------------------
+0      12288           {0, 1, 2, 3}
+1      12288           {4, 5, 6, 7}
+```
+
 ---
 
 ## Virtualisation imbriquee (Nested Virtualization)
 
 La virtualisation imbriquee permet d'executer Hyper-V a l'interieur d'une VM Hyper-V. Utile pour les labs de formation et de test.
+
+!!! example "Analogie"
+
+    La virtualisation imbriquee, c'est comme une **valise a l'interieur d'une valise**. Votre serveur physique est la grande valise, la VM est une valise moyenne a l'interieur, et les VMs imbriquees sont de petites trousses de voyage dans la valise moyenne. Pratique pour organiser un lab de test, mais pas ideal pour un voyage en production.
 
 ### Prerequis
 
@@ -194,6 +263,17 @@ Invoke-Command -Session $session -ScriptBlock {
 }
 ```
 
+Resultat :
+
+```text
+Name         State   CPUUsage MemoryAssigned
+----         -----   -------- --------------
+SRV-APP01    Running        3     4294967296
+SRV-DC01     Running        1     2147483648
+SRV-SQL01    Running       12     8589934592
+SRV-WEB01    Off            0              0
+```
+
 ### Windows Admin Center
 
 Windows Admin Center offre une interface web moderne pour gerer Hyper-V, incluant :
@@ -222,6 +302,62 @@ Windows Admin Center offre une interface web moderne pour gerer Hyper-V, incluan
 - Stocker les fichiers VMs sur un **volume dedie** avec des disques performants
 - La **virtualisation imbriquee** permet de creer des labs Hyper-V dans Hyper-V (test uniquement)
 - La gestion peut se faire via Hyper-V Manager, PowerShell ou Windows Admin Center
+
+---
+
+!!! example "Scenario pratique"
+
+    **Contexte :** Sophie, administratrice systeme dans une PME, doit installer Hyper-V sur un nouveau serveur Dell PowerEdge pour heberger 5 VMs de production. Le serveur est installe avec Windows Server 2022 Standard.
+
+    **Probleme :** Apres l'installation du role via `Install-WindowsFeature`, le serveur redemarrait mais le service `vmms` ne demarrait pas. La commande `Get-VM` retournait une erreur.
+
+    **Diagnostic :**
+
+    ```powershell
+    # Check if virtualization extensions are active
+    Get-ComputerInfo | Select-Object HyperVRequirementVMMonitorModeExtensions
+    ```
+
+    ```text
+    HyperVRequirementVMMonitorModeExtensions : False
+    ```
+
+    Les extensions de virtualisation Intel VT-x n'etaient pas activees dans le BIOS UEFI du serveur.
+
+    **Solution :**
+
+    1. Redemarrer le serveur et acceder au BIOS UEFI (touche F2 au demarrage)
+    2. Naviguer vers **Processor Settings** > **Virtualization Technology** > **Enabled**
+    3. Activer egalement **VT-d** (Intel Virtualization Technology for Directed I/O)
+    4. Sauvegarder et redemarrer
+
+    ```powershell
+    # Verify after BIOS change
+    Get-ComputerInfo | Select-Object HyperVRequirementVMMonitorModeExtensions
+    ```
+
+    ```text
+    HyperVRequirementVMMonitorModeExtensions : True
+    ```
+
+    ```powershell
+    # Reinstall the role
+    Install-WindowsFeature -Name Hyper-V -IncludeManagementTools -Restart
+    ```
+
+    Apres le redemarrage, le service `vmms` etait actif et Sophie a pu configurer les emplacements par defaut sur le volume D: avant de creer ses VMs.
+
+!!! danger "Erreurs courantes"
+
+    1. **Oublier d'activer VT-x/AMD-V dans le BIOS** : L'installation du role semble reussir mais le service Hyper-V ne demarre pas. Verifiez toujours les extensions de virtualisation avant l'installation.
+
+    2. **Stocker les VMs sur le volume systeme C:** : Les I/O des VMs entrent en concurrence avec celles du systeme d'exploitation. Utilisez toujours un volume dedie (D:, E:) avec des disques performants (SSD/NVMe).
+
+    3. **Ne pas prevoir la memoire pour les VMs** : Un serveur avec 16 Go de RAM ne peut pas heberger 4 VMs de 8 Go chacune. Calculez la memoire totale necessaire : RAM hote (4 Go minimum) + somme de la RAM de toutes les VMs.
+
+    4. **Ignorer la virtualisation imbriquee en lab** : Tenter d'installer Hyper-V dans une VM sans activer `ExposeVirtualizationExtensions` echoue silencieusement. La VM doit etre eteinte pour activer cette option.
+
+    5. **Ne pas configurer la gestion a distance** : Sans CredSSP ou Kerberos correctement configure, le Gestionnaire Hyper-V ne peut pas se connecter aux hotes distants. Configurez WinRM et la delegation des que possible.
 
 ---
 

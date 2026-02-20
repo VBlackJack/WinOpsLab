@@ -13,6 +13,10 @@ tags:
 
 ## Qu'est-ce qu'une zone DNS ?
 
+!!! example "Analogie"
+
+    Pensez a une zone DNS comme a un classeur dans un bureau de poste. Chaque classeur contient les fiches d'adresses pour un quartier precis. Une zone standard, c'est un classeur unique dans un seul bureau : si ce bureau ferme, plus personne ne peut consulter les fiches. Une zone integree AD, c'est comme avoir une copie synchronisee du classeur dans chaque bureau de poste de la ville : si l'un ferme, les autres prennent le relais.
+
 Une **zone DNS** est une portion de l'espace de noms DNS geree par un serveur ou un groupe de serveurs. Elle contient les enregistrements de ressources (A, CNAME, MX, etc.) pour les noms qu'elle couvre.
 
 Il ne faut pas confondre **zone** et **domaine** :
@@ -130,6 +134,19 @@ Get-DnsServerZone -Name "lab.local" -ComputerName "SRV-DC01" |
     Select-Object ZoneName, ZoneType, IsDsIntegrated, DirectoryPartitionName
 ```
 
+Resultat :
+
+```text
+DirectoryPartitionName                  State  Flags
+----------------------                  -----  -----
+DomainDnsZones.lab.local                Ready  Enlisted
+ForestDnsZones.lab.local                Ready  Enlisted
+
+ZoneName    ZoneType  IsDsIntegrated  DirectoryPartitionName
+--------    --------  --------------  ----------------------
+lab.local   Primary   True            DomainDnsZones.lab.local
+```
+
 !!! info "Partition par defaut"
 
     Lors de la creation d'une zone integree AD, Windows propose par defaut la partition
@@ -178,6 +195,14 @@ Contient les enregistrements **PTR** qui resolvent une **adresse IP vers un nom*
     Get-DnsServerZone -Name "dev.lab.local" -ComputerName "SRV-DC01"
     ```
 
+    Resultat :
+
+    ```text
+    ZoneName        ZoneType  IsDsIntegrated  DynamicUpdate  IsReverseLookupZone  DirectoryPartitionName
+    --------        --------  --------------  -------------  -------------------  ----------------------
+    dev.lab.local   Primary   True            Secure         False                DomainDnsZones.lab.local
+    ```
+
 === "GUI"
 
     1. Ouvrir **DNS Manager** (dnsmgmt.msc)
@@ -203,6 +228,14 @@ Contient les enregistrements **PTR** qui resolvent une **adresse IP vers un nom*
 
     # Verify the zone
     Get-DnsServerZone -Name "1.168.192.in-addr.arpa" -ComputerName "SRV-DC01"
+    ```
+
+    Resultat :
+
+    ```text
+    ZoneName                    ZoneType  IsDsIntegrated  DynamicUpdate  IsReverseLookupZone
+    --------                    --------  --------------  -------------  -------------------
+    1.168.192.in-addr.arpa      Primary   True            Secure         True
     ```
 
 === "GUI"
@@ -305,6 +338,18 @@ Set-DnsServerPrimaryZone -Name "lab.local" -ReplicationScope "Forest" -ComputerN
 Remove-DnsServerZone -Name "dev.lab.local" -ComputerName "SRV-DC01" -Force
 ```
 
+Resultat :
+
+```text
+ZoneName                    ZoneType  IsDsIntegrated  DynamicUpdate  ReplicationScope
+--------                    --------  --------------  -------------  ----------------
+lab.local                   Primary   True            Secure         Domain
+_msdcs.lab.local            Primary   True            Secure         Forest
+0.0.10.in-addr.arpa         Primary   True            Secure         Domain
+dev.lab.local               Primary   True            Secure         Domain
+TrustAnchors                Primary   False           None
+```
+
 ## Transferts de zone (pour les zones non integrees)
 
 Les zones secondaires se mettent a jour via des transferts de zone. Il existe deux types :
@@ -331,6 +376,52 @@ Start-DnsServerZoneTransfer -Name "partenaire.local" -FullTransfer -ComputerName
     Un transfert de zone expose l'integralite de vos enregistrements DNS.
     Limitez toujours les transferts aux serveurs secondaires identifies
     et n'autorisez jamais les transferts vers n'importe quel serveur.
+
+!!! example "Scenario pratique"
+
+    **Situation** : Marc, administrateur reseau, constate que les mises a jour DNS depuis les postes clients echouent. Les postes de travail ne peuvent plus enregistrer leurs noms dans la zone `lab.local`. Le message d'erreur indique "Mise a jour refusee".
+
+    **Diagnostic** :
+
+    ```powershell
+    # Etape 1 : Verifier le type de mise a jour dynamique configuree
+    Get-DnsServerZone -Name "lab.local" -ComputerName "DC-01" |
+        Select-Object ZoneName, DynamicUpdate, IsDsIntegrated
+    ```
+
+    Resultat : `DynamicUpdate` affiche `None`, les mises a jour dynamiques sont desactivees.
+
+    ```powershell
+    # Etape 2 : Verifier si la zone est bien integree AD
+    Get-DnsServerZone -Name "lab.local" -ComputerName "DC-01" |
+        Select-Object ZoneName, ZoneType, IsDsIntegrated
+    ```
+
+    Resultat : `IsDsIntegrated` est a `True`, la zone est bien integree AD.
+
+    **Solution** :
+
+    ```powershell
+    # Activer les mises a jour dynamiques securisees
+    Set-DnsServerPrimaryZone -Name "lab.local" -DynamicUpdate "Secure" -ComputerName "DC-01"
+
+    # Verifier le changement
+    Get-DnsServerZone -Name "lab.local" -ComputerName "DC-01" |
+        Select-Object ZoneName, DynamicUpdate
+
+    # Forcer l'enregistrement DNS depuis un poste client
+    Register-DnsClient
+    ```
+
+    Les postes clients peuvent desormais enregistrer automatiquement leurs noms dans la zone DNS.
+
+!!! danger "Erreurs courantes"
+
+    - **Oublier de creer la zone de recherche inverse** : cette zone n'est pas creee automatiquement lors de la promotion d'un DC. Sans elle, les commandes `nslookup` affichent des erreurs et certains outils de diagnostic ne fonctionnent pas.
+    - **Choisir la mauvaise etendue de replication** : utiliser "Tous les DC du domaine" au lieu de "Tous les DC DNS du domaine" replique inutilement la zone vers des DC qui n'executent pas le service DNS, augmentant le trafic de replication.
+    - **Laisser les mises a jour dynamiques en mode non securise** : n'importe quelle machine peut enregistrer un nom, ce qui permet a un attaquant de detourner un nom de serveur vers sa propre adresse IP.
+    - **Ne pas securiser les transferts de zone pour les zones secondaires** : autoriser les transferts vers n'importe quel serveur expose l'integralite de vos enregistrements DNS, facilitant la reconnaissance reseau par un attaquant.
+    - **Convertir une zone sans verifier la replication AD** : avant de convertir une zone fichier en zone integree AD, assurez-vous que la replication AD fonctionne correctement entre tous les DC, sinon la zone ne sera pas disponible partout.
 
 ## Points cles a retenir
 

@@ -21,6 +21,10 @@ tags:
 
 ---
 
+!!! example "Analogie"
+
+    DirectAccess est comparable a une **ligne telephonique directe** entre votre domicile et le bureau. Des que vous decrochez le telephone (le PC demarre), la ligne est automatiquement etablie sans avoir a composer un numero (pas de connexion manuelle). Cependant, cette ligne ne fonctionne qu'avec un modele de telephone tres specifique (Windows Enterprise), necessite un cablage complexe (IPv6, IPsec, NLS) et le fournisseur a annonce qu'il arretait la maintenance de ce type de ligne.
+
 ## Principes de fonctionnement
 
 ### Connexion transparente
@@ -223,6 +227,32 @@ netsh interface teredo show state
 netsh interface isatap show state
 ```
 
+Resultat :
+
+```text
+Status           : ConnectedRemotely
+Substatus        : None
+TunnelType       : IpHttps
+ServerIPAddress  : 2002:836b:2:1::1
+
+CorporateResources : lab.local
+FriendlyName       : DirectAccess - lab.local
+GslbFqdn           :
+PreferLocalNames   : False
+
+VpnStatus        : Uninstalled
+DAStatus         : Installed
+RoutingStatus    : Uninstalled
+
+InterfaceName    : IPHTTPSInterface
+InterfaceStatus  : IPHTTPS interface active
+URL              : https://da.lab.local/IPHTTPS
+
+6to4 State  : Default
+Teredo State: Default
+ISATAP State: Default
+```
+
 ---
 
 ## Points cles a retenir
@@ -237,6 +267,58 @@ netsh interface isatap show state
 | Deprecie                 | Remplace par Always On VPN pour les nouveaux deployements    |
 
 ---
+
+!!! example "Scenario pratique"
+
+    **Contexte** : Antoine, responsable IT, gere un environnement DirectAccess herite dans le domaine `lab.local`. Plusieurs utilisateurs se plaignent de deconnexions frequentes lorsqu'ils travaillent depuis des hotels. Il doit diagnostiquer le probleme.
+
+    **Diagnostic** :
+
+    ```powershell
+    # Step 1: Check DirectAccess status on a client
+    Get-DAConnectionStatus
+    ```
+
+    ```text
+    Status    : ConnectedRemotely
+    Substatus : None
+    TunnelType: IpHttps
+    ```
+
+    Le client utilise IP-HTTPS, ce qui est normal derriere un pare-feu restrictif. Le probleme est intermittent.
+
+    ```powershell
+    # Step 2: Check IP-HTTPS interface details
+    Get-NetIPHttpsState
+    ```
+
+    ```text
+    InterfaceStatus : IPHTTPS interface active
+    LastError       : 0x2AFC (timeout during TLS handshake)
+    ```
+
+    Le proxy de l'hotel interrompt les connexions TLS longues.
+
+    **Solution** : Migrer vers Always On VPN avec SSTP (plus resilient aux proxys) ou configurer un keepalive plus agressif sur l'interface IP-HTTPS. A moyen terme, planifier la migration vers Always On VPN.
+
+    ```powershell
+    # Step 3: Document the migration plan
+    Get-RemoteAccess | Select-Object DAStatus, VpnStatus
+    ```
+
+    ```text
+    DAStatus  VpnStatus
+    --------  ---------
+    Installed Uninstalled
+    ```
+
+!!! danger "Erreurs courantes"
+
+    - **Deployer DirectAccess pour de nouveaux projets** : DirectAccess est en fin de vie. Tout nouveau deploiement doit utiliser Always On VPN.
+    - **Ignorer la haute disponibilite du NLS** : si le Network Location Server tombe, tous les clients internes activeront DirectAccess a tort, perdant leur connectivite reseau normale.
+    - **Desactiver IPv6 sur les clients** : DirectAccess depend entierement d'IPv6. Desactiver IPv6 rend DirectAccess inoperant.
+    - **Oublier les restrictions d'edition Windows** : DirectAccess ne fonctionne qu'avec Windows Enterprise/Education. Deployer le profil sur un poste Windows Pro ne generera aucune erreur visible, mais le tunnel ne s'etablira jamais.
+    - **Ne pas surveiller les technologies de transition** : les performances de 6to4 et Teredo sont souvent mauvaises. Verifier que les clients utilisent IP-HTTPS, le protocole le plus fiable.
 
 ## Pour aller plus loin
 

@@ -19,6 +19,10 @@ tags:
 
 ## Pourquoi JEA ?
 
+!!! example "Analogie"
+
+    JEA fonctionne comme le systeme de cles d'un hotel. Le client (operateur) recoit une carte magnetique qui n'ouvre que sa chambre et les espaces communs, pas les cuisines ni la salle des serveurs. Il peut utiliser la television et le minibar (cmdlets autorisees), mais pas modifier l'installation electrique (commandes administrateur). Et chaque ouverture de porte est enregistree dans un journal.
+
 ### Le probleme
 
 En l'absence de JEA, la delegation d'administration se limite souvent a :
@@ -246,6 +250,17 @@ Register-PSSessionConfiguration -Name "HelpDeskEndpoint" `
 Get-PSSessionConfiguration -Name "HelpDeskEndpoint"
 ```
 
+Resultat :
+
+```text
+Name          : HelpDeskEndpoint
+PSVersion     : 5.1
+StartupScript :
+RunAsUser     :
+Permission    : NT AUTHORITY\INTERACTIVE AccessAllowed, BUILTIN\Administrators AccessAllowed,
+                LAB\HelpDesk-Operators AccessAllowed
+```
+
 ### Tester l'endpoint
 
 ```powershell
@@ -265,6 +280,36 @@ Restart-Service -Name Spooler
 Stop-Service -Name WinRM
 ```
 
+Resultat (Get-Command dans la session JEA) :
+
+```text
+CommandType     Name                    Version    Source
+-----------     ----                    -------    ------
+Function        Clear-Host
+Function        Exit-PSSession
+Function        Get-Command
+Function        Get-FormatData
+Function        Get-Help
+Function        Get-HelpDeskTicket
+Function        Measure-Object
+Function        Out-Default
+Function        Reset-UserPassword
+Function        Select-Object
+Cmdlet          Get-EventLog            3.1.0.0    Microsoft.PowerShell.Management
+Cmdlet          Get-Process             3.1.0.0    Microsoft.PowerShell.Management
+Cmdlet          Get-Service             3.1.0.0    Microsoft.PowerShell.Management
+Cmdlet          Restart-Service         3.1.0.0    Microsoft.PowerShell.Management
+```
+
+Resultat (commande bloquee) :
+
+```text
+The term 'Stop-Service' is not recognized as the name of a cmdlet, function, script file, or operable
+program. Check the spelling of the name, or if a path was included, verify that the path is correct and
+try again.
+    + CategoryInfo          : ObjectNotFound: (Stop-Service:String) [], CommandNotFoundException
+```
+
 ## Journalisation et audit
 
 JEA enregistre automatiquement toutes les actions dans des transcriptions PowerShell.
@@ -277,6 +322,18 @@ Get-ChildItem -Path "C:\ProgramData\JEA\Transcripts" -Recurse -Filter "*.txt" |
 # Check Windows Event Log for JEA connections
 Get-WinEvent -LogName "Microsoft-Windows-PowerShell/Operational" -MaxEvents 20 |
     Where-Object { $_.Message -like "*JEA*" -or $_.Message -like "*session configuration*" }
+```
+
+Resultat :
+
+```text
+    Directory: C:\ProgramData\JEA\Transcripts\20260220
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+-a----         2/20/2026  10:22 AM          3542 PowerShell_transcript.SRV-01.Random123.20260220102215.txt
+-a----         2/20/2026   9:45 AM          2108 PowerShell_transcript.SRV-01.Random456.20260220094503.txt
+-a----         2/19/2026   3:15 PM          4821 PowerShell_transcript.SRV-01.Random789.20260219151522.txt
 ```
 
 ## Gestion de l'endpoint
@@ -306,6 +363,62 @@ Unregister-PSSessionConfiguration -Name "HelpDeskEndpoint"
 - Utilisez `ValidateSet` et `ValidatePattern` pour restreindre les parametres des cmdlets autorisees
 - Toutes les actions JEA sont **journalisees** via les transcriptions PowerShell
 - Deployez les `.psrc` dans un module PowerShell sous `RoleCapabilities\`
+
+!!! example "Scenario pratique"
+
+    **Nadia**, responsable securite, constate que 12 operateurs du helpdesk sont membres du groupe Administrateurs locaux sur les serveurs de production. Apres un audit, elle doit restreindre leurs droits tout en leur permettant de redemarrer les services IIS et de reinitialiser les mots de passe utilisateurs.
+
+    **Diagnostic :**
+
+    1. Identifier les actions necessaires pour le helpdesk :
+    ```powershell
+    # List the commands currently used by helpdesk (from transcripts)
+    Get-ChildItem "C:\PSTranscripts" -Recurse -Filter "*.txt" |
+        Select-String -Pattern "^PS>" | Select-Object -First 20
+    ```
+    Le helpdesk utilise principalement : `Restart-Service`, `Get-Service`, `Get-EventLog`, `Set-ADAccountPassword`.
+
+    2. Creer le fichier Role Capability :
+    ```powershell
+    New-PSRoleCapabilityFile -Path "C:\Program Files\WindowsPowerShell\Modules\JEA-HelpDesk\RoleCapabilities\HelpDeskOperator.psrc" `
+        -VisibleCmdlets @(
+            'Get-Service',
+            'Get-EventLog',
+            @{ Name = 'Restart-Service'; Parameters = @{ Name = 'Name'; ValidateSet = 'W3SVC', 'WAS', 'Spooler' } }
+        ) `
+        -ModulesToImport @('ActiveDirectory') `
+        -VisibleFunctions @('Reset-UserPassword')
+    ```
+
+    3. Enregistrer et tester l'endpoint :
+    ```powershell
+    Register-PSSessionConfiguration -Name "HelpDeskEndpoint" `
+        -Path "C:\ProgramData\JEA\HelpDeskEndpoint.pssc" -Force
+    Enter-PSSession -ComputerName "SRV-01" -ConfigurationName "HelpDeskEndpoint" `
+        -Credential (Get-Credential -UserName "LAB\helpdesk-user")
+    ```
+    Resultat :
+    ```text
+    [SRV-01]: PS> Get-Command | Measure-Object | Select-Object Count
+
+    Count
+    -----
+       14
+
+    [SRV-01]: PS> Restart-Service -Name W3SVC
+    [SRV-01]: PS> Restart-Service -Name WinRM
+    The term 'Restart-Service' cannot be used with parameter 'Name' value 'WinRM'.
+    ```
+
+    **Resolution :** Les operateurs du helpdesk sont retires du groupe Administrateurs locaux. Ils se connectent via l'endpoint JEA et ne peuvent executer que les 14 commandes autorisees. Toutes leurs actions sont journalisees dans les transcriptions.
+
+!!! danger "Erreurs courantes"
+
+    - **Autoriser une cmdlet sans restreindre ses parametres** : `Restart-Service` sans `ValidateSet` permet de redemarrer n'importe quel service, y compris les services critiques comme WinRM ou DNS. Restreignez toujours les parametres sensibles.
+    - **Oublier le mode `RestrictedRemoteServer`** : sans `SessionType = 'RestrictedRemoteServer'`, la session JEA n'est pas verrouille et l'utilisateur peut executer du code arbitraire via le langage PowerShell complet.
+    - **Ne pas placer les `.psrc` dans un dossier `RoleCapabilities`** : les fichiers Role Capability doivent etre dans un sous-dossier `RoleCapabilities\` d'un module PowerShell. Sans cette structure, JEA ne les trouve pas.
+    - **Utiliser CredSSP avec JEA** : JEA utilise des comptes virtuels qui n'ont pas d'identite reseau. Pour acceder a des ressources reseau, utilisez un gMSA (Group Managed Service Account) au lieu de CredSSP.
+    - **Ne pas tester l'endpoint avant le deploiement** : toujours verifier avec `Get-Command` dans la session JEA que les commandes autorisees sont correctes et que les commandes dangereuses sont bien bloquees.
 
 ## Pour aller plus loin
 

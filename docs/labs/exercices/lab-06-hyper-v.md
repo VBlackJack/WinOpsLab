@@ -36,6 +36,16 @@ L'equipe de developpement a besoin d'un environnement de test virtualise. Vous d
 
 ## Instructions
 
+!!! example "Analogie"
+
+    Hyper-V transforme un serveur physique en immeuble d'appartements : l'hote est le
+    proprietaire de l'immeuble, chaque VM est un locataire avec ses propres ressources
+    (CPU, RAM, disque). Les commutateurs virtuels sont les couloirs et issues de l'immeuble :
+    External ouvre sur la rue (reseau physique), Internal permet de circuler entre appartements
+    et de sonner chez le proprietaire, Private isole completement les locataires entre eux.
+    Un checkpoint, c'est la photo d'un appartement avant des travaux — on peut y revenir
+    si les travaux tournent mal.
+
 ### Partie 1 : Installer Hyper-V
 
 ??? success "Solution"
@@ -92,6 +102,15 @@ L'equipe de developpement a besoin d'un environnement de test virtualise. Vous d
     # Verify configuration
     Get-VM -Name "VM-TEST01" | Select-Object Name, State, ProcessorCount, MemoryStartup
     Get-VMNetworkAdapter -VMName "VM-TEST01" | Select-Object VMName, Name, SwitchName
+    ```
+
+    Resultat attendu de `Get-VMNetworkAdapter -VMName "VM-TEST01"` :
+
+    ```text
+    VMName     Name        SwitchName       MacAddress     Status
+    ------     ----        ----------       ----------     ------
+    VM-TEST01  Network...  vSwitch-Internal 00155D...      {Ok}
+    VM-TEST01  Private-NIC vSwitch-Private  00155D...      {Ok}
     ```
 
 ### Partie 4 : Gerer les checkpoints
@@ -171,6 +190,32 @@ L'equipe de developpement a besoin d'un environnement de test virtualise. Vous d
        utilise VSS dans le guest pour un checkpoint coherent au niveau application.
     4. `Move-VM -Name "VM-TEST01" -DestinationHost "SRV-HV02"` (Live Migration).
        Necessite un cluster ou une configuration de delegation Kerberos.
+
+!!! warning "Pieges frequents dans ce lab"
+
+    1. **Virtualisation imbriquee non activee sur SRV-CORE01** : si la commande
+       `Set-VMProcessor -VMName "SRV-CORE01" -ExposeVirtualizationExtensions $true`
+       n'a pas ete executee sur l'hote Hyper-V physique AVANT de demarrer SRV-CORE01,
+       l'installation du role Hyper-V reussira mais les VMs ne demarreront pas (erreur
+       "The virtual machine could not be started because the hypervisor is not running").
+
+    2. **Creer un switch External sur une VM** : un switch de type External necessite
+       une carte reseau physique de l'hote. Sur SRV-CORE01 (VM elle-meme), il n'y a pas
+       de vraie carte reseau physique exposee. Utiliser Internal ou Private pour ce lab.
+
+    3. **Checkpoint Standard vs Production** : le type par defaut dans les labs recents
+       est "Production". Ce type necessite que les services VSS soient actifs dans la VM.
+       Sur une VM sans OS installe, utiliser le type "Standard" explicitement avec
+       `-SnapshotType Standard` ou la restauration peut echouer.
+
+    4. **VHDX partage entre plusieurs VMs** : un fichier VHDX standard ne peut pas etre
+       ouvert par deux VMs simultanement. Pour le partage, utiliser `New-VHD -Fixed` et
+       l'option `-SupportPersistentReservations` (VHDX partage, necessite le format GPT).
+       Tenter de partager un VHDX classique corrompt generalement le disque.
+
+    5. **Redimensionner un VHDX monte** : `Resize-VHD` doit etre execute sur un disque
+       DECONNECTE de la VM (VM arretee ou disque detache). Tenter un redimensionnement
+       a chaud echoue avec "The virtual hard disk is in use".
 
 ## Nettoyage
 

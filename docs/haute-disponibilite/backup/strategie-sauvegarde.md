@@ -18,6 +18,10 @@ Disposer d'un outil de sauvegarde ne suffit pas. Sans une **strategie** reflechi
 
 ## La regle 3-2-1
 
+!!! example "Analogie"
+
+    La regle 3-2-1, c'est comme garder une copie de ses documents importants. On garde l'original chez soi, une photocopie chez un ami, et une troisieme dans un coffre a la banque. Si la maison brule, on a la copie chez l'ami. Si l'immeuble s'effondre, on a le coffre. C'est le meme principe pour les donnees de l'entreprise : aucun sinistre unique ne doit pouvoir detruire les trois copies en meme temps.
+
 La regle **3-2-1** est le socle de toute strategie de sauvegarde fiable :
 
 ```mermaid
@@ -172,6 +176,21 @@ Set-WBSchedule -Policy $policy -Schedule 22:00
 Set-WBPolicy -Policy $policy
 ```
 
+Resultat :
+
+```text
+(Set-WBPolicy ne produit pas de sortie en cas de succes — la politique est enregistree)
+
+# Verifier la planification enregistree :
+Get-WBPolicy
+
+Schedule     : {22:00:00}
+BackupTargets:
+  DiskNumber : 1
+  Label      : BackupDisk
+BMR          : True
+```
+
 ## Plan de test de restauration
 
 !!! danger "Une sauvegarde non testee n'existe pas"
@@ -197,6 +216,72 @@ Chaque test de restauration doit etre documente :
 - Temps reel de restauration (compare au RTO)
 - Integrite des donnees restaurees
 - Problemes rencontres et actions correctives
+
+!!! example "Scenario pratique"
+
+    **Contexte :** Laurent est administrateur systeme dans un cabinet juridique de 80 personnes. Il dispose d'un serveur de fichiers (`SRV-01`, Windows Server 2022) contenant tous les dossiers clients. Un associe lui demande de justifier que les donnees sont protegees et recuperables en moins de 4 heures (RTO=4h) avec une perte maximale d'une journee de travail (RPO=24h).
+
+    **Probleme :** Laurent a bien une sauvegarde nocturne, mais elle ecrit sur un NAS situe dans la meme salle serveur. Il n'y a aucune copie hors site. En cas d'incendie ou de vol, toutes les donnees seraient perdues.
+
+    **Solution :** Laurent met en place une strategie 3-2-1 complete :
+
+    1. **Copie 1** : donnees originales sur `SRV-01` (disque C: et D:)
+    2. **Copie 2** : sauvegarde WSB nocturne vers le NAS local (`\\NAS-01\Backups`)
+    3. **Copie 3** : replication hebdomadaire vers Azure Backup
+
+    Il documente les RPO/RTO negocies avec les associes :
+
+    | Service | RPO | RTO | Solution |
+    |---|---|---|---|
+    | Dossiers clients | 24h | 4h | WSB + BMR |
+    | Courriels Exchange | 4h | 2h | Exchange Online (cloud) |
+    | Fichiers systeme | 24h | 2h | WSB system state |
+
+    Pour valider la strategie, Laurent effectue un test de restauration trimestriel :
+
+    ```powershell
+    # List available backup versions
+    wbadmin get versions -backupTarget:\\NAS-01\Backups
+    ```
+
+    ```text
+    Backup time: 20/02/2026 22:00:00
+    Backup target: Network Share labeled \\NAS-01\Backups
+    Version identifier: 02/20/2026-22:00
+    Can recover: Volume(s), File(s), Application(s), Bare Metal Recovery, System State
+    ```
+
+    ```powershell
+    # Test file restoration (pick a file from last night's backup)
+    wbadmin start recovery `
+        -version:02/20/2026-22:00 `
+        -backupTarget:\\NAS-01\Backups `
+        -itemType:File `
+        -items:"D:\Clients\DossierTest\rapport.docx" `
+        -recoveryTarget:"C:\TestRestore" `
+        -quiet
+    ```
+
+    ```text
+    Retrieving volume information...
+    Starting recovery of D:\Clients\DossierTest\rapport.docx to C:\TestRestore ...
+    Successfully recovered D:\Clients\DossierTest\rapport.docx to C:\TestRestore.
+    The recovery operation completed successfully.
+    ```
+
+    Laurent documente le resultat (temps de restauration : 3 minutes pour un fichier, RTO tenu) et le presente lors du prochain audit.
+
+!!! danger "Erreurs courantes"
+
+    **Sauvegarde et donnees sur le meme disque physique** — Sauvegarder sur une partition differente du meme disque ne protege pas contre une panne materielle. Le disque de sauvegarde doit etre physiquement distinct.
+
+    **Ne jamais tester la restauration** — Une sauvegarde non testee peut etre corrompue, incomplete ou incompatible avec le nouveau materiel. Les tests de restauration doivent etre planifies et documentes, pas optionnels.
+
+    **RPO et RTO definis sans consulter les metiers** — Un RPO de 24h pour une base de donnees de transactions financieres peut etre inacceptable pour le directeur financier. Impliquez les responsables metiers dans la definition de ces objectifs.
+
+    **Schema GFS non respecte** — Sans rotation structuree (quotidien/hebdomadaire/mensuel), les sauvegardes les plus anciennes sont ecrasees trop tot. Une suppression accidentelle decouverte 45 jours apres ne peut pas etre recuperee si la rotation ne conserve que 7 jours.
+
+    **Copie hors site oubliee** — Avoir deux disques dans la meme piece n'est pas une vraie redondance. Un incendie, une inondation ou un vol peut tout emporter. La copie hors site (cloud ou site distant) n'est pas optionnelle.
 
 ## Points cles a retenir
 

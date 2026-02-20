@@ -24,6 +24,15 @@ tags:
 
 La direction de TechNova exige un plan de reprise d'activite formalise. Vous devez identifier les services critiques, definir les objectifs de reprise et mettre en place les mecanismes de sauvegarde et de basculement.
 
+!!! example "Analogie"
+
+    Un PRA, c'est comme le plan d'evacuation d'un immeuble : tout le monde sait qu'il existe,
+    mais sa vraie valeur n'est visible que lors d'un exercice ou d'un sinistre reel. La regle
+    3-2-1 des sauvegardes est analogue a ne jamais mettre tous ses oeufs dans le meme panier
+    — une copie uniquement sur le meme serveur ne protege pas d'un incendie ou d'un ransomware.
+    Le RTO, c'est le temps que vos employes peuvent rester bloques devant une porte fermee
+    avant que l'entreprise perde de l'argent.
+
 ## Analyse des risques
 
 ### Services critiques
@@ -158,6 +167,17 @@ graph TD
     $backupReport | Format-Table -AutoSize
     ```
 
+    Resultat attendu du script de verification des sauvegardes :
+
+    ```text
+    Server     LastBackup             Result   NextBackup             Status
+    ------     ----------             ------   ----------             ------
+    SRV-DC01   20/02/2026 03:00:14   Success  21/02/2026 03:00:00   Online
+    SRV-DC02   20/02/2026 03:02:31   Success  21/02/2026 03:00:00   Online
+    SRV-FILE01 20/02/2026 02:00:08   Success  20/02/2026 06:00:00   Online
+    SRV-WEB01  N/A                   N/A      N/A                    Offline
+    ```
+
 ## Mecanismes de basculement
 
 ### Active Directory
@@ -264,6 +284,35 @@ Le document PRA doit contenir :
 - La restauration de l'etat systeme d'un DC necessite le mode **DSRM**
 - La documentation doit etre accessible **hors du systeme d'information** (impression, cloud)
 - Chaque test de reprise doit etre documente avec les resultats et les axes d'amelioration
+
+!!! warning "Pieges frequents dans ce projet"
+
+    1. **Sauvegarde configuree mais jamais testee** : une sauvegarde dont la restauration n'a
+       jamais ete validee est equivalente a aucune sauvegarde. `Get-WBSummary` peut afficher
+       "Success" alors que le fichier de sauvegarde est corrompu ou incomplet. Tester la
+       restauration d'au moins un fichier dans le premier mois apres configuration.
+
+    2. **Restauration d'etat systeme DC sans le mode DSRM** : tenter `wbadmin start
+       systemstaterecovery` depuis Windows normal (hors DSRM) echoue avec "The system state
+       cannot be restored while the computer is running". La sequence DSRM (`bcdedit /set
+       safeboot dsrepair` puis redemarrage) est obligatoire, et le mot de passe DSRM doit
+       etre disponible.
+
+    3. **Transfert FSMO pendant un test de basculement oublie** : si on simule la panne de
+       SRV-DC01 sans avoir transfere les roles FSMO vers SRV-DC02 au prealable (ou sans
+       les saisir en urgence), certains services AD deviennent dysfonctionnels pendant le test
+       (creation de comptes bloquee sans RID Master, etc.).
+
+    4. **Cible de sauvegarde sur le meme disque que le systeme** : configurer la sauvegarde
+       de l'etat systeme sur le volume `C:` (meme disque que le systeme) est invalide.
+       `New-WBBackupTarget -VolumePath "C:"` echoue avec "The backup storage location is
+       not valid". Utiliser un disque ou volume different (`D:` ou `E:`).
+
+    5. **RTO et RPO definis sans validation de la direction** : dans l'evaluation, les RTO/RPO
+       doivent etre approuves par la direction fictive de TechNova — pas seulement determines
+       techniquement. Un RPO de 0h pour Active Directory implique une replication temps-reel
+       ou un second DC en temps reel, ce qui doit etre documente comme une decision metier,
+       pas uniquement technique.
 
 ## Pour aller plus loin
 

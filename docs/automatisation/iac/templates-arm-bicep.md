@@ -33,6 +33,10 @@ Les templates **ARM** (Azure Resource Manager) et **Bicep** sont les outils d'**
 
     Microsoft recommande Bicep pour tous les nouveaux projets IaC Azure. Bicep compile vers ARM JSON et offre toutes les memes fonctionnalites avec une syntaxe nettement plus lisible.
 
+!!! example "Analogie"
+
+    Un template ARM ou Bicep, c'est comme un plan d'architecte pour une maison. Le plan decrit precisement chaque piece, chaque porte, chaque fenetre. N'importe quel constructeur peut prendre ce plan et construire une maison identique, que ce soit en France, en Belgique ou au Canada. Et si vous voulez construire deux maisons identiques, vous utilisez exactement le meme plan — pas besoin de re-inventer les fondations.
+
 ## Structure d'un template ARM
 
 Un template ARM est un fichier JSON avec quatre sections principales :
@@ -278,6 +282,21 @@ New-AzResourceGroupDeployment `
     -Verbose
 ```
 
+Resultat :
+
+```text
+VERBOSE: Performing the operation "Creating Deployment" on target "rg-yourproject".
+VERBOSE: 11:42:03 - Template is valid.
+VERBOSE: 11:42:05 - Creating the deployment 'vm-windows-20260220-114203'
+VERBOSE: 11:42:05 - Resource Microsoft.Network/publicIPAddresses 'SRV-WEB01-pip' provisioning status is running
+VERBOSE: 11:46:12 - Resource Microsoft.Compute/virtualMachines 'SRV-WEB01' provisioning status is succeeded
+
+DeploymentName          : vm-windows-20260220-114203
+ResourceGroupName       : rg-yourproject
+ProvisioningState       : Succeeded
+Timestamp               : 20/02/2026 10:46:12
+```
+
 ### Deployer un template Bicep
 
 ```powershell
@@ -342,6 +361,25 @@ New-AzResourceGroupDeployment `
     -TemplateFile ".\templates\vm-windows.bicep" `
     -vmName "SRV-WEB01" `
     -WhatIf
+```
+
+Resultat :
+
+```text
+Resource and property changes are indicated with these symbols:
+  + Create
+  ~ Modify
+
+The deployment will update the following scope:
+
+Scope: /subscriptions/xxxx/resourceGroups/rg-yourproject
+
+  + Microsoft.Network/publicIPAddresses/SRV-WEB01-pip [2023-04-01]
+  + Microsoft.Network/virtualNetworks/SRV-WEB01-vnet [2023-04-01]
+  + Microsoft.Network/networkInterfaces/SRV-WEB01-nic [2023-04-01]
+  + Microsoft.Compute/virtualMachines/SRV-WEB01 [2023-03-01]
+
+Resource changes: 4 to create.
 ```
 
 ## Modules Bicep
@@ -418,6 +456,74 @@ module webServer 'modules/windows-vm.bicep' = {
   }
 }
 ```
+
+!!! example "Scenario pratique"
+
+    **Contexte :** Antoine est ingenieur cloud dans une societe qui doit regulierement provisionner des environnements de test pour les developpeurs. Chaque environnement comprend un serveur Windows Server 2022 avec une IP publique. Actuellement, chaque environnement est cree manuellement dans le portail Azure, ce qui prend 30 a 45 minutes.
+
+    **Probleme :** Les environnements manuels different les uns des autres (tailles VM incorrectes, regions differentes, noms inconsistants), et les developpeurs doivent attendre Antoine pour obtenir un environnement.
+
+    **Solution :** Antoine cree un template Bicep parametre et le stocke dans Git. Les developpeurs peuvent maintenant se provisionner eux-memes :
+
+    ```powershell
+    # Step 1: Validate the Bicep template
+    az bicep build --file .\templates\vm-windows.bicep
+    ```
+
+    ```text
+    (La commande genere vm-windows.json sans erreur si le template est valide)
+    ```
+
+    ```powershell
+    # Step 2: What-if before deploying
+    New-AzResourceGroupDeployment `
+        -ResourceGroupName "rg-dev-antoine-20260220" `
+        -TemplateFile ".\templates\vm-windows.bicep" `
+        -vmName "SRV-DEV01" `
+        -adminUsername "labadmin" `
+        -WhatIf
+    ```
+
+    ```text
+    Resource changes: 4 to create.
+      + SRV-DEV01-pip     (publicIPAddress)
+      + SRV-DEV01-vnet    (virtualNetwork)
+      + SRV-DEV01-nic     (networkInterface)
+      + SRV-DEV01         (virtualMachine - Standard_D2s_v5)
+    ```
+
+    ```powershell
+    # Step 3: Deploy (password from Key Vault)
+    New-AzResourceGroupDeployment `
+        -ResourceGroupName "rg-dev-antoine-20260220" `
+        -TemplateFile ".\templates\vm-windows.bicep" `
+        -vmName "SRV-DEV01" `
+        -adminUsername "labadmin" `
+        -TemplateParameterFile ".\parameters\dev.parameters.json"
+    ```
+
+    ```text
+    DeploymentName    : vm-windows-20260220-143012
+    ProvisioningState : Succeeded
+    Timestamp         : 20/02/2026 12:34:45
+    Outputs           :
+      vmResourceId    : /subscriptions/.../virtualMachines/SRV-DEV01
+      publicIPAddress : 51.105.22.47
+    ```
+
+    Le provisionnement complet prend maintenant 8 minutes au lieu de 45. Antoine partage le template dans le wiki interne et les developpeurs s'autonomisent.
+
+!!! danger "Erreurs courantes"
+
+    **Mot de passe en clair dans le fichier de parametres** — Ne stockez jamais `adminPassword` en clair dans un fichier `.parameters.json` commite dans Git. Utilisez une reference Key Vault ou passez le parametre interactivement via `-adminPassword (Read-Host -AsSecureString)`.
+
+    **API version obsolete** — Azure retire regulierement les anciennes versions d'API. Si votre template utilise une `apiVersion` obsolete, le deploiement echoue. Verifiez les versions supportees dans la documentation ou via `az provider show`.
+
+    **Deploiement sans mode What-If** — Deployer directement sans `-WhatIf` dans un environnement existant peut modifier ou supprimer des ressources non prevues. Utilisez systematiquement What-If pour les ressources en production.
+
+    **Dependances implicites manquantes** — En ARM JSON, les dependances doivent etre declarcees explicitement avec `dependsOn`. En Bicep, les dependances symboliques sont automatiques (reference directe a la ressource), mais si vous copiez des blocs JSON vers Bicep, verifiez que les dependances sont bien gerees.
+
+    **Region non supportee pour le type de VM** — Certaines tailles de VM (`Standard_D*v5`) ne sont pas disponibles dans toutes les regions Azure. Verifiez la disponibilite avant de deployer ou parametrez la region dynamiquement.
 
 ## Points cles a retenir
 

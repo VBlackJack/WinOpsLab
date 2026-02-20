@@ -16,6 +16,10 @@ tags:
 
 ### Qu'est-ce que iSCSI ?
 
+!!! example "Analogie"
+
+    Imaginez un entrepot de stockage situe de l'autre cote de la ville. Normalement, pour acceder a vos cartons, il faudrait vous deplacer physiquement. iSCSI, c'est comme un **service de livraison express** qui amene les cartons directement a votre bureau. Pour vous, tout se passe comme si l'entrepot etait juste a cote : vous ouvrez, lisez et rangez vos cartons normalement, mais ils transitent par la route (le reseau TCP/IP).
+
 iSCSI (Internet Small Computer Systems Interface) est un protocole qui encapsule des commandes SCSI dans des paquets TCP/IP. Il permet d'acceder a du stockage distant via le reseau Ethernet standard, comme si les disques etaient connectes localement.
 
 ```mermaid
@@ -72,6 +76,14 @@ Le role **iSCSI Target Server** transforme un serveur Windows en cible de stocka
 ```powershell
 # Install the iSCSI Target Server role
 Install-WindowsFeature FS-iSCSITarget-Server -IncludeManagementTools
+```
+
+Resultat :
+
+```text
+Success Restart Needed Exit Code      Feature Result
+------- -------------- ---------      --------------
+True    No             NoChangeNeeded {iSCSI Target Server, iSCSI Target...}
 ```
 
 ### Creer un disque virtuel iSCSI
@@ -138,6 +150,25 @@ Get-IscsiVirtualDisk | Format-Table Path,
 Get-IscsiVirtualDiskTargetMapping | Format-Table TargetName, Path, Lun -AutoSize
 ```
 
+Resultat :
+
+```text
+TargetName   Status InitiatorIds
+----------   ------ ------------
+SQL-Target   Online {IQN:iqn.1991-05.com.microsoft:srv-sql.lab.local}
+HyperV-Target Online {IPAddress:10.0.0.20, IPAddress:10.0.0.21}
+
+Path                                SizeGB Status
+----                                ------ ------
+E:\iSCSIDisks\SQL-Data.vhdx        100.00 NotConnected
+E:\iSCSIDisks\SQL-Logs.vhdx         50.00 NotConnected
+
+TargetName   Path                             Lun
+----------   ----                             ---
+SQL-Target   E:\iSCSIDisks\SQL-Data.vhdx        0
+SQL-Target   E:\iSCSIDisks\SQL-Logs.vhdx        1
+```
+
 ## Configurer l'initiateur iSCSI
 
 L'initiateur iSCSI est le composant cote client qui se connecte a la cible.
@@ -153,6 +184,14 @@ Start-Service MSiSCSI
 Get-Service MSiSCSI | Select-Object Name, Status, StartType
 ```
 
+Resultat :
+
+```text
+Name    Status  StartType
+----    ------  ---------
+MSiSCSI Running Automatic
+```
+
 ### Decouvrir une cible
 
 ```powershell
@@ -161,6 +200,14 @@ New-IscsiTargetPortal -TargetPortalAddress 192.168.10.10
 
 # List discovered targets
 Get-IscsiTarget | Format-Table NodeAddress, IsConnected -AutoSize
+```
+
+Resultat :
+
+```text
+NodeAddress                                          IsConnected
+-----------                                          -----------
+iqn.1991-05.com.microsoft:srv-stor-sql-target        False
 ```
 
 ### Se connecter a une cible
@@ -211,6 +258,22 @@ $disk | Initialize-Disk -PartitionStyle GPT -PassThru |
     Format-Volume -FileSystem NTFS -NewFileSystemLabel "SQL-Data" -Confirm:$false
 ```
 
+Resultat :
+
+```text
+InitiatorNodeAddress                            TargetNodeAddress                             IsConnected IsPersistent
+--------------------                            -----------------                             ----------- ------------
+iqn.1991-05.com.microsoft:srv-sql.lab.local     iqn.1991-05.com.microsoft:srv-stor-sql-target        True         True
+
+Number FriendlyName           SizeGB OperationalStatus
+------ ------------           ------ -----------------
+     2 MSFT Virtual HD        100.00 Online
+
+DriveLetter FileSystemLabel FileSystem DriveType HealthStatus SizeRemaining    Size
+----------- --------------- ---------- --------- ------------ -------------    ----
+F           SQL-Data        NTFS       Fixed     Healthy         99.87 GB   99.97 GB
+```
+
 ### Se deconnecter d'une cible
 
 ```powershell
@@ -222,6 +285,10 @@ Remove-IscsiTargetPortal -TargetPortalAddress 192.168.10.10 -Confirm:$false
 ```
 
 ## MPIO (Multipath I/O)
+
+!!! example "Analogie"
+
+    MPIO, c'est comme avoir **deux routes distinctes** pour aller de votre maison a votre bureau. Si un accident bloque la route principale, vous prenez l'autre sans interruption. Mieux encore, aux heures creuses, vous pouvez utiliser les deux routes en meme temps pour transporter plus de marchandises (equilibrage de charge).
 
 MPIO permet d'utiliser plusieurs chemins reseau vers une meme cible iSCSI, assurant la redundance et l'equilibrage de charge.
 
@@ -254,6 +321,14 @@ Install-WindowsFeature Multipath-IO -IncludeManagementTools
 
 # A reboot is required after installation
 Restart-Computer -Force
+```
+
+Resultat :
+
+```text
+Success Restart Needed Exit Code      Feature Result
+------- -------------- ---------      --------------
+True    Yes            SuccessRest... {Multipath I/O}
 ```
 
 Apres le redemarrage :
@@ -354,6 +429,68 @@ Set-NetAdapterAdvancedProperty -Name "iSCSI-NIC1" `
 - **MPIO** assure la redundance et l'equilibrage de charge avec plusieurs chemins reseau
 - En production, isolez le trafic iSCSI sur un reseau dedie avec trames Jumbo
 - Utilisez **CHAP** pour l'authentification et **IPSec** pour le chiffrement
+
+!!! example "Scenario pratique"
+
+    **Contexte :** Marc, administrateur dans une entreprise de logistique, configure un nouveau serveur SQL (SRV-SQL, 10.0.0.20) qui doit acceder a du stockage iSCSI heberge sur SRV-STOR (10.0.0.10). Apres avoir configure la cible et l'initiateur, il constate que le disque iSCSI n'apparait pas dans Windows.
+
+    **Diagnostic :**
+
+    ```powershell
+    # Check if the iSCSI initiator service is running
+    Get-Service MSiSCSI | Select-Object Name, Status, StartType
+    ```
+
+    Resultat :
+
+    ```text
+    Name    Status  StartType
+    ----    ------  ---------
+    MSiSCSI Stopped  Manual
+    ```
+
+    Le service n'est pas demarre et n'est pas configure en demarrage automatique.
+
+    **Solution :**
+
+    ```powershell
+    # Start and configure the service
+    Set-Service -Name MSiSCSI -StartupType Automatic
+    Start-Service MSiSCSI
+
+    # Discover and connect to the target
+    New-IscsiTargetPortal -TargetPortalAddress 10.0.0.10
+    $target = Get-IscsiTarget
+    Connect-IscsiTarget -NodeAddress $target.NodeAddress -IsPersistent $true
+
+    # Verify the disk appears
+    Get-Disk | Where-Object { $_.BusType -eq "iSCSI" } |
+        Format-Table Number, FriendlyName,
+            @{N='SizeGB';E={[math]::Round($_.Size/1GB,2)}},
+            OperationalStatus -AutoSize
+    ```
+
+    Resultat :
+
+    ```text
+    Number FriendlyName    SizeGB OperationalStatus
+    ------ ------------    ------ -----------------
+         2 MSFT Virtual HD 100.00 Online
+    ```
+
+    Le disque iSCSI apparait maintenant. Marc l'initialise en GPT, le partitionne et le formate pour SQL Server avec une taille d'allocation de 64 Ko.
+
+!!! danger "Erreurs courantes"
+
+    1. **Oublier de demarrer le service MSiSCSI** : le service de l'initiateur iSCSI est en demarrage manuel par defaut. Sans `Set-Service -StartupType Automatic`, la connexion sera perdue apres chaque redemarrage.
+
+    2. **Ne pas utiliser `-IsPersistent $true`** : sans persistance, la connexion iSCSI est perdue au redemarrage du serveur. Les volumes deviennent inaccessibles et les applications echouent.
+
+    3. **Melanger trafic iSCSI et trafic applicatif** : le trafic iSCSI sur le meme reseau que les utilisateurs provoque de la contention et des latences. Isolez toujours le trafic iSCSI sur un VLAN ou un reseau physique dedie.
+
+    4. **Ignorer MPIO en production** : un seul chemin reseau constitue un point de defaillance unique. Si le cable ou le switch tombe en panne, le stockage iSCSI est perdu. Configurez toujours MPIO avec au moins deux chemins independants.
+
+    5. **Utiliser des trames standard au lieu de Jumbo Frames** : le MTU par defaut de 1500 octets genere un overhead important pour les transferts volumineux. Activez les trames Jumbo (MTU 9000) sur toute la chaine (NIC, switchs, cible) pour de meilleures performances.
 
 ## Pour aller plus loin
 

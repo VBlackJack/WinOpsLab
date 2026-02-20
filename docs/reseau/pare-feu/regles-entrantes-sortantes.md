@@ -20,6 +20,10 @@ Les regles du Pare-feu Windows avec securite avancee (WFAS) definissent quels fl
 
 ---
 
+!!! example "Analogie"
+
+    Les regles de pare-feu fonctionnent comme les **consignes d'un bureau de securite a l'entree d'un batiment**. Le vigile dispose d'une liste precisant : "Laisser passer les livreurs (programme) par la porte A (port), uniquement entre 8h et 18h (profil), et seulement s'ils viennent de la societe de livraison agreee (adresse source)". Toute personne ne correspondant a aucune consigne est refoulee par defaut.
+
 ## Types de regles
 
 Le WFAS propose quatre types de regles lors de la creation via l'assistant :
@@ -178,6 +182,14 @@ Set-NetFirewallProfile -Profile Domain -DefaultOutboundAction Block
 Get-NetFirewallProfile -Profile Domain | Select-Object Name, DefaultOutboundAction
 ```
 
+Resultat :
+
+```text
+Name   DefaultOutboundAction
+----   ---------------------
+Domain                 Block
+```
+
 Apres avoir active le blocage sortant par defaut, il faut creer des regles sortantes pour chaque flux necessaire :
 
 ```powershell
@@ -193,6 +205,28 @@ New-NetFirewallRule -DisplayName "Allow HTTPS Outbound" `
     -Direction Outbound -Protocol TCP -RemotePort 443 -Action Allow
 ```
 
+Resultat :
+
+```text
+Name                  : {b5e2d7c8-1234-4a5b-9c6d-7e8f9a0b1c2d}
+DisplayName           : Allow DNS Outbound
+Direction             : Outbound
+Action                : Allow
+Enabled               : True
+
+Name                  : {c6f3e8d9-2345-5b6c-0d7e-8f9a0b1c2d3e}
+DisplayName           : Allow DNS Outbound TCP
+Direction             : Outbound
+Action                : Allow
+Enabled               : True
+
+Name                  : {d7a4f9e0-3456-6c7d-1e8f-9a0b1c2d3e4f}
+DisplayName           : Allow HTTPS Outbound
+Direction             : Outbound
+Action                : Allow
+Enabled               : True
+```
+
 ---
 
 ## Gestion des regles predefinies
@@ -204,6 +238,21 @@ Windows Server inclut des groupes de regles predefinies pour les roles et foncti
 ```powershell
 # List all predefined rule groups
 Get-NetFirewallRule | Select-Object -Unique Group | Where-Object { $_.Group -ne "" } | Sort-Object Group
+```
+
+Resultat :
+
+```text
+Group
+-----
+Active Directory Domain Services
+Core Networking
+DHCP Server
+DNS Service
+File and Printer Sharing
+Hyper-V
+Remote Desktop
+Windows Remote Management
 ```
 
 ### Groupes les plus courants
@@ -227,6 +276,12 @@ Enable-NetFirewallRule -Group "Remote Desktop"
 
 # Enable WinRM rules
 Enable-NetFirewallRule -Group "Windows Remote Management"
+```
+
+Resultat :
+
+```text
+# (Les regles des groupes "Remote Desktop" et "Windows Remote Management" sont activees)
 ```
 
 ---
@@ -275,6 +330,27 @@ Get-NetFirewallRule -DisplayName "Allow HTTPS Inbound" | Format-List *
 Get-NetFirewallRule -DisplayName "Allow HTTPS Inbound" | Get-NetFirewallPortFilter
 ```
 
+Resultat :
+
+```text
+ComputerName     : 192.168.1.10
+RemoteAddress    : 192.168.1.10
+RemotePort       : 443
+TcpTestSucceeded : True
+
+DisplayName                             Action  Profile
+-----------                             ------  -------
+Allow HTTPS Inbound                      Allow  Domain, Private
+Allow RDP Admin Subnet                   Allow  Domain
+Core Networking - DNS (UDP-Out)          Allow  Any
+Remote Desktop - User Mode (TCP-In)      Allow  Domain, Private
+Windows Remote Management (HTTP-In)      Allow  Domain
+
+Protocol  : TCP
+LocalPort : 443
+RemotePort: Any
+```
+
 ---
 
 ## Points cles a retenir
@@ -289,6 +365,62 @@ Get-NetFirewallRule -DisplayName "Allow HTTPS Inbound" | Get-NetFirewallPortFilt
 | Bonnes pratiques     | Moindre privilege, restriction par source, nommage clair      |
 
 ---
+
+!!! example "Scenario pratique"
+
+    **Contexte** : Marc, administrateur reseau, configure un serveur de base de donnees `SRV-DB01` (10.0.0.30) dans le domaine `lab.local`. Seuls les serveurs applicatifs du sous-reseau 10.0.0.0/24 doivent acceder au port SQL Server 1433, et tout acces depuis Internet doit etre bloque.
+
+    **Solution** :
+
+    ```powershell
+    # Step 1: Create restrictive inbound rule for SQL Server
+    New-NetFirewallRule -DisplayName "Allow-In-SQL-AppServers" `
+        -Direction Inbound `
+        -Protocol TCP `
+        -LocalPort 1433 `
+        -RemoteAddress "10.0.0.0/24" `
+        -Action Allow `
+        -Profile Domain `
+        -Description "SQL Server access restricted to app server subnet"
+    ```
+
+    ```text
+    Name        : {a1b2c3d4-5678-9abc-def0-123456789abc}
+    DisplayName : Allow-In-SQL-AppServers
+    Direction   : Inbound
+    Action      : Allow
+    Enabled     : True
+    ```
+
+    ```powershell
+    # Step 2: Explicitly block SQL from all other sources
+    New-NetFirewallRule -DisplayName "Block-In-SQL-Other" `
+        -Direction Inbound `
+        -Protocol TCP `
+        -LocalPort 1433 `
+        -Action Block `
+        -Profile Domain, Private, Public
+
+    # Step 3: Test from an app server (SRV-APP01, 10.0.0.20)
+    Test-NetConnection -ComputerName SRV-DB01.lab.local -Port 1433
+    ```
+
+    ```text
+    ComputerName     : SRV-DB01.lab.local
+    RemoteAddress    : 10.0.0.30
+    RemotePort       : 1433
+    TcpTestSucceeded : True
+    ```
+
+    L'acces SQL est restreint au sous-reseau applicatif uniquement.
+
+!!! danger "Erreurs courantes"
+
+    - **Creer une regle d'autorisation sans restreindre la source** : ouvrir le port 3389 (RDP) a toutes les adresses est un risque majeur. Toujours restreindre par adresse source.
+    - **Oublier de selectionner le bon profil** : une regle creee pour le profil Public alors que le serveur est en profil Domaine ne s'appliquera jamais.
+    - **Supprimer une regle plutot que la desactiver** : une regle supprimee est irrecuperable. Preferez `Disable-NetFirewallRule` pour pouvoir la reactiver facilement.
+    - **Ne pas tester apres creation** : toujours verifier avec `Test-NetConnection` que le flux passe bien apres avoir cree une regle.
+    - **Confondre port local et port distant** : le port local est celui du serveur, le port distant est celui du client. Pour autoriser un service entrant, c'est le port local qu'il faut configurer.
 
 ## Pour aller plus loin
 

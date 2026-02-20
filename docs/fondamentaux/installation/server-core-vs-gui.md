@@ -13,6 +13,13 @@ tags:
 
 ## Les deux modes d'installation
 
+!!! example "Analogie"
+
+    Imaginez deux cuisines de restaurant. **Server Core**, c'est la cuisine professionnelle : pas de
+    decoration, pas de television, juste les ustensiles essentiels. Le chef travaille vite et efficacement.
+    **Desktop Experience**, c'est une cuisine ouverte avec ecran, musique et eclairage decoratif :
+    plus agreable pour apprendre, mais plus de choses a entretenir et a nettoyer.
+
 Lors de l'installation de Windows Server 2022, vous choisissez entre deux experiences :
 
 ```mermaid
@@ -95,6 +102,27 @@ Get-Service | Where-Object Status -eq "Running"
 Get-EventLog -LogName System -Newest 20
 ```
 
+Resultat de `Get-ComputerInfo` :
+
+```text
+WindowsProductName                    OsVersion
+------------------                    ---------
+Windows Server 2022 Datacenter        10.0.20348
+```
+
+Resultat de `Get-WindowsFeature | Where-Object Installed` (extrait) :
+
+```text
+Display Name                                    Name                Install State
+------------                                    ----                -------------
+[X] File and Storage Services                   FileAndStorage-Se.. Installed
+    [X] Storage Services                        Storage-Services    Installed
+[X] .NET Framework 4.8 Features                 NET-Framework-45..  Installed
+[X] PowerShell                                  PowerShellRoot      Installed
+    [X] Windows PowerShell 5.1                  PowerShell          Installed
+[X] WoW64 Support                               WoW64-Support       Installed
+```
+
 #### Gestion a distance
 
 !!! tip "Best practice"
@@ -113,6 +141,23 @@ Enter-PSSession -ComputerName SRV-CORE-01 -Credential (Get-Credential)
 Invoke-Command -ComputerName SRV-CORE-01 -ScriptBlock {
     Get-WindowsFeature | Where-Object Installed
 }
+```
+
+Resultat de `Enter-PSSession` :
+
+```text
+[SRV-CORE-01]: PS C:\Users\Administrator\Documents>
+```
+
+Resultat de `Invoke-Command` (extrait) :
+
+```text
+Display Name                           Name              Install State PSComputerName
+------------                           ----              ------------- --------------
+[X] DNS Server                         DNS               Installed     SRV-CORE-01
+[X] File and Storage Services          FileAndStorage-Se..Installed     SRV-CORE-01
+    [X] Storage Services               Storage-Services  Installed     SRV-CORE-01
+[X] PowerShell                         PowerShellRoot    Installed     SRV-CORE-01
 ```
 
 ### Roles non disponibles en Server Core
@@ -191,6 +236,79 @@ graph TD
     - Avoir **un seul** serveur Desktop Experience comme poste d'administration
     - Installer **RSAT** sur votre poste Windows 10/11 pour la gestion quotidienne
     - Utiliser **Windows Admin Center** comme interface web centralisee
+
+## Scenario pratique
+
+!!! example "Scenario pratique"
+
+    **Contexte** : Claire, administratrice systeme, doit deployer 5 nouveaux serveurs dans son
+    infrastructure : 2 controleurs de domaine, 1 serveur de fichiers, 1 serveur Hyper-V et 1 serveur
+    d'administration. Son budget est serre et elle veut minimiser la maintenance.
+
+    **Probleme** : Elle hesite a tout deployer en Desktop Experience pour simplifier la gestion.
+
+    **Analyse** :
+
+    1. Comparer les ressources consommees par les deux modes :
+
+    ```powershell
+    # Check disk usage on a Core server
+    Invoke-Command -ComputerName SRV-CORE-01 -ScriptBlock {
+        Get-PSDrive C | Select-Object Used, Free
+    }
+
+    # Check disk usage on a GUI server
+    Invoke-Command -ComputerName SRV-GUI-01 -ScriptBlock {
+        Get-PSDrive C | Select-Object Used, Free
+    }
+    ```
+
+    ```text
+    # SRV-CORE-01 (Server Core)
+         Used        Free
+         ----        ----
+    6442450944  26843545600
+
+    # SRV-GUI-01 (Desktop Experience)
+         Used         Free
+         ----         ----
+    10737418240  22548578304
+    ```
+
+    2. La difference est significative : ~6 Go vs ~10 Go pour l'OS seul.
+    3. Avec 5 serveurs, cela represente 20 Go d'espace economise et moins de mises a jour.
+
+    **Decision** :
+
+    | Serveur | Mode | Justification |
+    |---------|------|---------------|
+    | DC-01, DC-02 | Core | Securite maximale pour les DCs |
+    | FS-01 | Core | Service de fichiers gere par RSAT |
+    | HV-01 | Core | Performance maximale pour Hyper-V |
+    | ADMIN-01 | GUI | Poste d'administration avec outils graphiques |
+
+    **Resultat** : 4 serveurs en Core, 1 en GUI. Claire installe RSAT sur ADMIN-01 et Windows Admin
+    Center pour gerer tous les serveurs depuis un seul point.
+
+## Erreurs courantes
+
+!!! danger "Erreurs courantes"
+
+    1. **Tenter de convertir Core en GUI apres installation** : Depuis Windows Server 2019, la conversion
+       n'est plus possible. Si vous vous etes trompe, il faut reinstaller le serveur. Choisissez bien
+       avant l'installation.
+
+    2. **Deployer Desktop Experience sur tous les serveurs** : Chaque serveur GUI consomme plus de
+       RAM, plus de disque et necessite plus de mises a jour. En production, cela multiplie la charge
+       de maintenance inutilement.
+
+    3. **Ne pas preparer la gestion a distance avant de deployer Core** : Avant de deployer un serveur
+       Core, assurez-vous que votre poste d'administration a RSAT installe et que WinRM est configure.
+       Sans cela, vous serez bloque avec seulement `sconfig` et PowerShell local.
+
+    4. **Croire que Server Core ne supporte aucun role** : Core supporte la grande majorite des roles
+       (AD DS, DNS, DHCP, Hyper-V, IIS, File Server, etc.). Seuls quelques roles marginaux comme
+       Fax Server ou MultiPoint Services necessitent Desktop Experience.
 
 ## Points cles a retenir
 

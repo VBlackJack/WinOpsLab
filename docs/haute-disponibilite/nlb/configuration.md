@@ -34,6 +34,10 @@ graph LR
     N2 --> DNS
 ```
 
+!!! example "Analogie"
+
+    Configurer un cluster NLB, c'est comme installer plusieurs guichets dans une gare. D'abord, on forme les agents (installation de la fonctionnalite). Ensuite, on ouvre un premier guichet (creation du cluster), puis on ajoute les autres (ajout de noeuds). On definit les horaires et types de billets pour chaque guichet (regles de port). Enfin, on affiche un panneau unique "Guichets" (enregistrement DNS) pour que les voyageurs trouvent le bon endroit.
+
 ## Prerequis
 
 ### Installation de la fonctionnalite
@@ -49,6 +53,15 @@ foreach ($node in $nodes) {
 
 # Verify installation
 Get-WindowsFeature -Name NLB -ComputerName "NODE1"
+```
+
+Resultat :
+
+```text
+Display Name                            Name     Install State
+------------                            ----     -------------
+[X] Network Load Balancing              NLB      Installed
+[X] Network Load Balancing Tools        NLB-Tools Installed
 ```
 
 ### Prerequis reseau

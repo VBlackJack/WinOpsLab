@@ -49,6 +49,14 @@ graph TD
 
 ## Instructions
 
+!!! example "Analogie"
+
+    Creer un domaine Active Directory, c'est comme ouvrir un hotel avec un registre central :
+    le premier controleur de domaine est le receptionniste principal qui tient le registre
+    (l'annuaire). Le second DC est son collegue de nuit avec un double du registre (replication).
+    Sans IP statique configuree avant la promotion, c'est comme si le receptionniste changeait
+    de bureau a chaque poste — personne ne saurait ou le trouver.
+
 ### Partie 1 : Installer le role AD DS sur SRV-DC01
 
 1. Se connecter a SRV-DC01
@@ -120,6 +128,26 @@ Apres le redemarrage, verifier que le domaine est fonctionnel.
     Resolve-DnsName -Name "_ldap._tcp.dc._msdcs.winopslab.local" -Type SRV
     ```
 
+    Resultat attendu apres verification du domaine :
+
+    ```text
+    # Get-ADDomainController | Select-Object Name, Domain, IPv4Address
+    Name      Domain            IPv4Address
+    ----      ------            -----------
+    SRV-DC01  winopslab.local   192.168.10.10
+
+    # Get-ADDomain | Select-Object DNSRoot, PDCEmulator
+    DNSRoot         PDCEmulator
+    -------         -----------
+    winopslab.local SRV-DC01.winopslab.local
+
+    # Get-SmbShare | Where-Object { $_.Name -in "SYSVOL","NETLOGON" }
+    Name     Path
+    ----     ----
+    NETLOGON C:\Windows\SYSVOL\sysvol\winopslab.local\SCRIPTS
+    SYSVOL   C:\Windows\SYSVOL\sysvol
+    ```
+
 ### Partie 4 : Joindre SRV-DC02 au domaine et promouvoir en DC
 
 1. Configurer le DNS de SRV-DC02 pour pointer vers SRV-DC01 (192.168.10.10)
@@ -189,6 +217,32 @@ Apres le redemarrage, verifier que le domaine est fonctionnel.
        pour resoudre les enregistrements SRV necessaires au fonctionnement d'AD DS.
     4. SYSVOL contient les scripts de connexion et les fichiers de strategies de groupe (GPO).
        Il est replique entre tous les controleurs de domaine.
+
+!!! warning "Pieges frequents dans ce lab"
+
+    1. **IP statique non configuree avant la promotion** : si SRV-DC01 est encore en DHCP
+       au moment de `Install-ADDSForest`, le DNS integre a AD sera lie a une adresse qui peut
+       changer. La promotion peut reussir mais le DNS sera inaccessible apres un redemarrage.
+       Toujours configurer l'IP statique ET le DNS (127.0.0.1 ou l'IP du serveur lui-meme) avant.
+
+    2. **DNS de SRV-DC02 pointant vers lui-meme** : avant de joindre SRV-DC02 au domaine,
+       son DNS doit pointer vers SRV-DC01 (192.168.10.10), pas vers lui-meme. Un DNS pointant
+       vers 127.0.0.1 ne peut pas resoudre winopslab.local car la zone n'existe pas encore
+       localement.
+
+    3. **Mot de passe DSRM oublie ou trop simple** : le mot de passe DSRM est independant
+       du mot de passe Administrateur du domaine. Il doit respecter la politique de complexite.
+       Notez-le dans votre documentation de lab — impossible a recuperer sans reinitialisation.
+
+    4. **Joindre SRV-DC02 sans redemarrer avant la promotion** : apres `Add-Computer -Restart`,
+       attendre le redemarrage complet et la reconnexion avec le compte de domaine avant
+       d'executer `Install-ADDSDomainController`. Une promotion lancee sans redemarrage
+       produit des erreurs de replication.
+
+    5. **Ne pas verifier les enregistrements SRV** : apres la promotion, un domaine AD
+       fonctionnel doit publier ses enregistrements `_ldap._tcp.dc._msdcs.winopslab.local`
+       dans le DNS. S'ils sont absents, les clients et serveurs ne pourront pas localiser
+       le controleur de domaine meme si le ping reussit.
 
 ## Nettoyage
 

@@ -36,6 +36,10 @@ flowchart TD
     L --> M["Exporter et versionner : auditpol /backup"]
 ```
 
+!!! example "Analogie"
+
+    Une politique d'audit est comparable au systeme de cameras de surveillance d'un immeuble. L'audit de base, ce sont 9 cameras couvrant les grandes zones (hall, parking, couloirs). L'audit avance, ce sont 53 cameras couvrant chaque porte, chaque fenetre et chaque armoire forte. Plus vous avez de cameras, plus vous pouvez reconstituer un incident, mais plus vous avez de bandes a stocker et a analyser.
+
 ## Audit de base vs audit avance
 
 Windows Server propose deux niveaux de configuration des strategies d'audit :
@@ -158,6 +162,26 @@ La commande `auditpol` permet de configurer l'audit avance en ligne de commande 
 ```powershell
 # View current audit policy
 auditpol /get /category:*
+```
+
+Resultat :
+
+```text
+System audit policy
+  Category/Subcategory                        Setting
+  Account Logon
+    Credential Validation                     No Auditing
+    Kerberos Authentication Service           No Auditing
+    Kerberos Service Ticket Operations        No Auditing
+  Logon/Logoff
+    Logon                                     No Auditing
+    Logoff                                    No Auditing
+  Account Management
+    User Account Management                   No Auditing
+    Security Group Management                 No Auditing
+```
+
+```powershell
 
 # Configure recommended audit settings
 # Account Logon
@@ -198,6 +222,13 @@ auditpol /restore /file:"C:\Temp\audit-policy-backup.csv"
 auditpol /clear /y
 ```
 
+Resultat :
+
+```text
+The command was successfully executed.
+The command was successfully executed.
+```
+
 ---
 
 ## Configuration de la taille des journaux
@@ -213,6 +244,16 @@ wevtutil sl Security /ms:4294967296
 
 # Alternatively via PowerShell
 Limit-EventLog -LogName Security -MaximumSize 4GB -OverflowAction OverwriteAsNeeded
+```
+
+Resultat :
+
+```text
+LogName   MaximumSizeInBytes  LogMode
+-------   ------------------  -------
+Security           20971520   Circular
+
+(taille par defaut : 20 Mo -> a augmenter a 4 Go)
 ```
 
 ### Recommandations de dimensionnement
@@ -253,6 +294,19 @@ Get-ItemProperty "HKLM:\SOFTWARE\Policies\Microsoft\Windows\PowerShell\ScriptBlo
 Get-ItemProperty "HKLM:\SOFTWARE\Policies\Microsoft\Windows\PowerShell\Transcription" -ErrorAction SilentlyContinue
 ```
 
+Resultat :
+
+```text
+EnableScriptBlockLogging     : 1
+EnableScriptBlockInvocationLogging : 0
+PSPath                       : Microsoft.PowerShell.Core\Registry::HKLM:\SOFTWARE\...
+
+EnableTranscripting          : 1
+OutputDirectory              : \\SRV-01\PStranscripts
+EnableInvocationHeader       : 1
+PSPath                       : Microsoft.PowerShell.Core\Registry::HKLM:\SOFTWARE\...
+```
+
 ---
 
 ## Verification de la politique effective
@@ -275,6 +329,82 @@ foreach ($policy in $expected.GetEnumerator()) {
     Write-Output "$($policy.Key) : $status (attendu: $($policy.Value), actuel: $($match.'Inclusion Setting'))"
 }
 ```
+
+Resultat :
+
+```text
+Credential Validation : OK (attendu: Success and Failure, actuel: Success and Failure)
+Logon : OK (attendu: Success and Failure, actuel: Success and Failure)
+Security Group Management : ECART (attendu: Success and Failure, actuel: Success)
+```
+
+---
+
+## Scenario pratique
+
+!!! example "Scenario pratique"
+
+    **Contexte** : Nathalie, responsable securite, est alertee d'une tentative de brute force sur le controleur de domaine `DC-01` (10.0.0.10). Elle doit verifier que la politique d'audit est correctement configuree pour capturer les evenements de connexion echouee.
+
+    **Diagnostic** :
+
+    ```powershell
+    # Check current audit policy on DC-01
+    Invoke-Command -ComputerName "DC-01" -ScriptBlock {
+        auditpol /get /subcategory:"Logon"
+        auditpol /get /subcategory:"Credential Validation"
+        auditpol /get /subcategory:"Account Lockout"
+    }
+    ```
+
+    Resultat :
+
+    ```text
+    System audit policy
+      Subcategory                      Setting
+      Logon                            Success
+      Credential Validation            Success
+      Account Lockout                  No Auditing
+    ```
+
+    **Probleme** : l'audit des echecs n'est pas active ! Les tentatives de brute force (Event 4625) ne sont pas enregistrees.
+
+    **Resolution** :
+
+    ```powershell
+    Invoke-Command -ComputerName "DC-01" -ScriptBlock {
+        auditpol /set /subcategory:"Logon" /success:enable /failure:enable
+        auditpol /set /subcategory:"Credential Validation" /success:enable /failure:enable
+        auditpol /set /subcategory:"Account Lockout" /failure:enable
+
+        # Verify
+        auditpol /get /subcategory:"Logon"
+    }
+    ```
+
+    Resultat :
+
+    ```text
+    System audit policy
+      Subcategory                      Setting
+      Logon                            Success and Failure
+    ```
+
+    Nathalie configure ensuite la GPO d'audit pour appliquer ces parametres de maniere permanente sur tous les controleurs de domaine, et augmente la taille du journal Security a 4 Go.
+
+---
+
+!!! danger "Erreurs courantes"
+
+    1. **Melanger audit de base et audit avance dans la meme GPO** : l'audit avance ecrase l'audit de base. Si vous configurez les deux, les resultats seront imprevisibles. Activez le parametre "Force audit policy subcategory settings" pour eviter ce conflit.
+
+    2. **Laisser la taille du journal Security a 20 Mo (valeur par defaut)** : sur un controleur de domaine ou un serveur critique, 20 Mo se remplissent en quelques heures. Augmentez a 4 Go minimum et configurez l'archivage vers un SIEM.
+
+    3. **Ne pas activer l'audit des echecs** : l'audit des succes seul ne permet pas de detecter les tentatives d'intrusion. Les tentatives de connexion echouees (Event 4625) sont l'indicateur principal d'une attaque par brute force.
+
+    4. **Oublier la journalisation PowerShell** : sans ScriptBlock Logging, un attaquant peut executer des scripts malveillants sans laisser de trace exploitable. Activez Module Logging, ScriptBlock Logging et Transcription.
+
+    5. **Ne pas exporter et versionner la politique d'audit** : utilisez `auditpol /backup` pour sauvegarder la configuration et la stocker dans un systeme de gestion de versions. Cela facilite la detection de modifications non autorisees.
 
 ---
 

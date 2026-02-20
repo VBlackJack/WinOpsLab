@@ -13,6 +13,12 @@ tags:
 
 ## Les editions de Windows Server 2022
 
+!!! example "Analogie"
+
+    Imaginez un immeuble de bureaux. L'edition **Essentials** est un petit local pour une startup de 25 personnes.
+    L'edition **Standard** est un etage entier avec deux salles de reunion. L'edition **Datacenter** est
+    l'immeuble complet, avec un nombre illimite de salles, un parking souterrain et un systeme de securite avance.
+
 Microsoft propose trois editions principales, chacune adaptee a des besoins differents.
 
 ### Essentials
@@ -91,6 +97,12 @@ graph LR
 
 ### CAL (Client Access License)
 
+!!! example "Analogie"
+
+    La licence serveur, c'est le loyer du bureau. Les CAL, ce sont les badges d'acces individuels :
+    chaque employe (CAL utilisateur) ou chaque poste de travail (CAL appareil) a besoin de son propre badge
+    pour entrer dans le batiment. Sans badge, pas d'acces.
+
 En plus de la licence serveur, chaque utilisateur ou appareil qui accede au serveur a besoin d'une CAL :
 
 - **CAL utilisateur** : attribuee a une personne, quel que soit le nombre d'appareils
@@ -138,6 +150,66 @@ slmgr /dlv
 # Convert evaluation to retail (requires a valid product key)
 DISM /Online /Set-Edition:ServerStandard /ProductKey:XXXXX-XXXXX-XXXXX-XXXXX-XXXXX /AcceptEula
 ```
+
+Resultat de `slmgr /dlv` :
+
+```text
+Name: Windows(R), ServerDatacenterEval edition
+Description: Windows(R) Operating System, TIMEBASED_EVAL channel
+Partial Product Key: 3V66T
+License Status: Licensed
+Timebased activation expiration: 180 days (172 day(s) remaining)
+```
+
+## Scenario pratique
+
+!!! example "Scenario pratique"
+
+    **Contexte** : Sophie, administratrice systeme dans une PME de 80 employes, doit deployer un nouveau
+    serveur pour heberger Active Directory, un partage de fichiers et deux machines virtuelles de test.
+
+    **Probleme** : Elle hesite entre l'edition Standard et Datacenter, et ne sait pas combien de CAL acheter.
+
+    **Analyse** :
+
+    1. L'entreprise compte 80 employes avec chacun un PC fixe → 80 CAL necessaires
+    2. Elle a besoin de seulement 2 VMs → l'edition Standard suffit (2 VMs incluses)
+    3. Pas de besoin de Storage Spaces Direct ni de SDN → Datacenter est surdimensionnee
+    4. Le serveur physique dispose d'un processeur 8 coeurs → minimum 16 coeurs a licencier (8 packs de 2)
+
+    **Solution** :
+
+    ```powershell
+    # Verify the edition installed on the new server
+    Get-ComputerInfo | Select-Object WindowsProductName, OsVersion
+    ```
+
+    ```text
+    WindowsProductName              OsVersion
+    ------------------              ---------
+    Windows Server 2022 Standard    10.0.20348
+    ```
+
+    **Decision** : Edition **Standard** + **80 CAL utilisateur** (car chaque employe n'a qu'un seul appareil).
+    Cout optimise, fonctionnalites adaptees au besoin.
+
+## Erreurs courantes
+
+!!! danger "Erreurs courantes"
+
+    1. **Confondre la licence serveur et les CAL** : Acheter la licence Standard ne suffit pas. Chaque
+       utilisateur ou appareil qui se connecte au serveur necessite egalement une CAL. Un audit Microsoft
+       peut reveler un manque de conformite couteux.
+
+    2. **Choisir Datacenter "au cas ou"** : L'edition Datacenter est significativement plus chere.
+       Si vous n'avez pas besoin de virtualisation illimitee, de Storage Spaces Direct ou de SDN,
+       l'edition Standard suffit largement.
+
+    3. **Oublier le minimum de 16 coeurs** : Meme si votre serveur n'a que 4 coeurs physiques,
+       vous devez acheter au minimum 16 coeurs de licences (8 packs de 2 coeurs).
+
+    4. **Laisser expirer la periode d'evaluation** : Apres 180 jours, le serveur s'eteint toutes les
+       heures. Pensez a activer la licence ou a convertir l'evaluation avant l'echeance.
 
 ## Points cles a retenir
 

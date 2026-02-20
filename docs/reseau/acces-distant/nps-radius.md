@@ -21,6 +21,10 @@ tags:
 
 ---
 
+!!! example "Analogie"
+
+    NPS/RADIUS fonctionne comme le **service de securite central d'un campus avec plusieurs batiments**. Chaque batiment a une porte d'entree (le point d'acces Wi-Fi, le serveur VPN), mais au lieu que chaque gardien verifie les badges independamment, tous appellent le bureau central de securite (NPS) qui consulte la liste officielle des employes (Active Directory) et repond : "Acces autorise, envoyez-le au 3e etage" (les parametres RADIUS comme le VLAN).
+
 ## Architecture RADIUS
 
 Le protocole RADIUS fonctionne selon un modele client/serveur :
@@ -73,6 +77,14 @@ Install-WindowsFeature NPAS -IncludeManagementTools
 Get-WindowsFeature NPAS | Select-Object Name, InstallState
 ```
 
+Resultat :
+
+```text
+Name InstallState
+---- ------------
+NPAS    Installed
+```
+
 ### Via le Gestionnaire de serveur
 
 1. **Ajouter des roles et fonctionnalites**
@@ -118,19 +130,28 @@ Chaque equipement reseau (NAS) qui envoie des demandes d'authentification a NPS 
 
 ```powershell
 # Add a VPN server as a RADIUS client
-New-NpsRadiusClient -Name "VPN-Server-01" `
-    -Address "192.168.1.50" `
+New-NpsRadiusClient -Name "SRV-VPN01" `
+    -Address "10.0.0.50" `
     -SharedSecret "YourComplexSharedSecret123!" `
     -VendorName "Microsoft"
 
 # Add a Wi-Fi access point as a RADIUS client
 New-NpsRadiusClient -Name "AP-WiFi-Building-A" `
-    -Address "192.168.2.10" `
+    -Address "10.0.0.60" `
     -SharedSecret "AnotherComplexSecret456!" `
     -VendorName "RADIUS Standard"
 
 # List all configured RADIUS clients
 Get-NpsRadiusClient | Select-Object Name, Address, Enabled
+```
+
+Resultat :
+
+```text
+Name                  Address      Enabled
+----                  -------      -------
+SRV-VPN01             10.0.0.50    True
+AP-WiFi-Building-A    10.0.0.60    True
 ```
 
 !!! warning "Secret partage"
@@ -254,6 +275,12 @@ Export-NpsConfiguration -Path "C:\Backup\nps-config.xml"
 Import-NpsConfiguration -Path "C:\Backup\nps-config.xml"
 ```
 
+Resultat :
+
+```text
+# (La configuration NPS est exportee vers C:\Backup\nps-config.xml)
+```
+
 ---
 
 ## Exemple : politique Wi-Fi 802.1X
@@ -341,6 +368,16 @@ Get-WinEvent -LogName Security -FilterXPath "*[System[EventID=6272 or EventID=62
 # Event ID 6273: Network Policy Server denied access
 ```
 
+Resultat :
+
+```text
+TimeCreated            Id Message
+-----------            -- -------
+2026-02-20 14:32:18  6272 Network Policy Server granted access to user LAB\jdupont...
+2026-02-20 14:30:05  6273 Network Policy Server denied access to user LAB\stagiaire1...
+2026-02-20 13:55:42  6272 Network Policy Server granted access to user LAB\mmartin...
+```
+
 ---
 
 ## Ports RADIUS
@@ -361,6 +398,22 @@ New-NetFirewallRule -DisplayName "Allow RADIUS Accounting" `
     -Direction Inbound -Protocol UDP -LocalPort 1813 -Action Allow -Profile Domain
 ```
 
+Resultat :
+
+```text
+Name        : {f1a2b3c4-5678-9def-0123-456789abcdef}
+DisplayName : Allow RADIUS Auth
+Direction   : Inbound
+Action      : Allow
+Enabled     : True
+
+Name        : {a9b8c7d6-5432-1fed-cba0-987654321098}
+DisplayName : Allow RADIUS Accounting
+Direction   : Inbound
+Action      : Allow
+Enabled     : True
+```
+
 ---
 
 ## Points cles a retenir
@@ -375,6 +428,69 @@ New-NetFirewallRule -DisplayName "Allow RADIUS Accounting" `
 | Journalisation               | Fichier local ou SQL Server pour l'audit                  |
 
 ---
+
+!!! example "Scenario pratique"
+
+    **Contexte** : Claire, ingenieure reseau, configure NPS sur `SRV-NPS01` (10.0.0.40) dans le domaine `lab.local` pour authentifier les connexions VPN provenant de `SRV-VPN01` (10.0.0.50). Seuls les membres du groupe AD "VPN-Users" doivent pouvoir se connecter.
+
+    **Solution** :
+
+    ```powershell
+    # Step 1: Install NPS
+    Install-WindowsFeature NPAS -IncludeManagementTools
+
+    # Step 2: Register NPS in Active Directory
+    netsh ras add registeredserver
+    ```
+
+    ```text
+    Registered server SRV-NPS01.lab.local successfully.
+    ```
+
+    ```powershell
+    # Step 3: Add the VPN server as a RADIUS client
+    New-NpsRadiusClient -Name "SRV-VPN01" `
+        -Address "10.0.0.50" `
+        -SharedSecret "S3cur3R@dius!2026" `
+        -VendorName "Microsoft"
+
+    # Step 4: Open firewall ports for RADIUS
+    New-NetFirewallRule -DisplayName "Allow RADIUS Auth" `
+        -Direction Inbound -Protocol UDP -LocalPort 1812 -Action Allow -Profile Domain
+    New-NetFirewallRule -DisplayName "Allow RADIUS Accounting" `
+        -Direction Inbound -Protocol UDP -LocalPort 1813 -Action Allow -Profile Domain
+    ```
+
+    ```text
+    Name     Address    Enabled
+    ----     -------    -------
+    SRV-VPN01 10.0.0.50 True
+    ```
+
+    Ensuite, dans la console NPS (`nps.msc`), creer une politique reseau :
+
+    - **Conditions** : Groupes Windows = "LAB\VPN-Users", Type de port NAS = "Virtual (VPN)"
+    - **Contraintes** : Methode d'authentification = PEAP-MSCHAPv2
+    - **Parametres** : Chiffrement = Maximum
+
+    ```powershell
+    # Step 5: Verify that authentication works
+    Get-WinEvent -LogName Security -FilterXPath "*[System[EventID=6272]]" -MaxEvents 1
+    ```
+
+    ```text
+    TimeCreated           Id Message
+    -----------           -- -------
+    2026-02-20 15:10:33 6272 Network Policy Server granted access to user LAB\jdupont...
+    ```
+
+!!! danger "Erreurs courantes"
+
+    - **Secret partage different entre NPS et le client RADIUS** : si le shared secret ne correspond pas exactement, toutes les authentifications echouent avec des erreurs cryptiques. Verifier la casse et les espaces.
+    - **Oublier d'enregistrer NPS dans Active Directory** : sans enregistrement, NPS ne peut pas lire les proprietes d'acces des comptes utilisateur et toutes les authentifications sont refusees.
+    - **Ordre des politiques reseau incorrect** : NPS evalue les politiques dans l'ordre. Si une politique de refus est placee avant la politique d'autorisation, les utilisateurs sont rejetes meme s'ils remplissent les conditions.
+    - **Ne pas ouvrir les ports RADIUS sur le pare-feu** : les ports UDP 1812 (authentification) et 1813 (comptabilisation) doivent etre ouverts entre le client RADIUS et le serveur NPS.
+    - **Oublier la replication NPS** : NPS ne se replique pas automatiquement. Si le serveur NPS tombe, aucune authentification RADIUS ne fonctionne. Toujours configurer un second serveur NPS et repliquer la configuration via `Export-NpsConfiguration` / `Import-NpsConfiguration`.
 
 ## Pour aller plus loin
 

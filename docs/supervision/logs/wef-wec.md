@@ -31,6 +31,14 @@ graph LR
     D --> G[Alertes]
 ```
 
+!!! example "Analogie"
+
+    WEF/WEC fonctionne comme un **systeme postal centralise**. Chaque serveur (bureau local)
+    envoie ses rapports importants au siege (le collecteur WEC). Au lieu de se deplacer dans
+    chaque bureau pour lire le courrier, le directeur (l'administrateur) consulte tout depuis
+    un point unique. Le mode "initie par la source" est comme un abonnement postal automatique :
+    chaque bureau envoie sans qu'on le lui demande.
+
 ## Modes de fonctionnement
 
 ### Initie par le collecteur (Collector-Initiated)
@@ -177,6 +185,36 @@ wecutil rs "Security-Events-DCs"
 wecutil ds "Security-Events-DCs"
 ```
 
+Resultat :
+
+```text
+# wecutil gs "Security-Events-DCs"
+Subscription Id: Security-Events-DCs
+SubscriptionType: CollectorInitiated
+Description: Collect security events from domain controllers
+Enabled: true
+Uri: http://schemas.microsoft.com/wbem/wsman/1/windows/EventLog
+ConfigurationMode: Normal
+DeliveryMode: Push
+DeliveryMaxLatencyTime: 900000
+
+# wecutil es
+Security-Events-DCs
+All-Servers-Security
+
+# wecutil gr "Security-Events-DCs"
+Subscription: Security-Events-DCs
+    RunTimeStatus: Active
+    LastError: 0
+    EventSources:
+        SRV-DC01.lab.local
+            RunTimeStatus: Active
+            LastHeartbeatTime: 2026-02-20T14:30:00.000
+        SRV-DC02.lab.local
+            RunTimeStatus: Active
+            LastHeartbeatTime: 2026-02-20T14:28:15.000
+```
+
 ## Configuration mode initie par la source (GPO)
 
 ### Etape 1 : Configurer le collecteur
@@ -293,6 +331,31 @@ wevtutil gl "ForwardedEvents"
 
 # Debug: check WinRM logs on the source
 Get-WinEvent -LogName "Microsoft-Windows-Forwarding/Operational" -MaxEvents 20
+```
+
+Resultat :
+
+```text
+# wecutil gr "All-Servers-Security"
+Subscription: All-Servers-Security
+    RunTimeStatus: Active
+    EventSources:
+        SRV-DC01.lab.local      RunTimeStatus: Active
+        SRV-01.lab.local        RunTimeStatus: Active
+        SRV-WEB01.lab.local     RunTimeStatus: Inactive (Error: 0x138C)
+
+# Get-WinEvent -LogName "ForwardedEvents" -MaxEvents 10
+TimeCreated           Id ProviderName              MachineName       Message
+-----------           -- ------------              -----------       -------
+2026-02-20 14:35:10 4625 Microsoft-Windows-Security SRV-DC01.lab.local An account failed to log on...
+2026-02-20 14:32:45 4624 Microsoft-Windows-Security SRV-01.lab.local   An account was successfully logged on...
+2026-02-20 14:30:22 7034 Service Control Manager    SRV-DC01.lab.local The DNS service terminated unexpectedly...
+
+# Test-WSMan -ComputerName SRV-LOG01
+wsmid           : http://schemas.dmtf.org/wbem/wsman/identity/1/wsmanidentity.xsd
+ProtocolVersion : http://schemas.dmtf.org/wbem/wsman/1/wsman.xsd
+ProductVendor   : Microsoft Corporation
+ProductVersion  : OS: 10.0.20348 SP: 0.0 Stack: 3.0
 ```
 
 ### Problemes courants

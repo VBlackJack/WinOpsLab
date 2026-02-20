@@ -22,6 +22,10 @@ La PKI (Public Key Infrastructure) est l'ensemble des composants, politiques et 
 
 ## Cryptographie asymetrique
 
+!!! example "Analogie"
+
+    La cryptographie asymetrique fonctionne comme une boite aux lettres avec une fente : tout le monde peut y deposer du courrier (chiffrer avec la cle publique), mais seul le proprietaire possede la cle pour l'ouvrir (dechiffrer avec la cle privee). La PKI, c'est le service postal qui certifie que la boite aux lettres appartient bien a la bonne personne.
+
 La PKI repose sur la **cryptographie asymetrique** : chaque entite possede une paire de cles mathematiquement liees.
 
 | Cle | Utilisation | Diffusion |
@@ -88,9 +92,30 @@ $cert | Format-List *
 Test-Certificate -Cert $cert -Policy SSL
 ```
 
+Resultat :
+
+```text
+Subject     Issuer                   NotAfter             Thumbprint
+-------     ------                   --------             ----------
+CN=SRV-01.. CN=Lab-SUB-CA, DC=lab... 2026-02-15 10:00:00  A1B2C3D4E5F6A7B8C9D0E1F2A3B4C5D6E7F8A9B0
+CN=SRV-01.. CN=Lab-SUB-CA, DC=lab... 2026-05-20 14:30:00  B2C3D4E5F6A7B8C9D0E1F2A3B4C5D6E7F8A9B0C1
+
+Subject            : CN=SRV-01.lab.local
+Issuer             : CN=Lab-SUB-CA, DC=lab, DC=local
+Thumbprint         : A1B2C3D4E5F6A7B8C9D0E1F2A3B4C5D6E7F8A9B0
+FriendlyName       :
+NotBefore          : 2025-02-15 10:00:00
+NotAfter           : 2026-02-15 10:00:00
+Extensions         : {System.Security.Cryptography.Oid, ...}
+```
+
 ---
 
 ## Hierarchie d'autorites de certification
+
+!!! example "Analogie"
+
+    La hierarchie de CA fonctionne comme le systeme notarial : le ministere de la Justice (CA Racine) accredite les notaires (CA Subordonnees), qui a leur tour authentifient les documents des citoyens (certificats). Si un notaire commet une faute, seuls ses documents sont invalides. Mais si le ministere est compromis, tout le systeme s'effondre.
 
 Une PKI d'entreprise repose sur une hierarchie de CA (Certificate Authorities) organisee en niveaux.
 
@@ -170,6 +195,17 @@ $cert.Extensions | Where-Object { $_.Oid.FriendlyName -eq "CRL Distribution Poin
 certutil -URL "http://pki.lab.local/CertEnroll/lab-ROOT-CA.crl"
 ```
 
+Resultat :
+
+```text
+[1]CRL Distribution Point
+     Distribution Point Name:
+          Full Name:
+               URL=http://pki.lab.local/CertEnroll/Lab-SUB-CA.crl
+
+CertUtil: -URL command completed successfully.
+```
+
 ---
 
 ## Magasins de certificats Windows
@@ -198,6 +234,81 @@ Get-ChildItem -Path Cert:\LocalMachine\My |
     Where-Object { $_.NotAfter -lt $threshold -and $_.NotAfter -gt (Get-Date) } |
     Select-Object Subject, NotAfter, Thumbprint
 ```
+
+Resultat :
+
+```text
+Name                                          Location
+----                                          --------
+My                                            LocalMachine
+Root                                          LocalMachine
+CA                                            LocalMachine
+TrustedPeople                                 LocalMachine
+TrustedPublisher                              LocalMachine
+
+Count : 47
+Count : 2
+
+Subject                     NotAfter              Thumbprint
+-------                     --------              ----------
+CN=SRV-01.lab.local         2025-03-10 14:30:00   A1B2C3D4E5F6...
+```
+
+---
+
+## Scenario pratique
+
+!!! example "Scenario pratique"
+
+    **Contexte** : Antoine, administrateur reseau, constate que les utilisateurs recoivent des avertissements de securite lorsqu'ils accedent au portail intranet `https://intranet.lab.local`. Le navigateur affiche "Ce certificat n'est pas approuve".
+
+    **Diagnostic** :
+
+    ```powershell
+    # Check the certificate on the web server
+    $cert = Get-ChildItem -Path Cert:\LocalMachine\My |
+        Where-Object { $_.Subject -match "intranet.lab.local" }
+    $cert | Select-Object Subject, Issuer, NotAfter
+
+    # Test the certificate chain
+    Test-Certificate -Cert $cert -Policy SSL
+    ```
+
+    Resultat :
+
+    ```text
+    Subject                    Issuer                    NotAfter
+    -------                    ------                    --------
+    CN=intranet.lab.local      CN=intranet.lab.local     2026-01-15 12:00:00
+
+    Test-Certificate : The certificate is self-signed.
+    ```
+
+    **Cause** : le certificat est auto-signe (Issuer = Subject). Il n'a pas ete emis par la CA d'entreprise `Lab-SUB-CA`.
+
+    **Resolution** :
+
+    ```powershell
+    # Request a proper certificate from the Enterprise CA
+    $template = "Lab-WebServer"
+    certreq -new "C:\Temp\intranet-request.inf" "C:\Temp\intranet.req"
+    certreq -submit -config "SRV-CA\Lab-SUB-CA" "C:\Temp\intranet.req" "C:\Temp\intranet.cer"
+    certreq -accept "C:\Temp\intranet.cer"
+    ```
+
+    Apres l'installation du certificat emis par la CA d'entreprise, les navigateurs des machines du domaine ne montrent plus d'avertissement car le certificat de la CA Racine est publie dans Active Directory et automatiquement approuve.
+
+---
+
+!!! danger "Erreurs courantes"
+
+    1. **Utiliser des certificats auto-signes en production** : les certificats auto-signes ne sont approuves par aucune CA et generent des avertissements de securite. Utilisez toujours votre CA d'entreprise pour les certificats internes.
+
+    2. **Stocker la cle privee de la CA Racine sur un serveur connecte au reseau** : si cette cle est compromise, toute la chaine de confiance est detruite. La CA Racine doit etre hors ligne sur une machine isolee.
+
+    3. **Ne pas surveiller les dates d'expiration des certificats** : un certificat expire provoque des interruptions de service silencieuses (HTTPS, LDAPS, VPN). Mettez en place un script de supervision avec alerte a 30 jours.
+
+    4. **Confondre chiffrement et signature** : le chiffrement protege la confidentialite (cle publique du destinataire), la signature prouve l'authenticite (cle privee de l'emetteur). Ce sont deux usages distincts de la cryptographie asymetrique.
 
 ---
 

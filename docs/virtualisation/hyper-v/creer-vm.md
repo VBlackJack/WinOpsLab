@@ -18,6 +18,10 @@ La creation d'une machine virtuelle Hyper-V implique plusieurs choix architectur
 
 ## Generation 1 vs Generation 2
 
+!!! example "Analogie"
+
+    Choisir entre Generation 1 et Generation 2, c'est comme choisir entre une **voiture ancienne** et une **voiture moderne**. La Generation 1 (BIOS legacy) est comme une voiture a carburateur : elle fonctionne encore mais manque de fonctionnalites modernes. La Generation 2 (UEFI) est comme une voiture a injection electronique : demarrage securise, equipements avances et meilleures performances.
+
 | Critere | Generation 1 | Generation 2 |
 |---------|-------------|-------------|
 | **Firmware** | BIOS legacy | UEFI |
@@ -57,6 +61,14 @@ Add-VMDvdDrive -VMName "SRV-APP01" -Path "D:\ISO\WindowsServer2022.iso"
 # Set boot order (DVD first for installation)
 $dvd = Get-VMDvdDrive -VMName "SRV-APP01"
 Set-VMFirmware -VMName "SRV-APP01" -FirstBootDevice $dvd
+```
+
+Resultat :
+
+```text
+Name       State CPUUsage(%) MemoryAssigned(M) Uptime            Status             Version
+----       ----- ----------- ----------------- ------            ------             -------
+SRV-APP01  Off   0           0                 00:00:00          Operating normally 10.0
 ```
 
 ### Creation complete avec parametres avances
@@ -123,6 +135,14 @@ Set-VMProcessor -VMName "SRV-APP01" `
     -RelativeWeight 100    # Priority relative to other VMs (1-10000)
 ```
 
+Resultat :
+
+```text
+Count Reserve Maximum RelativeWeight CompatibilityForMigrationEnabled
+----- ------- ------- -------------- --------------------------------
+4     10      80      100            False
+```
+
 ### Compatibilite du processeur
 
 ```powershell
@@ -134,6 +154,14 @@ Get-VMProcessor -VMName "SRV-APP01" |
     Select-Object Count, Reserve, Maximum, RelativeWeight, CompatibilityForMigrationEnabled
 ```
 
+Resultat :
+
+```text
+Count Reserve Maximum RelativeWeight CompatibilityForMigrationEnabled
+----- ------- ------- -------------- --------------------------------
+4     10      80      100            True
+```
+
 !!! warning "Surallocation CPU"
 
     Hyper-V permet d'allouer plus de vCPU que de coeurs physiques disponibles. C'est acceptable pour des charges non-critiques mais deconseille pour des VMs de production a forte charge.
@@ -141,6 +169,10 @@ Get-VMProcessor -VMName "SRV-APP01" |
 ---
 
 ## Memoire dynamique
+
+!!! example "Analogie"
+
+    La memoire dynamique fonctionne comme un **systeme de reservation de salles de reunion**. Chaque equipe (VM) reserve un minimum de places (Minimum), demarre avec un certain nombre de chaises (Startup), et peut en demander davantage jusqu'a la capacite maximale de la salle (Maximum). Le buffer de 20 % correspond a quelques chaises supplementaires toujours pretes, au cas ou des collegues arrivent a l'improviste.
 
 La memoire dynamique ajuste automatiquement la RAM allouee a une VM en fonction de sa charge.
 
@@ -166,6 +198,14 @@ Set-VMMemory -VMName "SRV-APP01" `
 # View memory allocation
 Get-VM -Name "SRV-APP01" | Select-Object Name, MemoryAssigned, MemoryDemand,
     MemoryStartup, DynamicMemoryEnabled
+```
+
+Resultat :
+
+```text
+Name      MemoryAssigned MemoryDemand MemoryStartup DynamicMemoryEnabled
+----      -------------- ------------ ------------- --------------------
+SRV-APP01     3221225472   2684354560    4294967296                 True
 ```
 
 ### Parametres
@@ -210,6 +250,19 @@ Enable-VMIntegrationService -VMName "SRV-APP01" -Name "Guest Service Interface"
 Disable-VMIntegrationService -VMName "SRV-APP01" -Name "Time Synchronization"
 ```
 
+Resultat :
+
+```text
+Name                      Enabled PrimaryOperationalStatus
+----                      ------- ------------------------
+Guest Service Interface   False   Ok
+Heartbeat                 True    Ok
+Key-Value Pair Exchange   True    Ok
+Shutdown                  True    Ok
+Time Synchronization      True    Ok
+VSS                       True    Ok
+```
+
 !!! warning "Synchronisation du temps"
 
     Pour les VMs jointes a un domaine Active Directory, **desactivez** le service Time Synchronization d'Hyper-V. Les VMs doivent synchroniser leur horloge avec le controleur de domaine (hierarchie NTP du domaine), pas avec l'hote Hyper-V.
@@ -244,6 +297,18 @@ Get-VM | Select-Object Name, State, CPUUsage,
     Format-Table -AutoSize
 ```
 
+Resultat :
+
+```text
+Name      State   CPUUsage MemoryGB Uptime           Status
+----      -----   -------- -------- ------           ------
+DC-01     Running        1     2.00 3.02:15:32       Operating normally
+SRV-APP01 Running        5     3.00 1.14:22:08       Operating normally
+SRV-SQL01 Running       12     8.00 3.02:15:30       Operating normally
+SRV-WEB01 Saved          0     0.00 00:00:00         Operating normally
+SRV-TEST  Off            0     0.00 00:00:00         Operating normally
+```
+
 ---
 
 ## Export et import de VMs
@@ -267,6 +332,58 @@ Import-VM -Path (Get-ChildItem $vmConfigPath).FullName -Copy -GenerateNewId
 - Ne pas **surallouer** les vCPU en production
 - Activer **Secure Boot** et **vTPM** pour les VMs Generation 2
 - Configurer les **actions automatiques** de demarrage et d'arret pour chaque VM
+
+---
+
+!!! example "Scenario pratique"
+
+    **Contexte :** Marc, administrateur dans une societe de logistique, doit creer une VM pour un nouveau serveur applicatif. L'application necessite 4 vCPU, 8 Go de RAM et 100 Go de stockage. Le serveur Hyper-V `SRV-HV01` est deja en production.
+
+    **Probleme :** Apres la creation de la VM en Generation 2, Marc n'arrive pas a demarrer l'installation de Windows Server depuis l'ISO. La VM affiche "No operating system was loaded".
+
+    **Diagnostic :**
+
+    ```powershell
+    # Check boot order
+    Get-VMFirmware -VMName "SRV-APP02" | Select-Object -ExpandProperty BootOrder
+    ```
+
+    ```text
+    BootType Device                 FirmwarePath
+    -------- ------                 ------------
+    Drive    Hard Disk Drive on ...
+    Network  Network Adapter on ...
+    ```
+
+    Le lecteur DVD n'apparaissait pas dans l'ordre de demarrage. Marc avait oublie de configurer le boot sur le DVD.
+
+    **Solution :**
+
+    ```powershell
+    # Attach the ISO
+    Add-VMDvdDrive -VMName "SRV-APP02" -Path "D:\ISO\WindowsServer2022.iso"
+
+    # Set DVD as first boot device
+    $dvd = Get-VMDvdDrive -VMName "SRV-APP02"
+    Set-VMFirmware -VMName "SRV-APP02" -FirstBootDevice $dvd
+
+    # Start the VM
+    Start-VM -Name "SRV-APP02"
+    ```
+
+    La VM a demarre correctement sur l'ISO et l'installation de Windows Server 2022 a pu commencer. Apres l'installation, Marc a retire le DVD de l'ordre de demarrage pour que la VM boote directement sur le disque VHDX.
+
+!!! danger "Erreurs courantes"
+
+    1. **Choisir Generation 1 par defaut** : Generation 2 est le standard pour tous les OS modernes (Windows Server 2012+, Linux UEFI). Ne choisissez Generation 1 que pour les anciens systemes.
+
+    2. **Allouer trop de vCPU** : Attribuer 8 vCPU a une VM qui n'en utilise que 2 ne la rend pas plus rapide. Cela consomme inutilement des ressources de scheduling. Dimensionnez en fonction de la charge reelle.
+
+    3. **Laisser la memoire dynamique sur SQL Server** : SQL Server gere sa propre memoire. La memoire dynamique d'Hyper-V entre en conflit avec le buffer pool de SQL Server, provoquant des baisses de performances. Utilisez une allocation fixe.
+
+    4. **Oublier de desactiver Time Synchronization sur les VMs en domaine** : Si la VM synchronise son horloge avec l'hote Hyper-V au lieu du controleur de domaine, cela peut provoquer des echecs d'authentification Kerberos et des problemes de replication AD.
+
+    5. **Ne pas configurer les actions automatiques** : Sans `AutomaticStartAction` et `AutomaticStopAction`, les VMs ne redemarrent pas automatiquement apres un reboot du serveur hote, provoquant une interruption de service.
 
 ---
 

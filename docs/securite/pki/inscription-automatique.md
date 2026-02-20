@@ -19,6 +19,10 @@ L'inscription automatique (auto-enrollment) permet aux machines et utilisateurs 
 
 ## Principe de fonctionnement
 
+!!! example "Analogie"
+
+    L'auto-enrollment fonctionne comme le renouvellement automatique d'un abonnement : votre carte de transport expire bientot, le systeme detecte automatiquement l'echeance et vous envoie une nouvelle carte sans que vous ayez a vous deplacer au guichet. C'est exactement ce que fait l'inscription automatique pour les certificats numeriques.
+
 L'auto-enrollment combine trois elements :
 
 1. **Modele de certificat** avec la permission `Autoenroll` accordee au sujet
@@ -80,6 +84,19 @@ $templateDN = "CN=$templateName,CN=Certificate Templates,CN=Public Key Services,
 dsacls $templateDN
 ```
 
+Resultat :
+
+```text
+Access list:
+  Allow LAB\Domain Computers         SPECIAL ACCESS
+                                       READ
+                                       Enroll
+                                       Autoenroll
+  Allow LAB\Domain Admins            FULL CONTROL
+  Allow NT AUTHORITY\Authenticated Users
+                                       READ
+```
+
 ---
 
 ## Configuration GPO pour l'auto-enrollment
@@ -131,6 +148,24 @@ gpupdate /force
 certutil -pulse
 ```
 
+Resultat :
+
+```text
+DisplayName       : PKI - Auto-Enrollment
+DomainName        : lab.local
+GpoStatus         : AllSettingsEnabled
+
+GpoId             : {F1E2D3C4-B5A6-7890-FEDC-BA0987654321}
+DisplayName       : PKI - Auto-Enrollment
+Enabled           : True
+Target            : DC=lab,DC=local
+
+Updating policy...
+Computer Policy update has completed successfully.
+
+CertUtil: -pulse command completed successfully.
+```
+
 ---
 
 ## Renouvellement automatique
@@ -169,6 +204,14 @@ Get-ChildItem -Path Cert:\LocalMachine\My |
     Where-Object { $_.NotAfter -lt $renewalWindow } |
     Select-Object Subject, NotAfter, Thumbprint,
         @{N='DaysRemaining';E={($_.NotAfter - (Get-Date)).Days}}
+```
+
+Resultat :
+
+```text
+Subject                    NotAfter              Thumbprint                        DaysRemaining
+-------                    --------              ----------                        -------------
+CN=SRV-01.lab.local        2025-03-25 10:00:00   A1B2C3D4E5F6A7B8C9D0E1F2A3...   33
 ```
 
 ---
@@ -212,6 +255,16 @@ foreach ($server in $servers) {
 }
 
 $report | Sort-Object DaysLeft | Format-Table -AutoSize
+```
+
+Resultat :
+
+```text
+Server      Subject                    Expiration            DaysLeft  Thumbprint
+------      -------                    ----------            --------  ----------
+SRV-01      CN=SRV-01.lab.local        2025-03-10 14:30:00  18        A1B2C3D4...
+SRV-APP01   CN=SRV-APP01.lab.local     2025-03-15 09:00:00  23        B2C3D4E5...
+WARNING: Cannot connect to SRV-DEV02 : WinRM cannot process the request.
 ```
 
 ### Detecter les certificats deja expires
@@ -262,6 +315,16 @@ Get-WinEvent -LogName "Security" |
     Select-Object TimeCreated, Id, Message -First 10
 ```
 
+Resultat :
+
+```text
+TimeCreated            Id    Message
+-----------            --    -------
+2025-02-20 10:15:32    1006  Certificate enrollment for Local System succeeded...
+2025-02-20 10:15:30    1006  Certificate enrollment for Local System succeeded...
+2025-02-19 14:22:10    1003  Certificate renewal for Local System completed...
+```
+
 ---
 
 ## Depannage
@@ -291,6 +354,75 @@ certutil -CATemplates -config "LAB-SUB-CA\Lab-SUB-CA"
 # Check CRL accessibility
 certutil -verify -urlfetch Cert:\LocalMachine\My\<thumbprint>
 ```
+
+---
+
+## Scenario pratique
+
+!!! example "Scenario pratique"
+
+    **Contexte** : Pierre, administrateur systeme, constate que le serveur `SRV-APP01` (10.0.0.20) n'a pas recu son certificat machine automatiquement alors que tous les autres serveurs de l'OU l'ont obtenu.
+
+    **Diagnostic** :
+
+    ```powershell
+    # Check if the machine has a certificate
+    Invoke-Command -ComputerName "SRV-APP01" -ScriptBlock {
+        Get-ChildItem -Path Cert:\LocalMachine\My | Select-Object Subject, Issuer, NotAfter
+    }
+    ```
+
+    Resultat :
+
+    ```text
+    (aucun certificat)
+    ```
+
+    ```powershell
+    # Trigger auto-enrollment and check for errors
+    Invoke-Command -ComputerName "SRV-APP01" -ScriptBlock {
+        certutil -pulse
+        Get-WinEvent -LogName "Microsoft-Windows-CertificateServicesClient-Lifecycle-System/Operational" -MaxEvents 5 |
+            Select-Object TimeCreated, Id, Message
+    }
+    ```
+
+    Resultat :
+
+    ```text
+    CertUtil: -pulse command completed successfully.
+
+    TimeCreated            Id    Message
+    -----------            --    -------
+    2025-02-20 11:30:15    1007  Certificate enrollment for Local System failed:
+                                 The requested certificate template is not supported by this CA.
+    ```
+
+    **Cause** : le modele `Lab-Computer` n'a pas ete publie sur la CA `Lab-SUB-CA`.
+
+    **Resolution** :
+
+    ```powershell
+    # Publish the template on the CA
+    certutil -SetCATemplates +Lab-Computer
+
+    # Retry enrollment on the client
+    Invoke-Command -ComputerName "SRV-APP01" -ScriptBlock { certutil -pulse }
+    ```
+
+    Apres publication du modele et relance de l'enrollment, `SRV-APP01` recoit son certificat machine en quelques secondes.
+
+---
+
+!!! danger "Erreurs courantes"
+
+    1. **Configurer Autoenroll dans la GPO sans accorder la permission Autoenroll sur le modele** : la GPO active le mecanisme cote client, mais le modele doit aussi accorder `Read + Enroll + Autoenroll` au groupe cible (ex: `Domain Computers`). Les deux sont necessaires.
+
+    2. **Oublier de publier le modele sur la CA** : un modele configure dans AD n'est pas automatiquement disponible. L'erreur "template not found" dans les logs client indique que le modele n'est pas publie via `certsrv.msc` ou `certutil -SetCATemplates`.
+
+    3. **Ne pas superviser les certificats expirant** : l'auto-enrollment renouvelle les certificats uniquement si la machine est allumee et connectee au reseau pendant la periode de renouvellement. Les serveurs eteints ou deconnectes conservent des certificats expires.
+
+    4. **Definir une periode de renouvellement trop courte** : avec une periode de renouvellement de 1 semaine sur un certificat d'un an, une machine eteinte pendant 10 jours se retrouve avec un certificat expire. Prevoyez au minimum 6 semaines.
 
 ---
 

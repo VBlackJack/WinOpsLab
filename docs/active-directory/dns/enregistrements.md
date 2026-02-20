@@ -13,6 +13,10 @@ tags:
 
 ## Types d'enregistrements
 
+!!! example "Analogie"
+
+    Les enregistrements DNS sont comme les differentes fiches d'un repertoire de contacts. La fiche **A** donne l'adresse postale d'une personne, la fiche **CNAME** est un post-it "voir aussi" qui redirige vers une autre fiche, la fiche **MX** indique la boite aux lettres ou deposer le courrier, et la fiche **PTR** permet de retrouver le nom d'une personne a partir de son adresse.
+
 Chaque zone DNS contient des **enregistrements de ressources** (Resource Records). Chaque enregistrement associe un nom a une valeur specifique selon son type.
 
 ### Enregistrements principaux
@@ -46,6 +50,16 @@ L'enregistrement **SOA** est present dans chaque zone et contient les metadonnee
 ```powershell
 # View SOA record for a zone
 Get-DnsServerResourceRecord -ZoneName "lab.local" -RRType SOA -ComputerName "SRV-DC01"
+```
+
+Resultat :
+
+```text
+HostName  RecordType  Type  Timestamp  TimeToLive  RecordData
+--------  ----------  ----  ---------  ----------  ----------
+@         SOA         6                01:00:00    [104][dc-01.lab.local.][hostmaster.lab.local.]
+                                                   [Serial:285][Refresh:900][Retry:600]
+                                                   [Expire:86400][MinTTL:3600]
 ```
 
 ### Enregistrements SRV (Service Locator)
@@ -85,6 +99,17 @@ Resolve-DnsName -Name "_ldap._tcp.lab.local" -Type SRV
 Resolve-DnsName -Name "_ldap._tcp.Paris._sites.lab.local" -Type SRV
 ```
 
+Resultat :
+
+```text
+Name                                    Type   TTL   Section    NameTarget              Priority Weight Port
+----                                    ----   ---   -------    ----------              -------- ------ ----
+_ldap._tcp.lab.local                    SRV    600   Answer     DC-01.lab.local         0        100    389
+_ldap._tcp.lab.local                    SRV    600   Answer     SRV-DC01.lab.local      0        100    389
+
+_ldap._tcp.Paris._sites.lab.local       SRV    600   Answer     DC-01.lab.local         0        100    389
+```
+
 !!! danger "Ne supprimez jamais les enregistrements SRV manuellement"
 
     Les enregistrements SRV sous `_msdcs` sont enregistres automatiquement par le service
@@ -114,6 +139,17 @@ Resolve-DnsName -Name "_ldap._tcp.Paris._sites.lab.local" -Type SRV
         -IPv4Address "192.168.1.50" `
         -CreatePtr `
         -ComputerName "SRV-DC01"
+    ```
+
+    Resultat :
+
+    ```text
+    # No output on success. Verify with:
+    PS> Get-DnsServerResourceRecord -ZoneName "lab.local" -Name "srv-app01" -ComputerName "SRV-DC01"
+
+    HostName    RecordType  Type  Timestamp            TimeToLive  RecordData
+    --------    ----------  ----  ---------            ----------  ----------
+    srv-app01   A           1     2/20/2026 8:00:00 AM 01:00:00    192.168.1.50
     ```
 
 === "GUI"
@@ -286,6 +322,15 @@ Get-DnsServerResourceRecord -ZoneName "lab.local" -Name "srv-dc01" -ComputerName
     Select-Object HostName, RecordType, Timestamp, TimeToLive
 ```
 
+Resultat :
+
+```text
+HostName    RecordType  Timestamp              TimeToLive
+--------    ----------  ---------              ----------
+srv-dc01    A           2/18/2026 4:00:00 AM   00:20:00
+srv-dc01    AAAA        2/18/2026 4:00:00 AM   00:20:00
+```
+
 ### Comment fonctionnent les mises a jour dynamiques
 
 ```mermaid
@@ -366,6 +411,18 @@ Le scavenging doit etre active a **deux niveaux** : sur le serveur DNS et sur ch
     Start-DnsServerScavenging -ComputerName "SRV-DC01" -Force
     ```
 
+    Resultat :
+
+    ```text
+    ScavengingState  ScavengingInterval  LastScavengeTime
+    ---------------  ------------------  ----------------
+    True             7.00:00:00          2/19/2026 3:00:00 AM
+
+    ZoneName     AgingEnabled  NoRefreshInterval  RefreshInterval  AvailForScavengeTime
+    --------     ------------  -----------------  ---------------  --------------------
+    lab.local    True          7.00:00:00         7.00:00:00       2/26/2026 4:00:00 AM
+    ```
+
 === "GUI"
 
     **Sur le serveur :**
@@ -406,6 +463,51 @@ Get-DnsServerResourceRecord -ZoneName "lab.local" -RRType A -ComputerName "SRV-D
     Where-Object { $_.Timestamp -ne $null -and $_.Timestamp -lt $CutoffDate } |
     Select-Object HostName, RecordType, Timestamp, @{N='IP';E={$_.RecordData.IPv4Address}}
 ```
+
+!!! example "Scenario pratique"
+
+    **Situation** : Julie, administratrice systeme, a migre le serveur intranet de `SRV-WEB01` (10.0.0.30) vers un nouveau serveur `SRV-WEB02` (10.0.0.40). L'alias CNAME `intranet.lab.local` pointe toujours vers l'ancien serveur. Les utilisateurs se plaignent que l'intranet n'est plus accessible.
+
+    **Diagnostic** :
+
+    ```powershell
+    # Etape 1 : Verifier l'enregistrement CNAME actuel
+    Resolve-DnsName -Name "intranet.lab.local" -Type CNAME -DnsOnly
+    ```
+
+    Resultat : le CNAME pointe vers `srv-web01.lab.local`, l'ancien serveur.
+
+    ```powershell
+    # Etape 2 : Verifier que le nouvel enregistrement A existe
+    Resolve-DnsName -Name "srv-web02.lab.local" -Type A -DnsOnly
+    ```
+
+    Resultat : `srv-web02.lab.local` resout bien vers `10.0.0.40`.
+
+    **Solution** :
+
+    ```powershell
+    # Supprimer l'ancien CNAME
+    Remove-DnsServerResourceRecord -ZoneName "lab.local" -Name "intranet" `
+        -RRType CNAME -ComputerName "DC-01" -Force
+
+    # Creer le nouveau CNAME pointant vers le nouveau serveur
+    Add-DnsServerResourceRecordCName -ZoneName "lab.local" -Name "intranet" `
+        -HostNameAlias "srv-web02.lab.local" -ComputerName "DC-01"
+
+    # Vider le cache DNS des clients pour appliquer immediatement
+    Clear-DnsServerCache -ComputerName "DC-01" -Force
+    ```
+
+    Les utilisateurs peuvent a nouveau acceder a `http://intranet.lab.local`.
+
+!!! danger "Erreurs courantes"
+
+    - **Creer un CNAME qui pointe vers un autre CNAME** : bien que techniquement possible, cette pratique (chaine de CNAME) ralentit la resolution et peut creer des boucles. Pointez toujours un CNAME directement vers un enregistrement A.
+    - **Creer un CNAME pour la racine de zone** : un enregistrement CNAME ne peut pas coexister avec d'autres types pour le meme nom. Or la racine (`@`) possede deja des enregistrements SOA et NS. Utilisez un enregistrement A a la place.
+    - **Activer le scavenging sans verifier les enregistrements statiques** : le scavenging supprime les enregistrements dont le timestamp est depasse. Si un enregistrement statique important est accidentellement marque comme dynamique, il sera supprime. Verifiez que vos enregistrements critiques ont un timestamp a `0` (statique).
+    - **Oublier de creer l'enregistrement PTR correspondant** : utilisez toujours le parametre `-CreatePtr` lors de la creation d'un enregistrement A. Sans PTR, la resolution inverse echoue et `nslookup` affiche des erreurs.
+    - **Supprimer manuellement les enregistrements SRV sous _msdcs** : ces enregistrements sont geres automatiquement par le service Netlogon des DC. Les supprimer casse l'authentification et la replication AD.
 
 ## Points cles a retenir
 

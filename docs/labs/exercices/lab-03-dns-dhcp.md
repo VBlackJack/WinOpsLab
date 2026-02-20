@@ -33,6 +33,14 @@ Le domaine winopslab.local est en place. Vous devez maintenant configurer les se
 
 ## Instructions
 
+!!! example "Analogie"
+
+    Le DNS est l'annuaire telephonique d'un reseau : on cherche un nom (`SRV-DC01`) et on obtient
+    un numero (192.168.10.10). La zone inversee, c'est l'annuaire en sens inverse : on part du
+    numero pour retrouver le nom. Le DHCP, quant a lui, est le standardiste de l'hotel qui
+    attribue automatiquement une chambre (une adresse IP) a chaque client qui arrive, en s'assurant
+    de ne pas donner deux fois la meme chambre.
+
 ### Partie 1 : Zone de recherche inversee
 
 1. Creer une zone de recherche inversee pour le reseau 192.168.10.0/24
@@ -171,6 +179,29 @@ Le domaine winopslab.local est en place. Vous devez maintenant configurer les se
     Test-NetConnection SRV-DC01 -Port 53
     ```
 
+    Resultat attendu apres `ipconfig /all` sur CLI-W11 :
+
+    ```text
+    Ethernet adapter Ethernet:
+       Connection-specific DNS Suffix  : winopslab.local
+       DHCP Enabled. . . . . . . . . . : Yes
+       Autoconfiguration Enabled . . . : Yes
+       IPv4 Address. . . . . . . . . . : 192.168.10.1xx (Preferred)
+       Subnet Mask . . . . . . . . . . : 255.255.255.0
+       Default Gateway . . . . . . . . : 192.168.10.1
+       DHCP Server . . . . . . . . . . : 192.168.10.10
+       DNS Servers . . . . . . . . . . : 192.168.10.10
+                                         192.168.10.11
+    ```
+
+    Resultat attendu apres `Resolve-DnsName SRV-DC01.winopslab.local` :
+
+    ```text
+    Name                                           Type   TTL   Section    IPAddress
+    ----                                           ----   ---   -------    ---------
+    SRV-DC01.winopslab.local                       A      1200  Answer     192.168.10.10
+    ```
+
 ## Verification
 
 !!! question "Questions de validation"
@@ -190,6 +221,29 @@ Le domaine winopslab.local est en place. Vous devez maintenant configurer les se
     3. L'exclusion reserve des adresses dans la plage pour un usage specifique (serveurs,
        imprimantes) sans que le DHCP les distribue a des clients.
     4. `ipconfig /renew` (CMD) ou `Invoke-CimMethod -ClassName Win32_NetworkAdapterConfiguration -MethodName RenewDHCPLease` (PowerShell).
+
+!!! warning "Pieges frequents dans ce lab"
+
+    1. **Serveur DHCP non autorise dans AD** : le service DHCP demarre mais n'attribue aucune
+       adresse. L'etape `Add-DhcpServerInDC` est obligatoire. Symptome : le client fait des
+       requetes DHCP (visible dans Wireshark) mais ne recoit aucune reponse.
+
+    2. **Etendue DHCP creee mais non activee** : l'etat par defaut d'une nouvelle etendue est
+       "Inactive". Verifier avec `Get-DhcpServerv4Scope` que le champ `State` affiche `Active`,
+       sinon activer avec `Set-DhcpServerv4Scope -ScopeId 192.168.10.0 -State Active`.
+
+    3. **Plage d'exclusion mal configuree** : si l'exclusion 192.168.10.150-160 n'est pas ajoutee,
+       le DHCP peut attribuer ces adresses a des clients alors qu'elles sont reservees a des
+       equipements a IP statique, creant des conflits d'adresses silencieux.
+
+    4. **Zone inversee avec un nom incorrect** : pour le reseau 192.168.10.0/24, la zone DNS
+       inversee doit se nommer `10.168.192.in-addr.arpa`. Une erreur de saisie (ex: `10.192.168`)
+       cree la zone mais les enregistrements PTR ne sont jamais resolus.
+
+    5. **Client W11 encore en IP statique apres le test** : apres avoir configure CLI-W11 en
+       DHCP pour le test, ne pas oublier de revenir a la configuration statique si les labs
+       suivants l'exigent, ou de verifier que l'adresse DHCP obtenue ne conflicte pas avec
+       d'autres serveurs du lab.
 
 ## Nettoyage
 

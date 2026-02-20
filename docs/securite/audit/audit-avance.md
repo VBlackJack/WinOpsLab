@@ -19,6 +19,10 @@ L'audit avance va au-dela des evenements de connexion et de gestion de comptes. 
 
 ## Comprendre les SACL
 
+!!! example "Analogie"
+
+    Une SACL fonctionne comme un detecteur de mouvement place a l'entree d'une piece sensible. La DACL, c'est la serrure qui decide qui peut entrer ou non. La SACL, c'est la camera qui enregistre chaque passage, que la personne soit autorisee ou non. Sans camera (SACL), meme si quelqu'un entre illegitimement, vous n'en aurez aucune trace.
+
 Une **SACL** (System Access Control List) est une liste de controle d'acces definie sur un objet (fichier, dossier, objet AD, cle de registre) qui specifie quels acces doivent etre journalises.
 
 ```mermaid
@@ -87,6 +91,15 @@ Set-Acl -Path $folderPath -AclObject $acl
 (Get-Acl -Path $folderPath -Audit).Audit | Format-Table -AutoSize
 ```
 
+Resultat :
+
+```text
+FileSystemRights  AuditFlags  IdentityReference  IsInherited  InheritanceFlags
+----------------  ----------  -----------------  -----------  ----------------
+Delete, Write,    Success,    Everyone           False        ContainerInherit,
+ChangePermissions Failure                                     ObjectInherit
+```
+
 ### Etape 3 : analyser les evenements generes
 
 Les acces aux fichiers generent l'Event ID **4663** (tentative d'acces a un objet) :
@@ -107,6 +120,16 @@ Get-WinEvent -FilterHashtable @{
             ProcessName= $xml.Event.EventData.Data | Where-Object { $_.Name -eq 'ProcessName' } | Select-Object -ExpandProperty '#text'
         }
     } | Format-Table -AutoSize
+```
+
+Resultat :
+
+```text
+Time                  Account       ObjectName                           AccessMask  ProcessName
+----                  -------       ----------                           ----------  -----------
+2025-02-20 14:22:10   jdupont       D:\Partage\Confidentiel\budget.xlsx  0x2         C:\Program Files\...\EXCEL.EXE
+2025-02-20 14:20:05   mlambert      D:\Partage\Confidentiel\RH\          0x10000     C:\Windows\explorer.exe
+2025-02-20 14:18:32   svc-backup    D:\Partage\Confidentiel\             0x1         C:\Windows\system32\robocopy.exe
 ```
 
 ### Event IDs lies a l'acces fichiers
@@ -140,6 +163,13 @@ Get-WinEvent -FilterHashtable @{
 # Enable DS Access auditing
 auditpol /set /subcategory:"Directory Service Access" /success:enable /failure:enable
 auditpol /set /subcategory:"Directory Service Changes" /success:enable
+```
+
+Resultat :
+
+```text
+The command was successfully executed.
+The command was successfully executed.
 ```
 
 ### Etape 2 : configurer la SACL sur les objets AD
@@ -204,6 +234,16 @@ Get-WinEvent -FilterHashtable @{
             NewValue      = $xml.Event.EventData.Data | Where-Object { $_.Name -eq 'AttributeValue' } | Select-Object -First 1 -ExpandProperty '#text'
         }
     } | Format-Table -AutoSize
+```
+
+Resultat :
+
+```text
+Time                  ChangedBy     ObjectDN                                      AttributeName     NewValue
+----                  ---------     --------                                      -------------     --------
+2025-02-20 10:15:32   T0-jdupont    CN=jmartin,OU=Users,DC=lab,DC=local          description       Comptabilite
+2025-02-20 09:45:10   T0-mlambert   CN=svc-app,OU=Services,DC=lab,DC=local       userAccountControl 512
+2025-02-19 16:30:22   T0-jdupont    CN=GPO-Security,CN=Policies,...              gPCMachineExt...  [{35378...
 ```
 
 ---
@@ -309,6 +349,71 @@ Set-Acl -Path $regPath -AclObject $acl
     - Utilisez des **groupes specifiques** plutot que Everyone quand possible
     - Dimensionnez le journal Security en consequence (4 Go minimum)
     - Centralisez les evenements dans un **SIEM** pour l'analyse
+
+---
+
+## Scenario pratique
+
+!!! example "Scenario pratique"
+
+    **Contexte** : Valerie, responsable conformite, doit mettre en place un audit sur le dossier partage `D:\Partage\Direction` sur le serveur `SRV-01` (10.0.0.11) suite a la disparition suspecte de documents financiers. Le directeur soupconne qu'un employe a supprime des fichiers intentionnellement.
+
+    **Mise en place de l'audit** :
+
+    ```powershell
+    # 1. Enable file system auditing
+    auditpol /set /subcategory:"File System" /success:enable /failure:enable
+
+    # 2. Add SACL on the target folder
+    $folderPath = "D:\Partage\Direction"
+    $acl = Get-Acl -Path $folderPath -Audit
+    $auditRule = New-Object System.Security.AccessControl.FileSystemAuditRule(
+        "Everyone", "Delete,Write", "ContainerInherit,ObjectInherit", "None", "Success"
+    )
+    $acl.AddAuditRule($auditRule)
+    Set-Acl -Path $folderPath -AclObject $acl
+    ```
+
+    **Investigation apres 48h** :
+
+    ```powershell
+    # Search for file deletion events in the monitored folder
+    Get-WinEvent -FilterHashtable @{
+        LogName = 'Security'; Id = 4660
+        StartTime = (Get-Date).AddDays(-2)
+    } | ForEach-Object {
+        $xml = [xml]$_.ToXml()
+        $account = $xml.Event.EventData.Data | Where-Object { $_.Name -eq 'SubjectUserName' } | Select-Object -ExpandProperty '#text'
+        $object = $xml.Event.EventData.Data | Where-Object { $_.Name -eq 'ObjectName' } | Select-Object -ExpandProperty '#text'
+        if ($object -match "Direction") {
+            [PSCustomObject]@{ Time = $_.TimeCreated; Account = $account; File = $object }
+        }
+    }
+    ```
+
+    Resultat :
+
+    ```text
+    Time                   Account    File
+    ----                   -------    ----
+    2025-02-19 23:45:12    rmartin    D:\Partage\Direction\Budget_2025_v3.xlsx
+    2025-02-19 23:45:08    rmartin    D:\Partage\Direction\Previsions_Q1.docx
+    2025-02-19 23:44:55    rmartin    D:\Partage\Direction\Comptes_rendus\CR_CA_fev.docx
+    ```
+
+    **Conclusion** : le compte `rmartin` a supprime trois fichiers a 23h45. Valerie transmet les logs au service juridique avec les horodatages precis et l'identite du compte.
+
+---
+
+!!! danger "Erreurs courantes"
+
+    1. **Placer une SACL sur la racine du disque** : auditer `C:\` ou `D:\` genere des millions d'evenements et sature le journal Security en quelques heures. Ciblez uniquement les dossiers sensibles.
+
+    2. **Auditer les acces en lecture (Read) sur des dossiers tres frequentes** : l'acces en lecture genere un volume d'evenements enorme et noie les informations pertinentes. Auditez les operations critiques : Delete, Write, ChangePermissions.
+
+    3. **Oublier d'activer l'audit Object Access dans la politique** : configurer une SACL sur un dossier sans activer `auditpol /set /subcategory:"File System"` ne produit aucun evenement. Les deux etapes sont indissociables.
+
+    4. **Utiliser Everyone comme principal d'audit quand un groupe cible suffit** : sur un dossier accede par 500 utilisateurs, auditer Everyone genere du bruit. Ciblez un groupe specifique si vous suspectez un acces non autorise precis.
 
 ---
 

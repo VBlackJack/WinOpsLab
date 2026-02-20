@@ -16,6 +16,10 @@ tags:
 
 ### Qu'est-ce qu'un partage SMB ?
 
+!!! example "Analogie"
+
+    Un partage SMB, c'est comme une **salle de reunion ouverte** dans un immeuble de bureaux. Les permissions de partage sont le **badge d'acces au batiment** (elles controlent qui peut entrer par le reseau), tandis que les permissions NTFS sont les **cles des armoires a l'interieur** (elles controlent ce que chacun peut faire avec les documents). Pour acceder a un document, il faut avoir le badge ET la bonne cle. C'est toujours la restriction la plus forte qui s'applique.
+
 Un partage SMB (Server Message Block) est un dossier rendu accessible via le reseau. Les clients Windows accedent aux partages via le chemin UNC : `\\NomServeur\NomPartage`.
 
 SMB est le protocole standard pour le partage de fichiers dans les environnements Windows. Windows Server 2022 prend en charge SMB 3.1.1, qui offre le chiffrement, l'integrite pre-authentification et le clustering.
@@ -112,6 +116,15 @@ New-SmbShare -Name "Admin$Data" -Path "D:\AdminData" `
 ```powershell
 # View share permissions
 Get-SmbShareAccess -Name "Comptabilite" | Format-Table AccountName, AccessRight, AccessControlType -AutoSize
+```
+
+Resultat :
+
+```text
+AccountName          AccessRight AccessControlType
+-----------          ----------- -----------------
+Everyone             Read        Allow
+BUILTIN\Administrators Full     Allow
 ```
 
 ### Modifier les permissions
@@ -269,6 +282,29 @@ Get-SmbOpenFile | Select-Object ClientComputerName, ClientUserName,
     Format-Table -AutoSize
 ```
 
+Resultat :
+
+```text
+Name          Path                     Description                     CurrentUsers ShareType
+----          ----                     -----------                     ------------ ---------
+ADMIN$        C:\Windows               Remote Admin                              0 Special
+C$            C:\                      Default share                             2 Special
+Comptabilite  D:\Partages\Comptabilite Documents du service comptabilite         5 FileSystemDirectory
+Commun        D:\Partages\Commun       Dossier commun entreprise               12 FileSystemDirectory
+RH            D:\Partages\RH           Documents des ressources humaines         3 FileSystemDirectory
+
+ClientComputerName ClientUserName     NumOpens SecondsExists
+------------------ --------------     -------- -------------
+10.0.0.50          LAB\marie.dupont         4          3842
+10.0.0.51          LAB\jean.martin          2          1205
+10.0.0.52          LAB\sophie.bernard       7          7201
+
+ClientComputerName ClientUserName     Path                                     ShareRelativePath
+------------------ --------------     ----                                     -----------------
+10.0.0.50          LAB\marie.dupont   D:\Partages\Comptabilite\Budget.xlsx     Comptabilite\Budget.xlsx
+10.0.0.52          LAB\sophie.bernard D:\Partages\RH\Contrats\CDI-2026.docx   RH\Contrats\CDI-2026.docx
+```
+
 ### Fermer des sessions ou fichiers ouverts
 
 ```powershell
@@ -341,6 +377,69 @@ foreach ($share in $shares) {
 - Le **chiffrement SMB** protege les donnees en transit (AES-256 avec SMB 3.1.1)
 - Utilisez `New-SmbShare`, `Grant-SmbShareAccess`, `Get-SmbShareAccess` pour gerer les partages
 - Surveillez les sessions et fichiers ouverts avec `Get-SmbSession` et `Get-SmbOpenFile`
+
+!!! example "Scenario pratique"
+
+    **Contexte :** Antoine, administrateur d'un serveur de fichiers, recoit un appel : Pierre du service direction ne peut pas modifier les documents dans le partage `\\SRV-01\Direction`. Pierre est membre du groupe `GRP-Direction` qui dispose des permissions NTFS Modify sur le dossier.
+
+    **Diagnostic :**
+
+    ```powershell
+    # Check share permissions
+    Get-SmbShareAccess -Name "Direction" |
+        Format-Table AccountName, AccessRight, AccessControlType -AutoSize
+    ```
+
+    Resultat :
+
+    ```text
+    AccountName              AccessRight AccessControlType
+    -----------              ----------- -----------------
+    Everyone                 Read        Allow
+    BUILTIN\Administrators   Full        Allow
+    ```
+
+    Le partage n'accorde que Read a Everyone. Meme si les permissions NTFS autorisent Modify, la permission de partage (Read) est plus restrictive et prend le dessus.
+
+    **Solution :**
+
+    ```powershell
+    # Grant Change permission at the share level for the Direction group
+    Grant-SmbShareAccess -Name "Direction" `
+        -AccountName "LAB\GRP-Direction" `
+        -AccessRight Change -Confirm:$false
+
+    # Optionally remove Everyone Read if not needed
+    Revoke-SmbShareAccess -Name "Direction" `
+        -AccountName "Everyone" -Confirm:$false
+
+    # Verify
+    Get-SmbShareAccess -Name "Direction" |
+        Format-Table AccountName, AccessRight, AccessControlType -AutoSize
+    ```
+
+    Resultat :
+
+    ```text
+    AccountName              AccessRight AccessControlType
+    -----------              ----------- -----------------
+    BUILTIN\Administrators   Full        Allow
+    LAB\GRP-Direction        Change      Allow
+    ```
+
+    Pierre peut maintenant modifier les fichiers. La permission effective est Modify (la plus restrictive entre Change au niveau partage et Modify au niveau NTFS).
+
+!!! danger "Erreurs courantes"
+
+    1. **Laisser Everyone en Read par defaut** : la permission par defaut de `New-SmbShare` est Read pour Everyone. Cela bloque les modifications meme si les permissions NTFS autorisent Modify. Pensez a configurer les permissions de partage explicitement.
+
+    2. **Confondre permissions de partage et permissions NTFS** : les permissions de partage ne s'appliquent qu'en acces reseau. Un utilisateur connecte localement (RDP sur le serveur) ne voit que les permissions NTFS. Cela peut creer des incoherences troublantes.
+
+    3. **Utiliser Full Control au lieu de Change** : au niveau du partage, Full Control permet de modifier les permissions du partage lui-meme. Accordez Change aux utilisateurs et reservez Full Control aux administrateurs.
+
+    4. **Oublier d'activer l'ABE (Access-Based Enumeration)** : sans ABE, les utilisateurs voient tous les dossiers du partage, meme ceux auxquels ils n'ont pas acces. Activez-la avec `Set-SmbShare -FolderEnumerationMode AccessBased`.
+
+    5. **Ne pas activer le chiffrement SMB pour les donnees sensibles** : sans chiffrement, les fichiers transitent en clair sur le reseau. Pour les partages contenant des donnees confidentielles, activez `Set-SmbShare -EncryptData $true`.
 
 ## Pour aller plus loin
 

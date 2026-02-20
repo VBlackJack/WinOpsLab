@@ -20,6 +20,10 @@ Le **Pare-feu Windows avec securite avancee** (Windows Firewall with Advanced Se
 
 ---
 
+!!! example "Analogie"
+
+    Imaginez le pare-feu comme le **portier d'un immeuble de bureaux**. Par defaut, il bloque toute personne qui tente d'entrer (trafic entrant) sauf celles figurant sur la liste des visiteurs autorises (regles d'autorisation). En revanche, les employes sont libres de sortir a tout moment (trafic sortant autorise). Le portier tient un registre des allers-retours (table d'etats) pour laisser rentrer automatiquement quelqu'un qui etait sorti il y a quelques minutes.
+
 ## Architecture du WFAS
 
 Le WFAS fonctionne au niveau de la couche reseau du systeme d'exploitation et filtre le trafic avant qu'il n'atteigne les applications.
@@ -149,6 +153,15 @@ Get-NetIPsecMainModeSA
 Get-NetIPsecQuickModeSA
 ```
 
+Resultat :
+
+```text
+DisplayName                    Enabled InboundSecurity OutboundSecurity
+-----------                    ------- --------------- ----------------
+Isolation Domain Rule          True    Require         Request
+Server-to-Server DC-01 to DB   True    Require         Require
+```
+
 ---
 
 ## Console de gestion WFAS
@@ -160,6 +173,12 @@ La console de gestion se lance de plusieurs facons :
 ```powershell
 # Launch the WFAS management console
 wf.msc
+```
+
+Resultat :
+
+```text
+# (La console MMC du Pare-feu Windows avec securite avancee s'ouvre)
 ```
 
 Ou depuis le **Gestionnaire de serveur** > **Outils** > **Pare-feu Windows avec fonctionnalites avancees de securite**.
@@ -185,6 +204,16 @@ Get-NetFirewallProfile | Select-Object Name, Enabled, DefaultInboundAction, Defa
 netsh advfirewall show allprofiles
 ```
 
+Resultat :
+
+```text
+Name    Enabled DefaultInboundAction DefaultOutboundAction
+----    ------- -------------------- ---------------------
+Domain     True                Block                 Allow
+Private    True                Block                 Allow
+Public     True                Block                 Allow
+```
+
 ---
 
 ## Journalisation
@@ -201,6 +230,16 @@ Set-NetFirewallProfile -Profile Domain `
 
 # Display current logging configuration
 Get-NetFirewallProfile | Select-Object Name, LogFileName, LogMaxSizeKilobytes, LogAllowed, LogBlocked
+```
+
+Resultat :
+
+```text
+Name    LogFileName                                              LogMaxSizeKilobytes LogAllowed LogBlocked
+----    -----------                                              ------------------- ---------- ----------
+Domain  C:\Windows\System32\LogFiles\Firewall\pfirewall.log                    4096       True       True
+Private C:\Windows\System32\LogFiles\Firewall\pfirewall.log                    4096      False       True
+Public  C:\Windows\System32\LogFiles\Firewall\pfirewall.log                    4096      False       True
 ```
 
 Le fichier de journalisation par defaut est situe a :
@@ -243,6 +282,67 @@ Dans un environnement Active Directory, le WFAS peut etre gere de facon centrali
 | GPO                        | Gestion centralisee en environnement Active Directory        |
 
 ---
+
+!!! example "Scenario pratique"
+
+    **Contexte** : Sophie, administratrice systeme, vient de deployer un nouveau serveur web `SRV-WEB01` dans le domaine `lab.local`. Les utilisateurs signalent qu'ils ne peuvent pas acceder au site heberge sur le port 443.
+
+    **Diagnostic** :
+
+    ```powershell
+    # Step 1: Verify firewall status on SRV-WEB01
+    Get-NetFirewallProfile | Select-Object Name, Enabled, DefaultInboundAction
+    ```
+
+    ```text
+    Name    Enabled DefaultInboundAction
+    ----    ------- --------------------
+    Domain     True                Block
+    Private    True                Block
+    Public     True                Block
+    ```
+
+    Le pare-feu est actif avec le trafic entrant bloque par defaut. Il faut verifier si une regle autorise le port 443.
+
+    ```powershell
+    # Step 2: Check for a rule allowing inbound HTTPS
+    Get-NetFirewallRule -Direction Inbound -Enabled True | Where-Object {
+        ($_ | Get-NetFirewallPortFilter).LocalPort -contains "443"
+    } | Select-Object DisplayName, Action
+    ```
+
+    ```text
+    # (Aucun resultat : pas de regle pour le port 443)
+    ```
+
+    **Solution** :
+
+    ```powershell
+    # Step 3: Create the missing HTTPS inbound rule
+    New-NetFirewallRule -DisplayName "Allow HTTPS Inbound" `
+        -Direction Inbound -Protocol TCP -LocalPort 443 `
+        -Action Allow -Profile Domain, Private
+
+    # Step 4: Verify from a poste client
+    Test-NetConnection -ComputerName SRV-WEB01.lab.local -Port 443
+    ```
+
+    ```text
+    ComputerName     : SRV-WEB01.lab.local
+    RemoteAddress    : 10.0.0.20
+    RemotePort       : 443
+    TcpTestSucceeded : True
+    ```
+
+    Le site web est maintenant accessible.
+
+!!! danger "Erreurs courantes"
+
+    - **Desactiver completement le pare-feu pour "debugger"** : cette pratique expose le serveur a des attaques. Utilisez plutot la journalisation (`-LogBlocked True`) pour identifier les flux bloques.
+    - **Oublier que les profils sont independants** : une regle creee pour le profil Domaine ne s'applique pas au profil Public. Si l'interface reseau bascule sur le profil Public (probleme NLA), les regles Domaine ne s'appliquent plus.
+    - **Ignorer l'ordre de priorite des regles** : les regles de blocage explicites priment toujours sur les regles d'autorisation. Si un flux reste bloque malgre une regle d'autorisation, verifiez qu'il n'y a pas de regle de blocage en amont.
+    - **Ne pas activer la journalisation lors du deploiement** : sans log, il est impossible de savoir quels flux sont bloques. Activez toujours la journalisation lors de la mise en service d'un nouveau serveur.
+    - **Confondre regles de trafic et regles de securite de connexion** : les regles de securite de connexion (IPsec) ne filtrent pas le trafic, elles ajoutent authentification et chiffrement. Il faut toujours des regles de trafic en complement.
 
 ## Pour aller plus loin
 

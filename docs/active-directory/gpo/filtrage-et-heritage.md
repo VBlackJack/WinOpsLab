@@ -16,6 +16,10 @@ tags:
 
 ## Heritage des GPO
 
+!!! example "Analogie"
+
+    L'heritage des GPO ressemble aux regles d'un immeuble de bureaux. Le reglement general du batiment (domaine) s'applique a tous les etages. Chaque etage (OU parente) peut ajouter ses propres regles, et chaque service a l'interieur de l'etage (OU enfante) peut en rajouter encore. Un employe recoit donc les regles du batiment + celles de son etage + celles de son service.
+
 Par defaut, les GPO sont **heritees** du conteneur parent vers les conteneurs
 enfants. Un objet (utilisateur ou ordinateur) dans une OU enfant recoit donc :
 
@@ -65,6 +69,14 @@ et les GPO marquees **Enforced** continueront de s'appliquer.
         Select-Object ContainerName, GpoInheritanceBlocked
     ```
 
+    Resultat :
+
+    ```text
+    ContainerName            GpoInheritanceBlocked
+    -------------            ---------------------
+    Labo-Test                True
+    ```
+
 === "GUI (gpmc.msc)"
 
     1. Dans **Group Policy Management**, cliquer droit sur l'OU
@@ -104,6 +116,14 @@ conflit de parametres.
         Select-Object -ExpandProperty InheritedGpoLinks |
         Where-Object { $_.Enforced -eq $true } |
         Select-Object DisplayName, Target, Enforced
+    ```
+
+    Resultat :
+
+    ```text
+    DisplayName              Target                  Enforced
+    -----------              ------                  --------
+    SEC - Security Baseline  dc=lab,dc=local         True
     ```
 
 === "GUI (gpmc.msc)"
@@ -162,6 +182,16 @@ un utilisateur ou un ordinateur specifique.
         -TargetName "Authenticated Users" `
         -TargetType Group `
         -PermissionLevel GpoRead
+    ```
+
+    Resultat :
+
+    ```text
+    Trustee                          Permission
+    -------                          ----------
+    GRP_Comptabilite                 GpoApply
+    Authenticated Users              GpoRead
+    ENTERPRISE DOMAIN CONTROLLERS    GpoRead
     ```
 
 === "GUI (gpmc.msc)"
@@ -266,6 +296,10 @@ de materiel ou une configuration logicielle.
 
 ## Traitement en boucle (Loopback Processing)
 
+!!! example "Analogie"
+
+    Imaginez un hopital ou chaque medecin a ses preferences personnelles (bureau, logiciels). Mais quand il entre dans le bloc operatoire (salle specifique), ce sont les regles de la salle qui priment : tenue obligatoire, equipement standardise. Le Loopback Processing fonctionne ainsi : les regles de la machine (la salle) prennent le dessus sur les preferences personnelles de l'utilisateur.
+
 Par defaut, les GPO **User Configuration** s'appliquent en fonction de l'OU
 ou se trouve le **compte utilisateur**. Le **Loopback Processing** permet
 d'appliquer les parametres utilisateur en fonction de l'OU ou se trouve le
@@ -351,6 +385,67 @@ flowchart TD
     style OK fill:#2e7d32,color:#fff
     style X fill:#c62828,color:#fff
 ```
+
+---
+
+## Scenario pratique
+
+!!! example "Scenario pratique"
+
+    **Contexte** : Thomas, administrateur chez un cabinet comptable, a deploye une GPO `CFG - Accounting Apps` liee a l'OU `Siege`. Il a restreint le filtrage de securite au groupe `GRP_Comptabilite`. Les comptables signalent que la GPO ne s'applique pas.
+
+    **Diagnostic** :
+
+    1. Thomas genere un rapport sur le poste d'un comptable :
+
+        ```powershell
+        gpresult /h "C:\Temp\diag-compta.html" /f
+        ```
+
+    2. Dans le rapport, la GPO apparait comme **filtree (Denied - Security)**. Il verifie les permissions :
+
+        ```powershell
+        Get-GPPermission -Name "CFG - Accounting Apps" -All |
+            Select-Object Trustee, Permission
+        ```
+
+        Resultat :
+
+        ```text
+        Trustee                  Permission
+        -------                  ----------
+        GRP_Comptabilite         GpoApply
+        Domain Admins            GpoEditDeleteModifySecurity
+        ```
+
+    3. La permission **GpoRead** pour **Authenticated Users** est absente. Sans elle, les postes ne peuvent pas lire la GPO. Thomas corrige :
+
+        ```powershell
+        Set-GPPermission -Name "CFG - Accounting Apps" `
+            -TargetName "Authenticated Users" `
+            -TargetType Group `
+            -PermissionLevel GpoRead
+        ```
+
+    4. Apres un `gpupdate /force` sur le poste, la GPO s'applique correctement.
+
+    **Resolution** : en retirant Authenticated Users du filtrage de securite, Thomas avait aussi supprime la permission Read. La GPO ne pouvait plus etre lue par les postes clients.
+
+---
+
+## Erreurs courantes
+
+!!! danger "Erreurs courantes"
+
+    1. **Supprimer Read en meme temps que Apply** : quand on retire Authenticated Users du filtrage de securite, il faut imperativement conserver la permission **Read** dans l'onglet Delegation. Sans Read, la GPO est invisible pour les postes.
+
+    2. **Abuser du Block Inheritance** : bloquer l'heritage sur une OU empeche l'application de toutes les GPO parentes, y compris les politiques de securite critiques. Preferez le filtrage de securite pour exclure des groupes precis.
+
+    3. **Utiliser Enforced sans discernement** : une GPO Enforced au niveau domaine s'impose a toutes les OU sans exception. A n'utiliser que pour les politiques de securite essentielles.
+
+    4. **Oublier l'impact performance des filtres WMI** : chaque filtre WMI est evalue a chaque cycle de traitement GPO sur chaque poste. Multiplier les filtres WMI complexes ralentit sensiblement les ouvertures de session.
+
+    5. **Confondre les modes Loopback** : en mode **Replace**, les GPO User de l'OU de l'utilisateur sont completement ignorees. En mode **Merge**, elles sont fusionnees avec celles de l'OU de l'ordinateur. Choisir le mauvais mode peut soit etre trop restrictif, soit trop permissif.
 
 ---
 

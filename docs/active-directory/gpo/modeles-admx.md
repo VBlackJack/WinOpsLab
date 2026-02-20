@@ -16,6 +16,10 @@ tags:
 
 ## Qu'est-ce qu'un modele ADMX ?
 
+!!! example "Analogie"
+
+    Pensez aux modeles ADMX comme a des catalogues de pieces detachees. Le fichier ADMX est le catalogue technique (references, specifications), et le fichier ADML est la traduction dans votre langue. Sans catalogue, le mecanicien (l'editeur de GPO) ne sait pas quelles pieces existent. Ajouter un catalogue tiers (Chrome, Office) revient a completer l'inventaire avec de nouvelles references.
+
 Les **Administrative Templates** (modeles d'administration) definissent les
 parametres configurables dans la section **Administrative Templates** de
 l'editeur de GPO. Depuis Windows Vista / Server 2008, ces modeles utilisent
@@ -115,6 +119,14 @@ que tous les administrateurs utilisent **les memes modeles ADMX**.
     Get-ChildItem -Path $centralStore -Recurse |
         Measure-Object |
         Select-Object @{N="Total files in Central Store"; E={$_.Count}}
+    ```
+
+    Resultat :
+
+    ```text
+    Total files in Central Store
+    ----------------------------
+                             487
     ```
 
 === "GUI"
@@ -254,6 +266,12 @@ if ($orphaned) {
 } else {
     Write-Output "All ADMX files have corresponding ADML translations."
 }
+```
+
+Resultat :
+
+```text
+All ADMX files have corresponding ADML translations.
 ```
 
 !!! tip "Sauvegardez avant chaque mise a jour"
@@ -416,6 +434,22 @@ $admlCount = (Get-ChildItem -Path "$centralStore\fr-FR" -Filter "*.adml").Count
 Write-Output "ADMX files: $admxCount | ADML files (fr-FR): $admlCount"
 ```
 
+Resultat :
+
+```text
+Name                          Length LastWriteTime
+----                          ------ -------------
+ActiveXInstallService.admx      4523 15/01/2026 08:00:00
+AppHVSI.admx                    8912 15/01/2026 08:00:00
+chrome.admx                   125430 10/02/2026 14:30:00
+firefox.admx                   89210 10/02/2026 14:30:00
+msedge.admx                   312045 10/02/2026 14:30:00
+Windows.admx                    3215 15/01/2026 08:00:00
+WindowsFirewall.admx           15678 15/01/2026 08:00:00
+...
+ADMX files: 243 | ADML files (fr-FR): 243
+```
+
 ### Erreur "Administrative Templates namespace already defined"
 
 Cette erreur survient quand deux fichiers ADMX definissent le meme namespace.
@@ -432,11 +466,84 @@ foreach ($file in $admxFiles) {
 # Look for duplicate namespace values in the output
 ```
 
+Resultat :
+
+```text
+ActiveXInstallService.admx -> Microsoft.Policies.ActiveXInstallService
+AppHVSI.admx -> Microsoft.Policies.AppHVSI
+chrome.admx -> Google.Policies.Chrome
+chrome_old.admx -> Google.Policies.Chrome    <-- DOUBLON
+firefox.admx -> Mozilla.Policies.Firefox
+msedge.admx -> Microsoft.Policies.Edge
+Windows.admx -> Microsoft.Policies.Windows
+```
+
 !!! warning "Conflits de namespace"
 
     Supprimez les anciens fichiers ADMX quand vous installez une version
     mise a jour. Ne conservez qu'une seule version de chaque modele dans
     le Central Store.
+
+---
+
+## Scenario pratique
+
+!!! example "Scenario pratique"
+
+    **Contexte** : Nadia, administratrice systeme, doit deployer les modeles ADMX de Google Chrome pour gerer la page d'accueil et les extensions autorisees via GPO. Le Central Store existe deja dans SYSVOL.
+
+    **Etapes** :
+
+    1. Nadia telecharge le pack ADMX Chrome Enterprise et extrait les fichiers dans `C:\Temp\ChromeADMX`.
+
+    2. Elle copie les fichiers vers le Central Store :
+
+        ```powershell
+        $centralStore = "\\lab.local\SYSVOL\lab.local\Policies\PolicyDefinitions"
+        Copy-Item -Path "C:\Temp\ChromeADMX\windows\admx\chrome.admx" -Destination $centralStore
+        Copy-Item -Path "C:\Temp\ChromeADMX\windows\admx\google.admx" -Destination $centralStore
+        Copy-Item -Path "C:\Temp\ChromeADMX\windows\admx\fr-FR\*" -Destination "$centralStore\fr-FR\"
+        Copy-Item -Path "C:\Temp\ChromeADMX\windows\admx\en-US\*" -Destination "$centralStore\en-US\"
+        ```
+
+    3. Elle verifie la presence des fichiers :
+
+        ```powershell
+        Get-ChildItem -Path $centralStore -Filter "chrome*" | Select-Object Name
+        Get-ChildItem -Path "$centralStore\fr-FR" -Filter "chrome*" | Select-Object Name
+        ```
+
+        Resultat :
+
+        ```text
+        Name
+        ----
+        chrome.admx
+
+        Name
+        ----
+        chrome.adml
+        ```
+
+    4. Elle ouvre `gpmc.msc`, edite une GPO et verifie que **Computer Configuration** > **Policies** > **Administrative Templates** > **Google** > **Google Chrome** est bien present.
+
+    5. Elle configure la page d'accueil et les extensions autorisees via l'editeur.
+
+    **Resolution** : les modeles ADMX Chrome apparaissent immediatement dans l'editeur de GPO apres copie dans le Central Store. Aucun redemarrage n'est necessaire.
+
+---
+
+## Erreurs courantes
+
+!!! danger "Erreurs courantes"
+
+    1. **Oublier les fichiers ADML** : copier uniquement le fichier `.admx` sans les fichiers `.adml` correspondants provoque des erreurs dans l'editeur de GPO. Le parametre apparait sans titre ni description.
+
+    2. **Melanger des versions de modeles** : conserver un ancien fichier `chrome.admx` a cote d'un nouveau `chrome_v2.admx` peut causer un conflit de namespace. Ne conserver qu'une seule version de chaque modele.
+
+    3. **Ne pas sauvegarder avant la mise a jour** : ecraser les fichiers du Central Store sans backup prealable. Si un fichier corrompu est copie, il est impossible de revenir en arriere.
+
+    4. **Utiliser les modeles d'un ancien OS** : copier les ADMX depuis un Windows Server 2016 vers le Central Store d'un domaine Windows Server 2022 fait perdre tous les parametres des nouvelles fonctionnalites.
 
 ---
 

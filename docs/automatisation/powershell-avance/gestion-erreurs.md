@@ -18,6 +18,10 @@ La gestion des erreurs est un aspect critique du scripting professionnel. Un scr
 
 ## Erreurs terminantes vs non-terminantes
 
+!!! example "Analogie"
+
+    Imaginez que vous suivez une liste de courses dans un supermarche. Une erreur **non-terminante**, c'est quand un article est en rupture de stock : vous passez au suivant. Une erreur **terminante**, c'est quand le magasin ferme ses portes : impossible de continuer, peu importe ce qu'il reste sur la liste. `$ErrorActionPreference = "Stop"` revient a dire : "si un seul article manque, je quitte le magasin immediatement."
+
 ### Erreurs terminantes (Terminating Errors)
 
 Les erreurs **terminantes** arretent immediatement l'execution du pipeline ou du script. Elles sont interceptees par `try/catch`.
@@ -47,6 +51,22 @@ Write-Output "This line STILL executes"
 # Terminating error: script stops
 throw "Critical failure"
 Write-Output "This line NEVER executes"
+```
+
+Resultat :
+
+```text
+Get-Item : Cannot find path 'C:\DoesNotExist.txt' because it does not exist.
+At line:1 char:1
++ Get-Item -Path "C:\DoesNotExist.txt"
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (C:\DoesNotExist.txt:String) [Get-Item], ItemNotFoundException
+    + FullyQualifiedErrorId : PathNotFound,Microsoft.PowerShell.Commands.GetItemCommand
+This line STILL executes
+Critical failure
+At line:4 char:1
++ throw "Critical failure"
++ ~~~~~~~~~~~~~~~~~~~~~~~~
 ```
 
 !!! warning "Piege classique"
@@ -201,6 +221,21 @@ $Error.Count
 $Error.Clear()
 ```
 
+Resultat :
+
+```text
+PSMessageDetails      :
+Exception             : System.Management.Automation.ItemNotFoundException: Cannot find path 'C:\DoesNotExist.txt'
+                        because it does not exist.
+TargetObject          : C:\DoesNotExist.txt
+CategoryInfo          : ObjectNotFound: (C:\DoesNotExist.txt:String) [Get-Item], ItemNotFoundException
+FullyQualifiedErrorId : PathNotFound,Microsoft.PowerShell.Commands.GetItemCommand
+ErrorDetails          :
+InvocationInfo        : System.Management.Automation.InvocationInfo
+ScriptStackTrace      : at <ScriptBlock>, <No file>: line 1
+PipelineIterationInfo : {}
+```
+
 ## Throw et Write-Error
 
 ### Throw
@@ -260,6 +295,10 @@ function Get-UserMailbox {
 ```
 
 ## Patterns courants
+
+!!! example "Analogie"
+
+    Le pattern de retry est comme un livreur qui sonne a votre porte : s'il n'obtient pas de reponse, il attend quelques minutes et reessaie. Apres trois tentatives sans succes, il laisse un avis de passage (exception). Sans ce mecanisme, un simple probleme reseau temporaire pourrait faire echouer tout un deploiement.
 
 ### Pattern de retry
 
@@ -365,6 +404,70 @@ trap {
 - Interceptez des types d'exceptions specifiques avant le `catch` generique
 - La variable `$_` dans `catch` contient l'objet erreur complet (message, stack trace, source)
 - Le pattern de **retry** est essentiel pour les operations reseau ou les API
+
+!!! example "Scenario pratique"
+
+    **Thomas**, administrateur systeme, execute un script qui verifie l'espace disque sur 10 serveurs. Le script echoue sur `SRV-03` (hors ligne) mais ne produit aucune alerte -- les 7 serveurs restants ne sont jamais verifies.
+
+    **Diagnostic :**
+
+    1. Verifier la configuration d'erreur du script :
+    ```powershell
+    # The script had this at the top:
+    $ErrorActionPreference = "Stop"
+    ```
+    Avec `Stop`, l'erreur sur SRV-03 arrete tout le script.
+
+    2. Examiner l'erreur dans `$Error` :
+    ```powershell
+    $Error[0] | Format-List Exception, ScriptStackTrace
+    ```
+    Resultat :
+    ```text
+    Exception      : System.Runtime.InteropServices.COMException: The RPC server is unavailable.
+    ScriptStackTrace : at Get-DiskSpace, C:\Scripts\Check-Disks.ps1: line 22
+                       at <ScriptBlock>, C:\Scripts\Check-Disks.ps1: line 45
+    ```
+
+    3. Corriger avec un `try/catch` par serveur :
+    ```powershell
+    $ErrorActionPreference = "Stop"
+    $servers = @("SRV-01", "SRV-02", "SRV-03", "DC-01")
+    $results = foreach ($server in $servers) {
+        try {
+            Get-CimInstance -ClassName Win32_LogicalDisk -ComputerName $server -Filter "DriveType=3" |
+                Select-Object @{N="Server";E={$server}}, DeviceID,
+                    @{N="FreeGB";E={[math]::Round($_.FreeSpace/1GB,2)}}
+        }
+        catch {
+            Write-Warning "Cannot reach $server : $($_.Exception.Message)"
+            [PSCustomObject]@{ Server = $server; DeviceID = "N/A"; FreeGB = "OFFLINE" }
+        }
+    }
+    $results | Format-Table -AutoSize
+    ```
+    Resultat :
+    ```text
+    WARNING: Cannot reach SRV-03 : The RPC server is unavailable.
+
+    Server DeviceID FreeGB
+    ------ -------- ------
+    SRV-01 C:        42.35
+    SRV-01 D:       189.12
+    SRV-02 C:        68.77
+    SRV-03 N/A     OFFLINE
+    DC-01  C:        54.10
+    ```
+
+    **Resolution :** En placant le `try/catch` a l'interieur de la boucle, chaque serveur est traite independamment. L'echec d'un serveur n'empeche plus la verification des suivants.
+
+!!! danger "Erreurs courantes"
+
+    - **Utiliser `try/catch` sans `-ErrorAction Stop`** : les cmdlets generent des erreurs non-terminantes par defaut. Sans `-ErrorAction Stop` (ou `$ErrorActionPreference = "Stop"`), le bloc `catch` n'est jamais execute.
+    - **Confondre `throw` et `Write-Error`** : `throw` arrete l'execution (erreur terminante), `Write-Error` signale l'erreur mais continue (non-terminante). Utilisez `throw` pour les erreurs critiques et `Write-Error` pour les avertissements.
+    - **Oublier le bloc `finally`** : si le script ouvre des connexions (SQL, fichiers, sessions distantes), le bloc `finally` doit les fermer. Sans `finally`, une erreur peut laisser des ressources ouvertes indefiniment.
+    - **Ignorer `$_.ScriptStackTrace`** : dans le bloc `catch`, `$_.Exception.Message` donne le message, mais `$_.ScriptStackTrace` indique exactement ou l'erreur s'est produite. C'est indispensable pour le debogage.
+    - **Utiliser `$Error.Clear()` en debut de script** : cela efface les erreurs des scripts precedents et complique le diagnostic. Preferez stocker les erreurs dans une variable dediee avec `-ErrorVariable`.
 
 ## Pour aller plus loin
 

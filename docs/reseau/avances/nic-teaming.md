@@ -29,6 +29,10 @@ Le **NIC Teaming** (ou association de cartes reseau) permet de regrouper plusieu
 
 ---
 
+!!! example "Analogie"
+
+    Le NIC Teaming est comparable aux **caisses d'un supermarche**. Si une seule caisse est ouverte (une seule carte reseau) et qu'elle tombe en panne, plus personne ne peut passer. En ouvrant trois caisses simultanement (trois cartes en equipe), les clients sont repartis entre elles (agregation de bande passante) et si une caisse ferme, les clients sont rediriges vers les caisses restantes sans interruption (tolerance de panne).
+
 ## Concepts fondamentaux
 
 ### Architecture
@@ -156,6 +160,20 @@ New-NetLbfoTeam -Name "Team-Production" `
 Get-NetLbfoTeam
 ```
 
+Resultat :
+
+```text
+Name       InterfaceDescription                       Status  LinkSpeed
+----       --------------------                       ------  ---------
+Ethernet1  Intel(R) I350 Gigabit Network Connection    Up     1 Gbps
+Ethernet2  Intel(R) I350 Gigabit Network Connection #2 Up     1 Gbps
+Ethernet3  Intel(R) I350 Gigabit Network Connection #3 Up     1 Gbps
+
+Name             Status  TeamingMode       LoadBalancingAlgorithm
+----             ------  -----------       ----------------------
+Team-Production  Up      SwitchIndependent Dynamic
+```
+
 ### Creer une equipe avec LACP
 
 ```powershell
@@ -175,6 +193,16 @@ Set-NetLbfoTeamMember -Name "Ethernet3" -AdministrativeMode Standby
 
 # Verify member status
 Get-NetLbfoTeamMember | Select-Object Name, Team, AdministrativeMode, OperationalStatus
+```
+
+Resultat :
+
+```text
+Name      Team            AdministrativeMode OperationalStatus
+----      ----            ------------------ -----------------
+Ethernet1 Team-Production Active             Active
+Ethernet2 Team-Production Active             Active
+Ethernet3 Team-Production Standby            Standby
 ```
 
 ### Ajouter/supprimer des membres
@@ -246,6 +274,26 @@ Get-NetLbfoTeamMember | Select-Object Name, Team, AdministrativeMode, Operationa
 Get-NetLbfoTeamNic | Select-Object Name, Team, VlanID, Primary
 ```
 
+Resultat :
+
+```text
+Name            Status TeamingMode       LoadBalancingAlgorithm
+----            ------ -----------       ----------------------
+Team-Production Up     SwitchIndependent Dynamic
+
+Name      Team            AdministrativeMode OperationalStatus ReceiveLinkSpeed
+----      ----            ------------------ ----------------- ----------------
+Ethernet1 Team-Production Active             Active            1 Gbps
+Ethernet2 Team-Production Active             Active            1 Gbps
+Ethernet3 Team-Production Standby            Standby           1 Gbps
+
+Name                  Team            VlanID Primary
+----                  ----            ------ -------
+Team-Production       Team-Production        True
+Team-VLAN100-Servers  Team-Production 100    False
+Team-VLAN200-Mgmt     Team-Production 200    False
+```
+
 ### Simuler une panne
 
 ```powershell
@@ -258,6 +306,25 @@ Get-NetLbfoTeamMember | Select-Object Name, OperationalStatus
 
 # Re-enable the adapter
 Enable-NetAdapter -Name "Ethernet1"
+```
+
+Resultat :
+
+```text
+Name            Status
+----            ------
+Team-Production Degraded
+
+Name      OperationalStatus
+----      -----------------
+Ethernet1 Failed
+Ethernet2 Active
+Ethernet3 Active
+
+# (Apres re-activation de Ethernet1)
+Name            Status
+----            ------
+Team-Production Up
 ```
 
 ### Evenements de journalisation
@@ -322,6 +389,62 @@ Get-VMSwitchTeam -Name "SET-Production"
 | SET                      | Alternative recommandee pour les hotes Hyper-V              |
 
 ---
+
+!!! example "Scenario pratique"
+
+    **Contexte** : David, administrateur systeme, doit configurer le NIC Teaming sur un serveur Hyper-V `SRV-HV01` (10.0.0.25) dans le domaine `lab.local`. Le serveur dispose de 3 cartes reseau 1 Gbps. Il souhaite une tolerance de panne avec un adaptateur en veille, et la repartition du trafic entre les deux cartes actives.
+
+    **Solution** :
+
+    ```powershell
+    # Step 1: Verify available adapters
+    Get-NetAdapter | Select-Object Name, Status, LinkSpeed
+    ```
+
+    ```text
+    Name      Status LinkSpeed
+    ----      ------ ---------
+    Ethernet1 Up     1 Gbps
+    Ethernet2 Up     1 Gbps
+    Ethernet3 Up     1 Gbps
+    ```
+
+    ```powershell
+    # Step 2: Create the team with all 3 adapters
+    New-NetLbfoTeam -Name "Team-HyperV" `
+        -TeamMembers "Ethernet1", "Ethernet2", "Ethernet3" `
+        -TeamingMode SwitchIndependent `
+        -LoadBalancingAlgorithm Dynamic `
+        -Confirm:$false
+
+    # Step 3: Set Ethernet3 as standby
+    Set-NetLbfoTeamMember -Name "Ethernet3" -AdministrativeMode Standby
+
+    # Step 4: Assign IP address
+    New-NetIPAddress -InterfaceAlias "Team-HyperV" `
+        -IPAddress "10.0.0.25" -PrefixLength 24 -DefaultGateway "10.0.0.1"
+
+    # Step 5: Verify final configuration
+    Get-NetLbfoTeamMember | Select-Object Name, AdministrativeMode, OperationalStatus
+    ```
+
+    ```text
+    Name      AdministrativeMode OperationalStatus
+    ----      ------------------ -----------------
+    Ethernet1 Active             Active
+    Ethernet2 Active             Active
+    Ethernet3 Standby            Standby
+    ```
+
+    Le serveur dispose maintenant de 2 Gbps de bande passante active avec un adaptateur de secours.
+
+!!! danger "Erreurs courantes"
+
+    - **Melanger des cartes de vitesses differentes** : regrouper une carte 1 Gbps avec une carte 10 Gbps degradera les performances car le trafic sera reparti sur les deux, limitant le debit global.
+    - **Oublier la configuration LACP cote switch** : en mode LACP, les ports du commutateur doivent etre configures en LACP egalement. Sans cela, les liens ne negocieront pas et le trafic sera perturbe.
+    - **Configurer l'IP sur un adaptateur membre au lieu du Team NIC** : l'adresse IP doit etre configuree sur l'interface logique (Team NIC), pas sur les adaptateurs physiques individuels.
+    - **Ne pas tester le basculement avant la production** : toujours simuler une panne (`Disable-NetAdapter`) pour verifier que le failover fonctionne correctement et que la connectivite est maintenue.
+    - **Utiliser NIC Teaming LBFO sur un nouvel hote Hyper-V** : LBFO est deprecie. Pour les nouvelles architectures Hyper-V, utiliser SET (Switch Embedded Teaming).
 
 ## Pour aller plus loin
 

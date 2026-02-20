@@ -37,6 +37,10 @@ flowchart TD
 
 ## Installation via PowerShell
 
+!!! example "Analogie"
+
+    Installer un role sur Windows Server, c'est comme ajouter une application sur votre telephone. Vous parcourez le catalogue (`Get-WindowsFeature`), vous choisissez l'application (`Install-WindowsFeature`), et parfois le telephone doit redemarrer pour finaliser l'installation. Pour desinstaller, c'est le chemin inverse — et avec l'option `-Remove`, vous supprimez aussi les fichiers d'installation pour liberer de l'espace, comme vider le cache d'une application.
+
 ### Lister les roles disponibles
 
 ```powershell
@@ -55,6 +59,26 @@ Get-WindowsFeature -Name "*AD*"
 Get-WindowsFeature | Where-Object Installed
 ```
 
+Resultat (extrait de `Get-WindowsFeature -Name "*DNS*"`) :
+
+```text
+PS C:\> Get-WindowsFeature -Name "*DNS*"
+
+Display Name                                            Name            Install State
+------------                                            ----            -------------
+    [ ] DNS Server                                      DNS             Available
+        [ ] DNS Server Tools                            RSAT-DNS-Server Available
+
+PS C:\> Get-WindowsFeature -Name "*AD*"
+
+Display Name                                            Name                   Install State
+------------                                            ----                   -------------
+    [ ] Active Directory Domain Services                AD-Domain-Services     Available
+    [ ] Active Directory Federation Services            ADFS-Federation        Available
+    [ ] Active Directory Lightweight Directory Serv.    ADLDS                  Available
+    [ ] Active Directory Rights Management Services     ADRMS                  Available
+```
+
 ### Installer un role
 
 ```powershell
@@ -69,6 +93,26 @@ Install-WindowsFeature -Name "Web-Server" -IncludeAllSubFeature -IncludeManageme
 
 # Install and automatically restart if needed
 Install-WindowsFeature -Name "DHCP" -IncludeManagementTools -Restart
+```
+
+Resultat :
+
+```text
+PS C:\> Install-WindowsFeature -Name "DNS" -IncludeManagementTools
+
+Success Restart Needed Exit Code      Feature Result
+------- -------------- ---------      --------------
+True    No             Success        {DNS Server, DNS Server Tools}
+
+PS C:\> Install-WindowsFeature -Name "Web-Server" -IncludeAllSubFeature -IncludeManagementTools
+
+Success Restart Needed Exit Code      Feature Result
+------- -------------- ---------      --------------
+True    No             Success        {Web Server (IIS), Common HTTP Features,
+                                       Default Document, Directory Browsing,
+                                       HTTP Errors, Static Content, HTTP Logging,
+                                       Request Monitor, Static Content Compression,
+                                       IIS Management Console, ...}
 ```
 
 !!! warning "Parametres importants"
@@ -87,6 +131,20 @@ Install-WindowsFeature -Name "DHCP" -IncludeManagementTools -Restart
 Install-WindowsFeature -Name "DNS" -ComputerName "SRV-02" -IncludeManagementTools -Credential (Get-Credential)
 ```
 
+Resultat :
+
+```text
+PS C:\> Install-WindowsFeature -Name "DNS" -ComputerName "SRV-01" -IncludeManagementTools -Credential (Get-Credential)
+
+cmdlet Get-Credential at command pipeline position 1
+Supply values for the following parameters:
+Credential
+
+Success Restart Needed Exit Code      Feature Result
+------- -------------- ---------      --------------
+True    No             Success        {DNS Server, DNS Server Tools}
+```
+
 ### Verifier l'installation
 
 ```powershell
@@ -97,6 +155,33 @@ Get-WindowsFeature -Name "DNS"
 Get-WindowsFeature | Where-Object InstallState -eq "Installed" |
     Select-Object Name, DisplayName |
     Sort-Object DisplayName
+```
+
+Resultat :
+
+```text
+PS C:\> Get-WindowsFeature -Name "DNS"
+
+Display Name                                            Name            Install State
+------------                                            ----            -------------
+    [X] DNS Server                                      DNS             Installed
+        [X] DNS Server Tools                            RSAT-DNS-Server Installed
+
+PS C:\> Get-WindowsFeature | Where-Object InstallState -eq "Installed" |
+    Select-Object Name, DisplayName | Sort-Object DisplayName
+
+Name                    DisplayName
+----                    -----------
+AD-Domain-Services      Active Directory Domain Services
+DHCP                    DHCP Server
+DNS                     DNS Server
+FS-FileServer           File Server
+GPMC                    Group Policy Management
+NET-Framework-45-Core   .NET Framework 4.8
+PowerShellRoot          Windows PowerShell
+RSAT-AD-Tools           AD DS and AD LDS Tools
+RSAT-DHCP               DHCP Server Tools
+RSAT-DNS-Server         DNS Server Tools
 ```
 
 ## Suppression d'un role
@@ -114,6 +199,26 @@ Uninstall-WindowsFeature -Name "DHCP" -Remove
 Uninstall-WindowsFeature -Name "DHCP" -Remove -Restart
 ```
 
+Resultat :
+
+```text
+PS C:\> Uninstall-WindowsFeature -Name "DHCP"
+
+Success Restart Needed Exit Code      Feature Result
+------- -------------- ---------      --------------
+True    No             Success        {DHCP Server}
+
+WARNING: You must restart this server to finish the removal process.
+
+PS C:\> Uninstall-WindowsFeature -Name "Web-Server" -Remove
+
+Success Restart Needed Exit Code      Feature Result
+------- -------------- ---------      --------------
+True    Yes            SuccessRest... {Web Server (IIS), Common HTTP Features, ...}
+
+WARNING: You must restart this server to finish the removal process.
+```
+
 !!! danger "Attention avec -Remove"
 
     Le flag `-Remove` supprime les fichiers binaires du disque.
@@ -128,6 +233,16 @@ Install-WindowsFeature -Name "DHCP" -IncludeManagementTools
 
 # Install from a local source (ISO mounted or folder)
 Install-WindowsFeature -Name "DHCP" -IncludeManagementTools -Source "D:\sources\sxs"
+```
+
+Resultat :
+
+```text
+PS C:\> Install-WindowsFeature -Name "DHCP" -IncludeManagementTools -Source "D:\sources\sxs"
+
+Success Restart Needed Exit Code      Feature Result
+------- -------------- ---------      --------------
+True    No             Success        {DHCP Server, DHCP Server Tools}
 ```
 
 ## Installation via Server Manager (GUI)
@@ -172,6 +287,17 @@ Install-WindowsFeature -Name "DHCP" -IncludeManagementTools -Source "D:\sources\
     Get-WindowsFeature | Where-Object DisplayName -like "*Active*"
     ```
 
+    Resultat :
+
+    ```text
+    Display Name                                            Name                   Install State
+    ------------                                            ----                   -------------
+        [ ] Active Directory Domain Services                AD-Domain-Services     Available
+        [ ] Active Directory Federation Services            ADFS-Federation        Available
+        [ ] Active Directory Lightweight Directory Serv.    ADLDS                  Available
+        [ ] Active Directory Rights Management Services     ADRMS                  Available
+    ```
+
 ## Workflow type pour un nouveau serveur
 
 ```powershell
@@ -190,6 +316,97 @@ Get-WindowsFeature | Where-Object Installed
 # 5. Proceed with role-specific configuration
 # (AD DS promotion, DNS zones, DHCP scopes...)
 ```
+
+Resultat (etape 3 - installation des roles) :
+
+```text
+PS C:\> Install-WindowsFeature -Name "AD-Domain-Services", "DNS", "DHCP" -IncludeManagementTools
+
+Success Restart Needed Exit Code      Feature Result
+------- -------------- ---------      --------------
+True    No             Success        {Active Directory Domain Services,
+                                       DNS Server, DHCP Server,
+                                       Group Policy Management,
+                                       AD DS and AD LDS Tools,
+                                       DNS Server Tools, DHCP Server Tools}
+```
+
+!!! example "Scenario pratique"
+
+    **Contexte** : Antoine, technicien IT, doit preparer un nouveau serveur `SRV-01` (10.0.0.20) pour heberger le role serveur de fichiers et DFS dans l'environnement `lab.local`. Le serveur vient d'etre installe avec Windows Server 2022.
+
+    **Etape 1** : Verifier les roles actuellement installes
+
+    ```powershell
+    Get-WindowsFeature | Where-Object Installed
+    ```
+
+    ```text
+    Display Name                                            Name            Install State
+    ------------                                            ----            -------------
+        [X] File and Storage Services                       FileAndStorage  Installed
+            [X] Storage Services                            Storage-Serv... Installed
+        [X] .NET Framework 4.8                              NET-Framework.. Installed
+        [X] Windows PowerShell                              PowerShellRoot  Installed
+    ```
+
+    Seuls les composants par defaut sont installes.
+
+    **Etape 2** : Rechercher les fonctionnalites necessaires
+
+    ```powershell
+    Get-WindowsFeature -Name "*FS*", "*DFS*"
+    ```
+
+    ```text
+    Display Name                                            Name            Install State
+    ------------                                            ----            -------------
+        [X] File and Storage Services                       FileAndStorage  Installed
+            [X] File Server                                 FS-FileServer   Installed
+            [ ] DFS Namespaces                              FS-DFS-Names... Available
+            [ ] DFS Replication                             FS-DFS-Repli... Available
+            [ ] File Server Resource Manager                FS-Resource-... Available
+    ```
+
+    **Etape 3** : Installer DFS avec les outils de gestion
+
+    ```powershell
+    Install-WindowsFeature -Name "FS-DFS-Namespace", "FS-DFS-Replication" -IncludeManagementTools
+    ```
+
+    ```text
+    Success Restart Needed Exit Code      Feature Result
+    ------- -------------- ---------      --------------
+    True    No             Success        {DFS Namespaces, DFS Replication,
+                                           DFS Management Tools}
+    ```
+
+    **Etape 4** : Verifier l'installation
+
+    ```powershell
+    Get-WindowsFeature -Name "*DFS*"
+    ```
+
+    ```text
+    Display Name                                            Name            Install State
+    ------------                                            ----            -------------
+            [X] DFS Namespaces                              FS-DFS-Names... Installed
+            [X] DFS Replication                             FS-DFS-Repli... Installed
+    ```
+
+    Antoine peut maintenant passer a la configuration des espaces de noms DFS et de la replication.
+
+!!! danger "Erreurs courantes"
+
+    1. **Oublier `-IncludeManagementTools`** : installer un role sans ses outils d'administration oblige ensuite a les ajouter manuellement. Prenez le reflexe d'ajouter ce parametre systematiquement.
+
+    2. **Installer un role sur un serveur de production sans tester** : utilisez toujours le parametre `-WhatIf` pour simuler l'installation avant de l'executer reellement : `Install-WindowsFeature -Name "DNS" -WhatIf`.
+
+    3. **Utiliser `-Remove` sans reflexion** : supprimer les binaires avec `-Remove` economise de l'espace disque mais rend la reinstallation plus complexe (necessite une source ISO ou Windows Update). En lab, evitez `-Remove` pour pouvoir reinstaller facilement.
+
+    4. **Ne pas redemarrer apres une installation qui le demande** : certains roles (comme Hyper-V) necessitent un redemarrage obligatoire. Ignorer cet avertissement laisse le role dans un etat partiel non fonctionnel.
+
+    5. **Confondre le nom affiche et le nom PowerShell** : "Active Directory Domain Services" s'appelle `AD-Domain-Services` en PowerShell, pas `ActiveDirectory` ni `ADDS`. Utilisez `Get-WindowsFeature | Where-Object DisplayName -like "*motcle*"` pour trouver le nom exact.
 
 ## Points cles a retenir
 

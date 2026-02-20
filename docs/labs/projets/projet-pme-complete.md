@@ -19,6 +19,15 @@ tags:
 
 <span class="level-advanced">Avance</span>
 
+!!! example "Analogie"
+
+    Deployer une infrastructure IT complete pour une PME, c'est comme construire et amenager
+    un nouveau siege social : l'Active Directory est le registre du personnel et les badges
+    d'acces, le serveur de fichiers est l'armoire commune avec des tiroirs par service, les GPO
+    sont le reglement interieur affiche dans chaque bureau, et la PKI est le service de
+    reprographie qui certifie l'authenticite des documents. Chaque element doit etre en place
+    avant le suivant — on ne pose pas les meubles avant les murs.
+
 ## Contexte
 
 La PME **TechNova** (50 employes, 3 sites) vous mandate pour deployer son infrastructure IT. Vous devez concevoir et mettre en place l'ensemble des services necessaires au fonctionnement de l'entreprise.
@@ -162,6 +171,50 @@ graph TD
     # 9. Test client connectivity
     Test-NetConnection dc01.technova.local -Port 389
     ```
+
+    Resultat attendu de la validation finale (exemple) :
+
+    ```text
+    # Get-ADDomainController -Filter * | Select-Object Name, IPv4Address
+    Name   IPv4Address
+    ----   -----------
+    DC01   10.10.10.10
+    DC02   10.10.10.11
+
+    # (Get-ADUser -Filter *).Count
+    55
+
+    # Get-DhcpServerv4Scope | Select-Object ScopeId, Name, State
+    ScopeId      Name     State
+    --------     ----     -----
+    10.10.10.0   LAN-PME  Active
+    ```
+
+!!! warning "Pieges frequents dans ce projet"
+
+    1. **Nommage incoerent entre les phases** : utiliser "DC01" dans le plan reseau mais
+       "SRV-DC01" dans les scripts PowerShell cree des echecs de resolution DNS et de jonction
+       au domaine. Choisir une convention de nommage (ici DC01, DC02, FILE01, WEB01) et s'y tenir
+       rigoureusement dans tous les scripts, la documentation et les enregistrements DNS.
+
+    2. **DHCP autorise avant la configuration de la CA** : si la CA est installee apres que le
+       DHCP distribue des baux, les enregistrements DNS crees par le DHCP (updates dynamiques)
+       peuvent ne pas etre signes par DNSSEC. Pour ce projet, installer AD DS et DNS en premier,
+       puis DHCP, puis PKI.
+
+    3. **Comptes de service crees comme utilisateurs standards** : les comptes de service (pour
+       les taches planifiees, IIS, etc.) ne doivent pas etre dans l'OU Utilisateurs avec les
+       comptes humains. Creer une OU "Service-Accounts" separee et appliquer une PSO (Fine-Grained
+       Password Policy) avec un mot de passe non expirable.
+
+    4. **GPO de mappage de lecteurs avant la creation des partages** : une GPO qui mappe
+       `\\FILE01\Comptabilite` echoue silencieusement si le partage SMB n'existe pas encore.
+       Verifier l'ordre de deploiement : partages avant GPO, DC avant clients.
+
+    5. **Documentation non a jour apres les modifications** : dans ce projet d'evaluation,
+       la documentation (schema reseau, plan IP, conventions de nommage) doit refleter l'etat
+       final reel de l'infrastructure. Une adresse IP changee en cours de projet qui ne se
+       retrouve pas dans la documentation est penalisante au meme titre qu'un service manquant.
 
 ## Pour aller plus loin
 

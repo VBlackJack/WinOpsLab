@@ -28,6 +28,10 @@ graph TD
     D --> I[Webhook / ITSM]
 ```
 
+!!! example "Analogie"
+
+    Azure Monitor, c'est comme les tableaux de bord d'une salle de controle de centrale electrique : des capteurs installes sur chaque machine (les agents) envoient en permanence leurs mesures (temperature, pression, debit) vers la salle de controle centrale. Les operateurs voient tout, peuvent definir des seuils d'alerte et n'ont pas besoin de se deplacer dans la centrale pour surveiller chaque machine.
+
 ## Agents de collecte
 
 ### Azure Monitor Agent (AMA) - Recommande
@@ -97,6 +101,22 @@ az connectedmachine extension create `
     --publisher "Microsoft.Azure.Monitor" `
     --type "AzureMonitorWindowsAgent" `
     --location "westeurope"
+```
+
+Resultat :
+
+```text
+{
+  "id": "/subscriptions/.../resourceGroups/RG-Arc-Servers/providers/Microsoft.HybridCompute/machines/SRV-DC01/extensions/AzureMonitorWindowsAgent",
+  "name": "AzureMonitorWindowsAgent",
+  "properties": {
+    "provisioningState": "Succeeded",
+    "publisher": "Microsoft.Azure.Monitor",
+    "type": "AzureMonitorWindowsAgent",
+    "typeHandlerVersion": "1.22.0"
+  },
+  "resourceGroup": "RG-Arc-Servers"
+}
 ```
 
 ## Data Collection Rules (DCR)
@@ -261,6 +281,59 @@ Epingler des requetes et graphiques sur un tableau de bord Azure partage :
 1. Executer une requete dans Log Analytics
 2. Cliquer sur **Epingler au tableau de bord**
 3. Choisir un tableau de bord existant ou en creer un nouveau
+
+!!! example "Scenario pratique"
+
+    **Context :** Pierre, ingenieur systeme, doit configurer Azure Monitor sur les 4 serveurs de son infrastructure (SRV-DC01, SRV-01, SRV-WEB01, SRV-FS01) et recevoir des alertes par email si le CPU depasse 85% pendant plus de 10 minutes ou si l'espace disque passe sous 15%.
+
+    **Etape 1 : Creer le workspace Log Analytics**
+
+    Pierre cree `law-winopslab` dans le Resource Group `RG-Monitoring`, region West Europe, retention 30 jours.
+
+    **Etape 2 : Deployer l'agent AMA via Azure Arc**
+
+    Les serveurs sont deja inscrits dans Arc. Pierre deploie l'extension Azure Monitor Windows Agent depuis le portail sur les 4 machines simultanement.
+
+    **Etape 3 : Creer une Data Collection Rule**
+
+    Il cree la DCR `dcr-windows-servers` qui collecte :
+    - Windows Event Logs : Security (4624, 4625), System (Critical, Error, Warning)
+    - Performance Counters : CPU, memoire disponible, espace disque (toutes les 60 secondes)
+
+    Il assigne la DCR aux 4 serveurs Arc.
+
+    **Etape 4 : Creer les alertes**
+
+    Dans Azure Monitor > Alertes, Pierre cree deux regles :
+
+    - Alerte CPU : requete KQL sur `Perf` ou CounterName = "% Processor Time" > 85, evaluee toutes les 5 minutes sur une fenetre de 10 minutes.
+    - Alerte disque : requete KQL sur `Perf` ou CounterName = "% Free Space" < 15, evaluee toutes les 15 minutes.
+
+    Les deux alertes sont liees a un Action Group qui envoie un email a `equipe-it@lab.local`.
+
+    **Etape 5 : Valider avec une requete KQL**
+
+    ```
+    Perf
+    | where CounterName == "% Processor Time" and InstanceName == "_Total"
+    | where TimeGenerated > ago(1h)
+    | summarize AvgCPU = avg(CounterValue) by Computer, bin(TimeGenerated, 5m)
+    | sort by TimeGenerated desc
+    ```
+
+    Les donnees de SRV-DC01, SRV-01, SRV-WEB01 et SRV-FS01 apparaissent dans les resultats. La surveillance est operationnelle.
+
+!!! danger "Erreurs courantes"
+
+    **Utiliser l'agent MMA (Log Analytics) pour de nouveaux deploiements.** L'agent MMA est en cours de deprecation. Tout nouveau deploiement doit utiliser l'Azure Monitor Agent (AMA) avec des Data Collection Rules. Migrer les agents MMA existants vers AMA.
+
+    **Oublier de creer une Data Collection Rule apres le deploiement de l'agent.** L'agent AMA seul ne collecte rien. Sans DCR associee, aucune donnee n'arrive dans Log Analytics. Toujours verifier qu'une DCR est bien assignee aux serveurs cibles apres le deploiement.
+
+    **Sous-estimer les couts de retention des donnees.** Log Analytics facture le stockage au-dela de 30 jours. Sur un parc de 20 serveurs avec collecte verbose (tous les logs de securite + compteurs toutes les 30 secondes), les couts peuvent depasser les attentes. Calibrer soigneusement les DCR et les intervalles de collecte.
+
+    **Ne pas configurer de groupe d'actions sur les alertes.** Une alerte sans Action Group n'envoie aucune notification. La regle se declenche silencieusement dans le portail sans que personne soit prevenu. Toujours associer un groupe d'actions avec au moins un canal de notification.
+
+    **Utiliser KQL sans tester les performances sur de grandes plages temporelles.** Une requete KQL sans filtre sur `TimeGenerated` peut scanner plusieurs mois de donnees et prendre plusieurs minutes, voire echouer par timeout. Toujours inclure un filtre temporel (`ago(1h)`, `ago(24h)`) et tester sur une petite plage avant de sauvegarder une alerte.
 
 ## Points cles a retenir
 

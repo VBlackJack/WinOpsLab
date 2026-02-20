@@ -15,6 +15,10 @@ tags:
 
 Le style de partition definit la maniere dont la table de partitions est organisee sur le disque. Windows Server 2022 prend en charge deux styles.
 
+!!! example "Analogie"
+
+    Imaginez un disque dur comme un terrain a batir. Le style de partition (MBR ou GPT) correspond au **plan de lotissement** : il definit comment le terrain est decoupe en parcelles. MBR est un ancien plan qui ne permet que 4 parcelles et un terrain de 2 hectares maximum. GPT est un plan moderne qui autorise 128 parcelles sur un terrain quasi illimite.
+
 ### MBR (Master Boot Record)
 
 Le MBR est le format historique, present depuis les annees 1980 :
@@ -64,9 +68,9 @@ Le GPT est le standard moderne, requis pour UEFI :
 Get-Disk | Format-Table Number, FriendlyName, PartitionStyle, Size -AutoSize
 ```
 
-Resultat typique :
+Resultat :
 
-```
+```text
 Number FriendlyName       PartitionStyle      Size
 ------ ------------       --------------      ----
      0 Virtual HD         GPT            127 GB
@@ -91,6 +95,14 @@ Initialize-Disk -Number 1 -PartitionStyle GPT
 # First, clean the disk, then re-initialize
 Clear-Disk -Number 1 -RemoveData -Confirm:$false
 Initialize-Disk -Number 1 -PartitionStyle GPT
+```
+
+Resultat :
+
+```text
+Number PartitionStyle OperationalStatus
+------ -------------- -----------------
+     1 GPT            Online
 ```
 
 Via `diskpart` (methode classique) :
@@ -119,6 +131,10 @@ diskpart
 ## Disques de base vs disques dynamiques
 
 Au-dela du style de partition, Windows distingue deux types de disques selon la facon dont les volumes sont geres.
+
+!!! example "Analogie"
+
+    Pensez au disque de base comme un **appartement avec des cloisons fixes** : chaque piece (partition) est independante et bien definie. Le disque dynamique, c'est un **loft modulable** : vous pouvez abattre des cloisons, fusionner des pieces ou meme etendre une piece sur l'appartement d'a cote. Plus flexible, mais plus difficile a revendre (compatibilite).
 
 ### Disque de base (Basic Disk)
 
@@ -181,6 +197,15 @@ diskpart
 # convert dynamic
 ```
 
+Resultat :
+
+```text
+Number PartitionStyle OperationalStatus
+------ -------------- -----------------
+     0 GPT            Online
+     1 GPT            Online
+```
+
 !!! danger "Attention"
 
     La conversion de base vers dynamique est possible sans perte de donnees, mais la **conversion inverse** (dynamique vers base) necessite la suppression de tous les volumes du disque.
@@ -201,6 +226,22 @@ Get-PhysicalDisk | Select-Object DeviceId, FriendlyName, MediaType,
     @{N='SizeGB';E={[math]::Round($_.Size/1GB,2)}},
     HealthStatus |
     Format-Table -AutoSize
+```
+
+Resultat :
+
+```text
+Number FriendlyName   PartitionStyle SizeGB OperationalStatus HealthStatus
+------ ------------   -------------- ------ ----------------- ------------
+     0 Virtual HD     GPT            127.00 Online            Healthy
+     1 Virtual HD     GPT             50.00 Online            Healthy
+     2 Virtual HD     RAW            100.00 Online            Healthy
+
+DeviceId FriendlyName   MediaType SizeGB HealthStatus
+-------- ------------   --------- ------ ------------
+0        Virtual HD     Unspecified 127.00 Healthy
+1        Virtual HD     Unspecified  50.00 Healthy
+2        Virtual HD     Unspecified 100.00 Healthy
 ```
 
 ### Avec la console Gestion des disques
@@ -230,6 +271,60 @@ diskmgmt.msc
 - Les **disques dynamiques** sont deprecies ; preferez **Storage Spaces** pour les volumes avances
 - La conversion MBR vers GPT detruit les donnees sauf avec `mbr2gpt.exe`
 - Verifiez toujours le style de partition avec `Get-Disk` avant toute operation
+
+!!! example "Scenario pratique"
+
+    **Contexte :** Thomas, administrateur systeme chez une PME, ajoute un nouveau disque de 4 To a son serveur de fichiers SRV-01. Il initialise le disque en MBR par reflexe. Apres formatage, il ne voit que 2 To d'espace disponible.
+
+    **Diagnostic :**
+
+    ```powershell
+    # Check the partition style and reported size
+    Get-Disk -Number 2 | Select-Object Number, PartitionStyle,
+        @{N='SizeGB';E={[math]::Round($_.Size/1GB,2)}}
+    ```
+
+    Resultat :
+
+    ```text
+    Number PartitionStyle SizeGB
+    ------ -------------- ------
+         2 MBR            4096.00
+    ```
+
+    Le disque fait bien 4 To, mais MBR ne peut adresser que 2 To.
+
+    **Solution :**
+
+    ```powershell
+    # Backup data first, then convert to GPT
+    Clear-Disk -Number 2 -RemoveData -Confirm:$false
+    Initialize-Disk -Number 2 -PartitionStyle GPT
+    New-Partition -DiskNumber 2 -UseMaximumSize -AssignDriveLetter |
+        Format-Volume -FileSystem NTFS -NewFileSystemLabel "Donnees" -Confirm:$false
+    ```
+
+    Resultat :
+
+    ```text
+    DriveLetter FileSystemLabel FileSystem DriveType HealthStatus SizeRemaining    Size
+    ----------- --------------- ---------- --------- ------------ -------------    ----
+    F           Donnees         NTFS       Fixed     Healthy      3.99 TB          4 TB
+    ```
+
+    Thomas retrouve maintenant la totalite des 4 To. La lecon : pour tout disque superieur a 2 To, toujours choisir GPT.
+
+!!! danger "Erreurs courantes"
+
+    1. **Initialiser un disque > 2 To en MBR** : l'espace au-dela de 2 To est perdu. Verifiez toujours la taille du disque avant de choisir le style de partition.
+
+    2. **Convertir MBR/GPT sans sauvegarde** : la conversion via `diskpart` ou `Clear-Disk` supprime toutes les donnees. Seul `mbr2gpt.exe` permet une conversion sans perte, et uniquement pour le disque systeme.
+
+    3. **Convertir un disque en dynamique sans reflexion** : la conversion base vers dynamique est sans retour (sauf perte de donnees). De plus, les disques dynamiques sont deprecies au profit de Storage Spaces.
+
+    4. **Oublier de verifier le mode de demarrage** : un disque GPT ne demarre que sur un systeme UEFI. Avant de convertir le disque systeme, verifiez que le firmware est en UEFI et non en BIOS Legacy.
+
+    5. **Ne pas verifier l'etat de sante des disques** : avant toute operation de partitionnement, executez `Get-PhysicalDisk` pour verifier le `HealthStatus`. Manipuler un disque en etat `Warning` ou `Unhealthy` augmente le risque de perte de donnees.
 
 ## Pour aller plus loin
 

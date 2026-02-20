@@ -20,6 +20,10 @@ Une fois les prerequis valides, la creation du cluster proprement dite est une o
 
     Ne creez jamais un cluster sans avoir execute et valide les tests de validation. Consultez la page [Prerequis et validation](prerequis-et-validation.md) avant de continuer.
 
+!!! example "Analogie"
+
+    Creer un cluster, c'est comme former une equipe de relais en athletisme. Chaque coureur (noeud) est deja entraine (prerequis valides). La creation du cluster officialise l'equipe, attribue un nom de dossard (nom du cluster) et un couloir (adresse IP virtuelle). Ensuite, on definit qui porte le temoin et dans quel ordre les relais se font.
+
 ## Creation via PowerShell
 
 ### Commande de base
@@ -30,6 +34,18 @@ New-Cluster -Name "YOURCLUSTER" `
     -Node "NODE1", "NODE2" `
     -StaticAddress "192.168.1.100" `
     -NoStorage
+```
+
+Resultat :
+
+```text
+Name
+----
+CLUSTER01
+
+WARNING: No valid nodes were found to use for running the validation tests.
+The tests were not run. For more information about the validation tests and
+how they should be run, type Get-Help Test-Cluster.
 ```
 
 | Parametre | Description |
@@ -105,6 +121,16 @@ Get-ClusterAvailableDisk -Cluster "YOURCLUSTER" | Where-Object { $_.Name -like "
 Get-ClusterResource -Cluster "YOURCLUSTER" | Where-Object { $_.ResourceType -eq "Physical Disk" }
 ```
 
+Resultat :
+
+```text
+Name               State  OwnerGroup      ResourceType
+----               -----  ----------      ------------
+Cluster Disk 1     Online Available Storage Physical Disk
+Cluster Disk 2     Online Available Storage Physical Disk
+Cluster Disk 3     Online Available Storage Physical Disk
+```
+
 ### Configurer les Cluster Shared Volumes (CSV)
 
 Les CSV permettent a plusieurs noeuds d'acceder simultanement au meme volume, indispensable pour Hyper-V en cluster.
@@ -120,6 +146,20 @@ Get-ClusterSharedVolume -Cluster "YOURCLUSTER"
 Get-ChildItem -Path "C:\ClusterStorage"
 ```
 
+Resultat :
+
+```text
+Name           State  Node
+----           -----  ----
+Cluster Disk 1 Online SRV-01
+
+    Directory: C:\ClusterStorage
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+d-----        01/15/2025   15:20                  Volume1
+```
+
 ### Configurer le quorum
 
 ```powershell
@@ -129,6 +169,14 @@ Set-ClusterQuorum -Cluster "YOURCLUSTER" `
 
 # Verify current quorum configuration
 Get-ClusterQuorum -Cluster "YOURCLUSTER"
+```
+
+Resultat :
+
+```text
+Cluster          : CLUSTER01
+QuorumResource   : File Share Witness (\\DC-01\ClusterWitness)
+QuorumType       : NodeAndFileShareMajority
 ```
 
 !!! info "Configuration detaillee du quorum"
@@ -148,6 +196,15 @@ Get-ClusterNetwork -Cluster "YOURCLUSTER"
 # Set network role (0=none, 1=cluster only, 3=cluster and client)
 (Get-ClusterNetwork -Cluster "YOURCLUSTER" -Name "Production").Role = 3
 (Get-ClusterNetwork -Cluster "YOURCLUSTER" -Name "Heartbeat").Role = 1
+```
+
+Resultat :
+
+```text
+Name        State  Role            Address
+----        -----  ----            -------
+Production  Up     ClusterAndClient 10.0.0.0
+Heartbeat   Up     ClusterOnly      10.10.10.0
 ```
 
 | Valeur Role | Signification |
@@ -180,6 +237,29 @@ Get-ClusterQuorum -Cluster "YOURCLUSTER"
 
 # Test cluster connectivity
 Test-Cluster -Node "NODE1", "NODE2" -Include "Network"
+```
+
+Resultat :
+
+```text
+Name                            : CLUSTER01
+SharedVolumesRoot               : C:\ClusterStorage
+QuorumType                      : NodeAndFileShareMajority
+DynamicQuorum                   : 1
+
+Name       State  Type
+----       -----  ----
+SRV-01     Up     Node
+SRV-02     Up     Node
+
+Name        State  Role              Address
+----        -----  ----              -------
+Production  Up     ClusterAndClient  10.0.0.0
+Heartbeat   Up     ClusterOnly       10.10.10.0
+
+Cluster          : CLUSTER01
+QuorumResource   : File Share Witness (\\DC-01\ClusterWitness)
+QuorumType       : NodeAndFileShareMajority
 ```
 
 ### Script de verification complet
@@ -233,6 +313,14 @@ $checks | Format-Table -AutoSize
 Add-ClusterNode -Cluster "YOURCLUSTER" -Name "NODE3"
 ```
 
+Resultat :
+
+```text
+Name       State  Type
+----       -----  ----
+SRV-03     Up     Node
+```
+
 !!! warning "Validation avant ajout"
 
     Executez `Test-Cluster` en incluant le nouveau noeud avant de l'ajouter au cluster.
@@ -243,6 +331,75 @@ Add-ClusterNode -Cluster "YOURCLUSTER" -Name "NODE3"
 # Evict a node from the cluster (moves all roles first)
 Remove-ClusterNode -Cluster "YOURCLUSTER" -Name "NODE3" -Force
 ```
+
+!!! example "Scenario pratique"
+
+    **Contexte :** Claire, administratrice dans une entreprise de logistique, doit mettre en place un cluster de basculement pour leur application de gestion d'entrepot. Elle dispose de deux serveurs Windows Server 2022 Datacenter (SRV-01 et SRV-02) et d'un SAN iSCSI.
+
+    **Probleme :** Apres la creation du cluster, les disques partages ne sont pas visibles et les reseaux ne sont pas nommes correctement.
+
+    **Diagnostic et solution :**
+
+    1. Claire cree le cluster avec l'option `-NoStorage` :
+
+        ```powershell
+        New-Cluster -Name "CLUSTER01" -Node "SRV-01", "SRV-02" -StaticAddress 10.0.0.100 -NoStorage
+        ```
+
+    2. Elle verifie les disques disponibles :
+
+        ```powershell
+        Get-ClusterAvailableDisk -Cluster "CLUSTER01"
+        ```
+
+        Resultat :
+
+        ```text
+        (aucun disque affiche)
+        ```
+
+    3. Elle realise que les disques iSCSI sont encore en mode "Offline" sur SRV-02 :
+
+        ```powershell
+        Invoke-Command -ComputerName "SRV-02" -ScriptBlock {
+            Get-Disk | Where-Object { $_.BusType -eq 'iSCSI' } | Select-Object Number, OperationalStatus
+        }
+        ```
+
+        Resultat :
+
+        ```text
+        Number OperationalStatus
+        ------ -----------------
+        2      Offline
+        3      Offline
+        ```
+
+    4. Elle met les disques en ligne et relance la detection :
+
+        ```powershell
+        Invoke-Command -ComputerName "SRV-02" -ScriptBlock {
+            Get-Disk | Where-Object { $_.BusType -eq 'iSCSI' } | Set-Disk -IsOffline $false
+        }
+        Get-ClusterAvailableDisk -Cluster "CLUSTER01" | Add-ClusterDisk
+        ```
+
+    5. Elle renomme les reseaux et configure le quorum :
+
+        ```powershell
+        (Get-ClusterNetwork -Cluster "CLUSTER01" | Where-Object { $_.Address -eq "10.0.0.0" }).Name = "Production"
+        (Get-ClusterNetwork -Cluster "CLUSTER01" | Where-Object { $_.Address -eq "10.10.10.0" }).Name = "Heartbeat"
+        Set-ClusterQuorum -Cluster "CLUSTER01" -NodeAndFileShareMajority "\\DC-01\ClusterWitness"
+        ```
+
+    **Resultat :** Le cluster est operationnel avec les disques partages, les reseaux nommes et le quorum configure.
+
+!!! danger "Erreurs courantes"
+
+    - **Creer le cluster sans `-NoStorage`** : tous les disques partages detectes sont ajoutes automatiquement, y compris ceux destines au quorum ou a d'autres usages. Utilisez `-NoStorage` pour garder le controle.
+    - **Oublier de configurer le quorum immediatement** : sans temoin de quorum, un cluster a 2 noeuds perd la majorite si un seul noeud tombe. Configurez le quorum juste apres la creation.
+    - **Ne pas renommer les reseaux du cluster** : les noms par defaut ("Cluster Network 1", "Cluster Network 2") sont ambigus. Renommez-les en "Production" et "Heartbeat" pour la clarte.
+    - **Oublier de valider apres l'ajout d'un noeud** : chaque ajout de noeud doit etre precede d'un `Test-Cluster` incluant le nouveau noeud.
 
 ## Points cles a retenir
 

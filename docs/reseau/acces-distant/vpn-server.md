@@ -25,6 +25,10 @@ Le role **RRAS** (Routing and Remote Access Service) de Windows Server 2022 perm
 
 ---
 
+!!! example "Analogie"
+
+    Un serveur VPN fonctionne comme un **tunnel prive creuse sous une route publique**. Imaginez que vos donnees sont un vehicule blinde : au lieu de circuler a decouvert sur l'autoroute (Internet), le vehicule emprunte un souterrain securise (le tunnel VPN) qui relie directement votre domicile au bureau. Personne sur l'autoroute ne peut voir ni intercepter ce qui circule dans le tunnel.
+
 ## Protocoles VPN disponibles
 
 Windows Server 2022 prend en charge les protocoles VPN suivants :
@@ -91,6 +95,16 @@ Get-WindowsFeature RemoteAccess, DirectAccess-VPN, Routing |
     Select-Object Name, InstallState
 ```
 
+Resultat :
+
+```text
+Name                InstallState
+----                ------------
+RemoteAccess           Installed
+DirectAccess-VPN       Installed
+Routing                Installed
+```
+
 ### Via le Gestionnaire de serveur
 
 1. **Gestionnaire de serveur** > **Ajouter des roles et fonctionnalites**
@@ -110,6 +124,14 @@ Install-RemoteAccess -VpnType Vpn
 
 # Verify RRAS status
 Get-RemoteAccess | Select-Object VpnStatus, VpnS2SStatus
+```
+
+Resultat :
+
+```text
+VpnStatus  VpnS2SStatus
+---------  ------------
+Installed  Uninstalled
 ```
 
 ### Configuration via la console RRAS
@@ -157,6 +179,17 @@ netsh http add sslcert ipport=0.0.0.0:443 certhash=$thumbprint appid="{ba195980-
 
 # Alternatively, configure via RRAS console:
 # Properties > Security > SSL Certificate Binding
+```
+
+Resultat :
+
+```text
+Subject                         Thumbprint                               NotAfter
+-------                         ----------                               --------
+CN=vpn.lab.local                AABBCCDD11223344556677889900AABBCCDD1122  01/06/2027 00:00:00
+CN=SRV-01.lab.local             1122334455667788990011223344556677889900  15/03/2027 00:00:00
+
+SSL Certificate successfully added
 ```
 
 ### Regles de pare-feu pour SSTP
@@ -343,6 +376,19 @@ Get-Service RemoteAccess | Select-Object Name, Status
 Get-WinEvent -LogName "Application" -FilterXPath "*[System[Provider[@Name='RemoteAccess']]]" -MaxEvents 20
 ```
 
+Resultat :
+
+```text
+ClientIPAddress  UserName           ConnectionType  ConnectionDuration
+---------------  --------           --------------  ------------------
+10.0.100.3       LAB\jdupont        Ikev2           01:23:45
+10.0.100.7       LAB\mmartin        Sstp            00:45:12
+
+Name          Status
+----          ------
+RemoteAccess  Running
+```
+
 ---
 
 ## Points cles a retenir
@@ -357,6 +403,60 @@ Get-WinEvent -LogName "Application" -FilterXPath "*[System[Provider[@Name='Remot
 | Pool IP              | Definir un pool d'adresses dedie aux clients VPN              |
 
 ---
+
+!!! example "Scenario pratique"
+
+    **Contexte** : Pierre, administrateur systeme chez une PME, doit deployer un serveur VPN (`SRV-VPN01`, 10.0.0.50) pour permettre aux commerciaux de se connecter au reseau `lab.local` depuis l'exterieur. Les commerciaux sont derriere des pare-feux restrictifs qui bloquent tout sauf le port 443.
+
+    **Solution** : Deployer SSTP (port TCP 443) comme protocole VPN principal.
+
+    ```powershell
+    # Step 1: Install the RRAS role
+    Install-WindowsFeature RemoteAccess, DirectAccess-VPN -IncludeManagementTools
+    Install-RemoteAccess -VpnType Vpn
+
+    # Step 2: Configure the VPN IP pool
+    netsh ras ip set addrassign method = pool
+    netsh ras ip add range from = 10.0.100.1 to = 10.0.100.25
+
+    # Step 3: Open the firewall for SSTP
+    New-NetFirewallRule -DisplayName "Allow SSTP VPN" `
+        -Direction Inbound -Protocol TCP -LocalPort 443 `
+        -Action Allow -Profile Public
+
+    # Step 4: Verify VPN service
+    Get-RemoteAccess | Select-Object VpnStatus
+    Get-Service RemoteAccess | Select-Object Name, Status
+    ```
+
+    ```text
+    VpnStatus
+    ---------
+    Installed
+
+    Name          Status
+    ----          ------
+    RemoteAccess  Running
+    ```
+
+    ```powershell
+    # Step 5: Create client VPN profile (on a commercial's laptop)
+    Add-VpnConnection -Name "VPN Lab" `
+        -ServerAddress "vpn.lab.local" `
+        -TunnelType Sstp `
+        -AuthenticationMethod MSChapv2 `
+        -EncryptionLevel Required
+    ```
+
+    Les commerciaux peuvent desormais se connecter au VPN meme derriere des pare-feux restrictifs.
+
+!!! danger "Erreurs courantes"
+
+    - **Utiliser PPTP en production** : le protocole PPTP est obsolete et son chiffrement MPPE est vulnerable. Toujours utiliser IKEv2 ou SSTP.
+    - **Oublier d'ouvrir les ports sur le pare-feu perimetrique** : le serveur VPN doit etre accessible depuis Internet. Verifier que les ports UDP 500/4500 (IKEv2) ou TCP 443 (SSTP) sont ouverts.
+    - **Ne pas configurer de pool d'adresses IP** : sans pool IP, les clients VPN ne recevront pas d'adresse et la connexion echouera.
+    - **Utiliser un certificat auto-signe pour SSTP** : les clients ne feront pas confiance au certificat et la connexion echouera. Utiliser un certificat emis par une CA reconnue.
+    - **Oublier le split tunneling** : sans split tunneling, tout le trafic Internet des clients passe par le VPN, surchargeant la bande passante du serveur.
 
 ## Pour aller plus loin
 

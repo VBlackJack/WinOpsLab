@@ -16,6 +16,10 @@ tags:
 
 Avant de creer un cluster de basculement, il est indispensable de valider que l'infrastructure repond a un ensemble strict de prerequis. Windows Server integre un assistant de **validation de cluster** qui verifie automatiquement la conformite de la configuration.
 
+!!! example "Analogie"
+
+    Avant de construire une maison, un architecte verifie que le terrain est stable, que les materiaux sont aux normes et que les fondations sont solides. La validation du cluster est exactement la meme demarche : on inspecte methodiquement chaque composant (reseau, stockage, OS) avant de batir l'infrastructure haute disponibilite. Construire sans valider, c'est batir sur du sable.
+
 ## Prerequis materiels et logiciels
 
 ### Systeme d'exploitation
@@ -27,6 +31,16 @@ Avant de creer un cluster de basculement, il est indispensable de valider que l'
 ```powershell
 # Install Failover Clustering feature on all future nodes
 Install-WindowsFeature -Name Failover-Clustering -IncludeManagementTools
+```
+
+Resultat :
+
+```text
+Success Restart Needed Exit Code      Feature Result
+------- -------------- ---------      --------------
+True    No             Success        {Failover Clustering, Failover Cluster
+                                       Management Tools, Failover Cluster
+                                       Module for Windows PowerShell}
 ```
 
 ### Reseau
@@ -54,6 +68,22 @@ Resolve-DnsName -Name "NODE1.yourdomain.local"
 Resolve-DnsName -Name "NODE2.yourdomain.local"
 ```
 
+Resultat :
+
+```text
+Source        Destination   IPV4Address   Bytes    Time(ms)
+------        -----------   -----------   -----    --------
+SRV-01        SRV-02        10.0.0.12     32       1
+SRV-01        SRV-02        10.0.0.12     32       1
+SRV-01        SRV-02        10.0.0.12     32       1
+SRV-01        SRV-02        10.0.0.12     32       1
+
+Name                          Type   TTL   Section    IPAddress
+----                          ----   ---   -------    ---------
+SRV-01.lab.local              A      3600  Answer     10.0.0.11
+SRV-02.lab.local              A      3600  Answer     10.0.0.12
+```
+
 ### Stockage partage
 
 Le stockage partage doit etre accessible par **tous les noeuds** du cluster :
@@ -69,6 +99,24 @@ Get-IscsiConnection
 
 # List available disks (should show shared disks)
 Get-Disk | Where-Object { $_.BusType -eq 'iSCSI' }
+```
+
+Resultat :
+
+```text
+NodeAddress                              IsConnected
+-----------                              -----------
+iqn.2025-01.local.lab:storage-cluster    True
+
+ConnectionIdentifier : ffffac10-0001-0000-0100-0100ac100014
+InitiatorAddress     : 10.0.0.11
+TargetAddress        : 10.0.0.50
+InitiatorPortNumber  : 0
+
+Number FriendlyName    SerialNumber   HealthStatus OperationalStatus TotalSize BusType
+------ ------------    ------------   ------------ ----------------- --------- -------
+2      ISCSI Disk 01   SN-00201       Healthy      Online            50 GB     iSCSI
+3      ISCSI Disk 02   SN-00202       Healthy      Online            100 GB    iSCSI
 ```
 
 !!! warning "Disques partages"
@@ -123,6 +171,31 @@ Test-Cluster -Node "NODE1", "NODE2" -Verbose
 Test-Cluster -Node "NODE1", "NODE2" -Include "Storage", "Network"
 ```
 
+Resultat :
+
+```text
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+-a----        01/15/2025   14:32         185420 Validation Report 2025.01.15 At 14.32.12.htm
+
+WARNING: Testing Storage
+Test                          Result
+----                          ------
+List Potential Cluster Disks  Success
+Validate Disk Access          Success
+Validate Disk Arbitration     Success
+Validate Disk Failover        Success
+
+WARNING: Testing Network
+Test                          Result
+----                          ------
+List Network Binding Order    Success
+Validate Network Communication Success
+Validate IP Configuration     Success
+
+Test-Cluster completed successfully.
+```
+
 Via l'interface graphique :
 
 1. Ouvrir **Failover Cluster Manager**
@@ -166,6 +239,14 @@ $reportPath = "$env:SystemRoot\Cluster\Reports"
 Get-ChildItem -Path $reportPath -Filter "*.htm" | Sort-Object LastWriteTime -Descending | Select-Object -First 1
 ```
 
+Resultat :
+
+```text
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+-a----        01/15/2025   14:32         185420 Validation Report 2025.01.15 At 14.32.12.htm
+```
+
 ### Problemes courants et solutions
 
 | Probleme | Cause probable | Solution |
@@ -188,6 +269,93 @@ Invoke-Command -ComputerName "NODE1", "NODE2" -ScriptBlock {
     Get-Disk | Where-Object { $_.OperationalStatus -eq 'Offline' } | Set-Disk -IsOffline $false
 }
 ```
+
+!!! example "Scenario pratique"
+
+    **Contexte :** Marc, technicien infrastructure, doit preparer deux serveurs pour un cluster de basculement. Le projet demarre lundi et il doit valider les prerequis avant la fin de la semaine.
+
+    **Probleme :** La validation echoue avec des erreurs sur les tests reseau et stockage.
+
+    **Diagnostic :**
+
+    1. Marc lance la validation complete :
+
+        ```powershell
+        Test-Cluster -Node "SRV-01", "SRV-02" -Verbose
+        ```
+
+        Resultat :
+
+        ```text
+        WARNING: Testing Network
+        Validate Network Communication    FAILED
+        WARNING: Testing Storage
+        Validate Disk Access              FAILED
+        ```
+
+    2. Il verifie la connectivite reseau :
+
+        ```powershell
+        Test-Connection -ComputerName "SRV-02" -Count 4
+        ```
+
+        Resultat :
+
+        ```text
+        Test-Connection : Testing connection to computer 'SRV-02' failed:
+        No resources are available to complete this operation.
+        ```
+
+    3. Il identifie que le pare-feu bloque le trafic cluster :
+
+        ```powershell
+        Get-NetFirewallRule -DisplayGroup "Failover Cluster*" | Select-Object DisplayName, Enabled
+        ```
+
+        Resultat :
+
+        ```text
+        DisplayName                              Enabled
+        -----------                              -------
+        Failover Clusters (UDP-In)               False
+        Failover Clusters (TCP-In)               False
+        ```
+
+    4. Il active les regles de pare-feu et relance la validation :
+
+        ```powershell
+        Get-NetFirewallRule -DisplayGroup "Failover Cluster*" | Enable-NetFirewallRule
+        Test-Cluster -Node "SRV-01", "SRV-02" -Include "Network"
+        ```
+
+        Resultat :
+
+        ```text
+        Validate Network Communication    Success
+        Validate IP Configuration         Success
+        ```
+
+    5. Pour le stockage, il decouvre que les LUNs iSCSI ne sont pas connectes sur SRV-02 :
+
+        ```powershell
+        Invoke-Command -ComputerName "SRV-02" -ScriptBlock { Get-IscsiConnection }
+        ```
+
+        Resultat :
+
+        ```text
+        (aucun resultat - pas de connexion iSCSI)
+        ```
+
+    **Solution :** Marc configure l'initiateur iSCSI sur SRV-02, connecte les LUNs, et la validation passe integralement.
+
+!!! danger "Erreurs courantes"
+
+    - **Lancer la creation du cluster sans validation** : Microsoft ne supportera pas un cluster cree sans validation reussie. Toujours executer `Test-Cluster` avant `New-Cluster`.
+    - **Oublier d'installer la fonctionnalite Failover Clustering sur tous les noeuds** : la validation echouera si un seul noeud ne dispose pas de la fonctionnalite. Verifiez avec `Get-WindowsFeature -Name Failover-Clustering` sur chaque noeud.
+    - **Utiliser des adresses IP dynamiques (DHCP)** : les noeuds du cluster doivent avoir des IP statiques. Un changement d'adresse IP en cours de fonctionnement cassera le cluster.
+    - **Ne pas verifier la coherence des mises a jour** : deux noeuds avec des niveaux de CU differents peuvent provoquer des comportements imprevisibles. Utilisez `Get-HotFix` pour comparer.
+    - **Ignorer les avertissements de validation** : meme si le cluster peut etre cree avec des warnings, ils indiquent souvent des problemes qui se manifesteront en production.
 
 ## Points cles a retenir
 

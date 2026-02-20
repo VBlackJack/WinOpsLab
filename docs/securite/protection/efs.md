@@ -19,6 +19,10 @@ EFS (Encrypting File System) est une fonctionnalite de chiffrement integree a NT
 
 ## Principe de fonctionnement
 
+!!! example "Analogie"
+
+    EFS fonctionne comme un casier personnel dans un espace de travail partage. Chaque employe a son propre cadenas (certificat EFS) pour verrouiller ses documents dans le casier. Les collegues voient que le casier existe, mais ne peuvent pas l'ouvrir. Le DRA (Data Recovery Agent), c'est le passe-partout du gardien, range dans un coffre-fort, utilisable uniquement si un employe perd sa cle.
+
 EFS utilise un chiffrement hybride combinant cryptographie symetrique (pour la performance) et asymetrique (pour la gestion des cles) :
 
 ```mermaid
@@ -57,6 +61,19 @@ cipher /e /s:"D:\Donnees\Confidentiel"
 (Get-Item "D:\Donnees\confidentiel.docx").Encrypt()
 ```
 
+Resultat :
+
+```text
+Encrypting files in D:\Donnees\
+confidentiel.docx         [OK]
+1 file(s) [or directorie(s)] within 1 directorie(s) were encrypted.
+
+Encrypting files in D:\Donnees\Confidentiel\
+rapport-Q1.xlsx           [OK]
+notes-reunion.docx        [OK]
+2 file(s) [or directorie(s)] within 1 directorie(s) were encrypted.
+```
+
 ### Dechiffrer un fichier ou un dossier
 
 ```powershell
@@ -68,6 +85,14 @@ cipher /d /s:"D:\Donnees\Confidentiel"
 
 # Using .NET API
 (Get-Item "D:\Donnees\confidentiel.docx").Decrypt()
+```
+
+Resultat :
+
+```text
+Decrypting files in D:\Donnees\
+confidentiel.docx         [OK]
+1 file(s) [or directorie(s)] within 1 directorie(s) were decrypted.
 ```
 
 ### Verifier l'etat de chiffrement
@@ -86,6 +111,29 @@ Get-ChildItem -Path "D:\Donnees" -Recurse |
     Select-Object FullName, Length, LastWriteTime
 ```
 
+Resultat :
+
+```text
+ Listing D:\Donnees\
+ New files added to this directory will not be encrypted.
+
+U budget-2025.xlsx
+U presentation.pptx
+
+ Listing D:\Donnees\Confidentiel\
+ New files added to this directory will be encrypted.
+
+E rapport-Q1.xlsx
+E notes-reunion.docx
+E salaires-2025.xlsx
+
+FullName                                 Length    LastWriteTime
+--------                                 ------    -------------
+D:\Donnees\Confidentiel\rapport-Q1.xlsx  45312     2025-02-18 14:30
+D:\Donnees\Confidentiel\notes-reunion... 23104     2025-02-19 09:15
+D:\Donnees\Confidentiel\salaires-2025... 18560     2025-02-20 11:00
+```
+
 ---
 
 ## Certificats EFS
@@ -102,6 +150,19 @@ cipher /r:backup
 Get-ChildItem -Path Cert:\CurrentUser\My |
     Where-Object { $_.EnhancedKeyUsageList.FriendlyName -contains "Encrypting File System" } |
     Select-Object Subject, Thumbprint, NotAfter
+```
+
+Resultat :
+
+```text
+Please type the password to protect your .PFX file:
+Please retype the password to confirm:
+Your .CER file was created successfully.
+Your .PFX file was created successfully.
+
+Subject                    Thumbprint                                NotAfter
+-------                    ----------                                --------
+CN=jdupont, OU=Users,...   C3D4E5F6A7B8C9D0E1F2A3B4C5D6E7F8A9B0C1D2 2026-02-15 10:00:00
 ```
 
 ### Utiliser des certificats d'une PKI d'entreprise
@@ -131,6 +192,22 @@ cipher /r:DRA-EFS
 # This creates:
 # - DRA-EFS.cer (public certificate)
 # - DRA-EFS.pfx (certificate with private key - PROTECT THIS!)
+```
+
+Resultat :
+
+```text
+Please type the password to protect your .PFX file:
+Please retype the password to confirm:
+Your .CER file was created successfully.
+Your .PFX file was created successfully.
+
+    Directory: C:\Secure
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+-a----         2025-02-20  10:30           1234   DRA-EFS.cer
+-a----         2025-02-20  10:30           3456   DRA-EFS.pfx
 ```
 
 ### Deployer le DRA via GPO
@@ -224,6 +301,101 @@ Get-WinEvent -FilterHashtable @{
     Select-Object TimeCreated, Id, Message |
     Format-Table -Wrap
 ```
+
+Resultat :
+
+```text
+TimeCreated            Id    Message
+-----------            --    -------
+2025-02-20 14:15:32    4656  A handle was requested to an object.
+                              Object Name: D:\Donnees\Confidentiel\salaires-2025.xlsx
+                              Process Name: C:\Windows\explorer.exe
+                              Access Mask: 0x2
+2025-02-20 14:10:18    4663  An attempt was made to access an object.
+                              Object Name: D:\Donnees\Confidentiel\rapport-Q1.xlsx
+                              Subject: LAB\jdupont
+```
+
+---
+
+## Scenario pratique
+
+!!! example "Scenario pratique"
+
+    **Contexte** : Claire, du service RH, a quitte l'entreprise. Son responsable demande a l'administrateur David d'acceder aux fichiers EFS chiffres par Claire sur le dossier partage `D:\Partage\RH\Confidentiel` du serveur `SRV-01` (10.0.0.11). Claire n'est plus disponible pour fournir son mot de passe.
+
+    **Diagnostic** :
+
+    ```powershell
+    # Verify the files are encrypted
+    cipher /s:"D:\Partage\RH\Confidentiel"
+    ```
+
+    Resultat :
+
+    ```text
+     Listing D:\Partage\RH\Confidentiel\
+     New files added to this directory will be encrypted.
+
+    E contrats-2024.xlsx
+    E evaluations-annuelles.docx
+    E plan-formation.xlsx
+    ```
+
+    ```powershell
+    # Check who can decrypt these files
+    cipher /c "D:\Partage\RH\Confidentiel\contrats-2024.xlsx"
+    ```
+
+    Resultat :
+
+    ```text
+    Users who can decrypt:
+      LAB\c.martin [claire.martin@lab.local]
+        Certificate thumbprint: D4E5F6A7...
+
+    Recovery Agents:
+      DRA-EFS
+        Certificate thumbprint: F6A7B8C9...
+    ```
+
+    **Resolution** : un DRA est configure. David importe la cle privee du DRA depuis le stockage securise :
+
+    ```powershell
+    # 1. Import the DRA private key
+    Import-PfxCertificate -FilePath "E:\Secure\DRA-EFS.pfx" `
+        -CertStoreLocation Cert:\CurrentUser\My `
+        -Password (Read-Host -AsSecureString "PFX password")
+
+    # 2. Decrypt the files
+    cipher /d /s:"D:\Partage\RH\Confidentiel"
+    ```
+
+    Resultat :
+
+    ```text
+    Decrypting files in D:\Partage\RH\Confidentiel\
+    contrats-2024.xlsx          [OK]
+    evaluations-annuelles.docx  [OK]
+    plan-formation.xlsx         [OK]
+    3 file(s) [or directorie(s)] within 1 directorie(s) were decrypted.
+    ```
+
+    David supprime ensuite le certificat DRA de son profil et remet la cle USB au coffre-fort.
+
+---
+
+!!! danger "Erreurs courantes"
+
+    1. **Ne pas configurer de DRA avant de deployer EFS** : sans Data Recovery Agent, la perte du profil utilisateur ou du certificat EFS entraine la perte definitive des fichiers chiffres. Configurez toujours un DRA via GPO avant d'autoriser l'utilisation d'EFS.
+
+    2. **Stocker la cle privee du DRA sur un poste connecte au reseau** : la cle DRA donne acces a tous les fichiers EFS du domaine. Elle doit etre stockee hors ligne (cle USB dans un coffre-fort) et importee uniquement pour les operations de recuperation ponctuelles.
+
+    3. **Confondre EFS et BitLocker** : EFS protege contre les acces inter-utilisateurs sur le meme systeme, BitLocker protege contre le vol physique. Copier un fichier EFS sur une cle USB FAT32 le dechiffre automatiquement car FAT32 ne supporte pas EFS.
+
+    4. **Utiliser des certificats EFS auto-signes en production** : les certificats auto-signes n'offrent pas de mecanisme de recuperation de cle. Deployez une PKI d'entreprise avec archivage de cle pour permettre la recuperation en cas de perte du certificat utilisateur.
+
+    5. **Oublier que les fichiers comprimes NTFS ne peuvent pas etre chiffres** : un fichier ne peut pas etre a la fois compresse et chiffre en NTFS. Le chiffrement EFS desactive automatiquement la compression, ce qui peut impacter l'espace disque.
 
 ---
 

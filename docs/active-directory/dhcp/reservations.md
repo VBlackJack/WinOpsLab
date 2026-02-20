@@ -16,6 +16,10 @@ tags:
 
 ## Qu'est-ce qu'une reservation ?
 
+!!! example "Analogie"
+
+    Une reservation DHCP fonctionne comme une place de parking nominative dans un parking d'entreprise. La place numero 150 est reservee au nom de "Imprimante RDC". Meme si l'imprimante est eteinte pendant le week-end, personne d'autre ne peut occuper cette place. Des que l'imprimante arrive (s'allume), elle retrouve toujours sa place attitrée. Les autres places du parking restent disponibles pour les visiteurs (clients DHCP classiques).
+
 Une **reservation DHCP** associe une adresse IP specifique a une **adresse MAC**
 (adresse physique) d'un equipement. Lorsque cet equipement envoie un DHCP
 Discover, le serveur lui attribue **toujours la meme adresse IP**.
@@ -91,6 +95,25 @@ l'equipement cible :
         Format-Table IPAddress, ClientId, HostName, LeaseExpiryTime -AutoSize
     ```
 
+    Resultat :
+
+    ```text
+    PS> Get-NetAdapter | Select-Object Name, MacAddress, Status
+
+    Name       MacAddress          Status
+    ----       ----------          ------
+    Ethernet   AA-BB-CC-11-22-33   Up
+
+    PS> Get-DhcpServerv4Lease -ComputerName "SRV-DHCP01" -ScopeId 10.0.0.0 |
+        Format-Table IPAddress, ClientId, HostName, LeaseExpiryTime -AutoSize
+
+    IPAddress    ClientId             HostName        LeaseExpiryTime
+    ---------    --------             --------        ---------------
+    10.0.0.105   AA-BB-CC-11-22-33    PC-USER01       2/20/2026 4:30:00 PM
+    10.0.0.110   AA-BB-CC-44-55-66    IMP-RDC-01      2/20/2026 5:00:00 PM
+    10.0.0.115   AA-BB-CC-77-88-99    CAM-HALL-01     2/20/2026 6:15:00 PM
+    ```
+
 === "CMD"
 
     ```powershell
@@ -125,6 +148,14 @@ l'equipement cible :
 
     # Verify the reservation
     Get-DhcpServerv4Reservation -ComputerName "SRV-DHCP01" -ScopeId 192.168.1.0
+    ```
+
+    Resultat :
+
+    ```text
+    IPAddress       ScopeId      ClientId             Name         Type   Description
+    ---------       -------      --------             ----         ----   -----------
+    10.0.0.150      10.0.0.0     AA-BB-CC-DD-EE-FF    IMP-RDC-01   Both   Imprimante RDC - Batiment A
     ```
 
 === "GUI"
@@ -216,6 +247,16 @@ Get-DhcpServerv4Reservation -ComputerName "SRV-DHCP01" -ScopeId 192.168.1.0 |
     Export-Csv -Path "C:\Admin\DHCP-Reservations-Export.csv" -NoTypeInformation -Encoding UTF8
 ```
 
+Resultat :
+
+```text
+# Content of C:\Admin\DHCP-Reservations-Export.csv:
+"Name","IPAddress","ClientId","Description"
+"IMP-RDC-01","10.0.0.150","AA-BB-CC-DD-EE-FF","Imprimante RDC - Batiment A"
+"CAM-HALL-01","10.0.0.160","11-22-33-44-55-66","Camera IP - Hall entree"
+"WAP-A-01","10.0.0.170","CC-DD-EE-FF-00-11","Borne Wi-Fi - Batiment A RDC"
+```
+
 ### Importer des reservations depuis un CSV
 
 ```powershell
@@ -291,6 +332,23 @@ ipconfig /release
 ipconfig /renew
 ```
 
+Resultat :
+
+```text
+PS> Get-DhcpServerv4Reservation -ComputerName "SRV-DHCP01" -ScopeId 10.0.0.0 |
+    Where-Object { $_.ClientId -eq "AA-BB-CC-DD-EE-FF" }
+
+IPAddress    ScopeId    ClientId             Name         Type
+---------    -------    --------             ----         ----
+10.0.0.150   10.0.0.0   AA-BB-CC-DD-EE-FF    IMP-RDC-01   Both
+
+PS> Get-DhcpServerv4Lease -ComputerName "SRV-DHCP01" -IPAddress 10.0.0.150
+
+IPAddress    ClientId             HostName      AddressState    LeaseExpiryTime
+---------    --------             --------      ------------    ---------------
+10.0.0.150   AA-BB-CC-DD-EE-FF    IMP-RDC-01    ActiveReservation  Unlimited
+```
+
 ---
 
 ## Bonnes pratiques
@@ -311,6 +369,55 @@ ipconfig /renew
     grandement le depannage et la maintenance.
 
 ---
+
+!!! example "Scenario pratique"
+
+    **Situation** : Laurent, technicien de support, remplace une imprimante reseau defectueuse `IMP-RDC-01` par un modele identique. Apres le branchement, la nouvelle imprimante recoit l'adresse `10.0.0.112` au lieu de `10.0.0.150`. Les utilisateurs ne peuvent plus imprimer car leurs postes pointent vers l'ancienne adresse IP.
+
+    **Diagnostic** :
+
+    ```powershell
+    # Etape 1 : Verifier la reservation existante
+    Get-DhcpServerv4Reservation -ComputerName "SRV-DHCP01" -ScopeId 10.0.0.0 |
+        Where-Object { $_.Name -eq "IMP-RDC-01" }
+    ```
+
+    Resultat : la reservation existe toujours avec l'adresse MAC `AA-BB-CC-DD-EE-FF` de l'ancienne imprimante.
+
+    ```powershell
+    # Etape 2 : Trouver l'adresse MAC de la nouvelle imprimante
+    Get-DhcpServerv4Lease -ComputerName "SRV-DHCP01" -ScopeId 10.0.0.0 |
+        Where-Object { $_.IPAddress -eq "10.0.0.112" } |
+        Select-Object IPAddress, ClientId, HostName
+    ```
+
+    Resultat : la nouvelle imprimante a l'adresse MAC `DD-EE-FF-11-22-33`.
+
+    **Solution** :
+
+    ```powershell
+    # Supprimer l'ancienne reservation
+    Remove-DhcpServerv4Reservation -ComputerName "SRV-DHCP01" `
+        -ScopeId 10.0.0.0 -ClientId "AA-BB-CC-DD-EE-FF"
+
+    # Creer la reservation avec la nouvelle adresse MAC
+    Add-DhcpServerv4Reservation -ComputerName "SRV-DHCP01" `
+        -ScopeId 10.0.0.0 -IPAddress 10.0.0.150 `
+        -ClientId "DD-EE-FF-11-22-33" `
+        -Name "IMP-RDC-01" -Description "Imprimante RDC - Batiment A (remplacement)"
+
+    # Forcer le renouvellement sur la nouvelle imprimante (ou la redemarrer)
+    ```
+
+    Apres redemarrage de l'imprimante, elle recoit l'adresse `10.0.0.150` et les utilisateurs peuvent a nouveau imprimer.
+
+!!! danger "Erreurs courantes"
+
+    - **Saisir une adresse MAC incorrecte** : une seule lettre ou un seul chiffre errone dans l'adresse MAC et la reservation ne fonctionnera jamais. Verifiez toujours la MAC avec `Get-NetAdapter` sur l'equipement ou via le bail DHCP existant.
+    - **Reserver une adresse IP deja utilisee par un bail actif d'un autre client** : la reservation ne prend effet qu'au prochain renouvellement du client reserve. En attendant, deux clients peuvent se retrouver avec la meme adresse. Supprimez d'abord le bail en conflit.
+    - **Oublier de repliquer les reservations apres un basculement DHCP** : les reservations ne sont pas repliquees automatiquement entre serveurs de basculement. Utilisez `Invoke-DhcpServerv4FailoverReplication` apres chaque ajout.
+    - **Reserver une adresse en dehors de la plage de l'etendue** : l'adresse reservee doit appartenir a la plage de l'etendue. Une adresse hors plage sera refusee par la cmdlet `Add-DhcpServerv4Reservation`.
+    - **Ne pas mettre a jour la reservation lors du remplacement d'un equipement** : un equipement remplace a une nouvelle adresse MAC. Si la reservation n'est pas mise a jour, le nouvel equipement recevra une adresse aleatoire au lieu de l'adresse reservee.
 
 ## Points cles a retenir
 

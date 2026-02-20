@@ -18,6 +18,10 @@ Le durcissement (hardening) consiste a reduire la surface d'attaque d'un serveur
 
 ## Principe de moindre privilege
 
+!!! example "Analogie"
+
+    Imaginez un immeuble de bureaux : le gardien a la cle du hall, les employes ont la cle de leur etage, et seul le directeur a le passe general. Si le gardien perd sa cle, seul le hall est compromis. Donner le passe general a tout le monde serait une aberration : c'est exactement le principe de moindre privilege applique a vos serveurs.
+
 Le principe de moindre privilege stipule qu'un utilisateur ou un service ne doit disposer que des droits strictement necessaires a l'execution de sa tache.
 
 ### Application aux comptes utilisateurs
@@ -35,6 +39,23 @@ Get-ADUser -Filter {AdminCount -eq 1} -Properties AdminCount |
     Select-Object Name, SamAccountName, Enabled
 ```
 
+Resultat :
+
+```text
+Name            SamAccountName
+----            --------------
+Jean Dupont     T0-jdupont
+Marie Lambert   T0-mlambert
+Administrateur  Administrator
+
+Name            SamAccountName  Enabled
+----            --------------  -------
+T0-jdupont      T0-jdupont      True
+T0-mlambert     T0-mlambert     True
+Administrator   Administrator   True
+krbtgt          krbtgt          False
+```
+
 ### Application aux services
 
 Chaque service Windows tourne sous un compte specifique. Eviter d'utiliser des comptes a privileges eleves pour des services applicatifs.
@@ -47,9 +68,27 @@ Get-WmiObject Win32_Service |
     Format-Table -AutoSize
 ```
 
+Resultat :
+
+```text
+Name                   DisplayName                          StartName                State
+----                   -----------                          ---------                -----
+CertSvc                Active Directory Certificate Se...   LocalSystem              Running
+ClusSvc                Cluster Service                      LocalSystem              Running
+DNS                    DNS Server                           LocalSystem              Running
+MSSQLSERVER            SQL Server (MSSQLSERVER)             LocalSystem              Running
+Spooler                Print Spooler                        LocalSystem              Running
+W3SVC                  World Wide Web Publishing Service    LocalSystem              Running
+WinRM                  Windows Remote Management (WS-M...   NT AUTHORITY\NetworkS... Running
+```
+
 ---
 
 ## Desactivation des services inutiles
+
+!!! example "Analogie"
+
+    Un serveur est comme un batiment : chaque porte ouverte est une entree potentielle pour un intrus. Desactiver les services inutiles revient a condamner les portes qui ne servent pas. Moins il y a d'entrees, moins il y a de risques.
 
 Un serveur de production ne doit executer que les services requis par son role. Chaque service actif est un vecteur d'attaque potentiel.
 
@@ -78,6 +117,15 @@ foreach ($svc in $servicesToDisable) {
 }
 ```
 
+Resultat :
+
+```text
+Disabled: Fax
+Disabled: XblAuthManager
+Disabled: XblGameSave
+Disabled: WSearch
+```
+
 !!! warning "Print Spooler et PrintNightmare"
 
     Le service Print Spooler a ete la cible de la vulnerabilite **PrintNightmare** (CVE-2021-34527). Sur les serveurs qui n'ont pas besoin du role d'impression, desactivez-le systematiquement.
@@ -86,6 +134,12 @@ foreach ($svc in $servicesToDisable) {
 # Disable Print Spooler on non-print servers
 Stop-Service -Name Spooler -Force
 Set-Service -Name Spooler -StartupType Disabled
+```
+
+Resultat :
+
+```text
+WARNING: [SRV-01] Le service 'Print Spooler (Spooler)' a ete arrete.
 ```
 
 ---
@@ -106,6 +160,18 @@ Disable-WindowsOptionalFeature -Online -FeatureName SMB1Protocol -NoRestart
 
 # Verify the change
 Get-SmbServerConfiguration | Select-Object EnableSMB1Protocol
+```
+
+Resultat :
+
+```text
+EnableSMB1Protocol
+------------------
+                 True
+
+EnableSMB1Protocol
+------------------
+                False
 ```
 
 !!! danger "Compatibilite"
@@ -134,6 +200,25 @@ Get-ItemProperty -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\
 
 # View installed updates
 Get-HotFix | Sort-Object InstalledOn -Descending | Select-Object -First 10
+```
+
+Resultat :
+
+```text
+WUServer       : http://wsus.lab.local:8530
+WUStatusServer : http://wsus.lab.local:8530
+
+AUOptions         : 4
+NoAutoUpdate      : 0
+ScheduledInstallDay : 0
+
+Source        Description      HotFixID      InstalledBy          InstalledOn
+------        -----------      --------      -----------          -----------
+SRV-01        Security Update  KB5034439     NT AUTHORITY\SYSTEM  2025-02-11
+SRV-01        Update           KB5034232     NT AUTHORITY\SYSTEM  2025-02-11
+SRV-01        Security Update  KB5033920     NT AUTHORITY\SYSTEM  2025-01-14
+SRV-01        Security Update  KB5033118     NT AUTHORITY\SYSTEM  2024-12-12
+SRV-01        Update           KB5032198     NT AUTHORITY\SYSTEM  2024-11-19
 ```
 
 ### Bonnes pratiques de patch management
@@ -170,6 +255,13 @@ Rename-LocalUser -Name "Administrator" -NewName "SrvLocalAdmin"
 Disable-LocalUser -Name "Guest"
 ```
 
+Resultat :
+
+```text
+PS C:\> Rename-LocalUser -Name "Administrator" -NewName "SrvLocalAdmin"
+PS C:\> Disable-LocalUser -Name "Guest"
+```
+
 !!! tip "Convention de nommage"
 
     Adoptez un nom non-standard qui ne revele pas la fonction du compte. Evitez `Admin`, `SysAdmin` ou des variantes evidentes.
@@ -182,6 +274,17 @@ Get-LocalUser | Select-Object Name, Enabled, LastLogon
 
 # Disable unused accounts
 Disable-LocalUser -Name "DefaultAccount"
+```
+
+Resultat :
+
+```text
+Name             Enabled  LastLogon
+----             -------  ---------
+SrvLocalAdmin    True     2025-02-18 09:32:14
+DefaultAccount   False
+Guest            False
+WDAGUtilityAccount False
 ```
 
 ---
@@ -203,12 +306,37 @@ Get-NetFirewallRule -Direction Inbound -Enabled True |
     Sort-Object DisplayName
 ```
 
+Resultat :
+
+```text
+Name    Enabled
+----    -------
+Domain     True
+Private    True
+Public     True
+
+DisplayName                                     Profile  Action
+-----------                                     -------  ------
+Core Networking - DNS (UDP-Out)                  Any      Allow
+Remote Desktop - User Mode (TCP-In)             Domain   Allow
+Windows Remote Management (HTTP-In)             Domain   Allow
+Windows Remote Management (HTTP-In)             Private  Allow
+File and Printer Sharing (Echo Request - ICMPv4) Domain  Allow
+```
+
 ### Regle de base : bloquer par defaut
 
 ```powershell
 # Set default inbound action to Block on all profiles
 Set-NetFirewallProfile -Profile Domain,Public,Private -DefaultInboundAction Block
 Set-NetFirewallProfile -Profile Domain,Public,Private -DefaultOutboundAction Allow
+```
+
+Resultat :
+
+```text
+PS C:\> Set-NetFirewallProfile -Profile Domain,Public,Private -DefaultInboundAction Block
+PS C:\> Set-NetFirewallProfile -Profile Domain,Public,Private -DefaultOutboundAction Allow
 ```
 
 ---
@@ -225,6 +353,22 @@ Get-WindowsFeature | Where-Object { $_.InstallState -eq "Installed" } |
 # Remove a feature (example: PowerShell v2 - often used for downgrade attacks)
 Remove-WindowsFeature PowerShell-V2
 Disable-WindowsOptionalFeature -Online -FeatureName MicrosoftWindowsPowerShellV2Root
+```
+
+Resultat :
+
+```text
+Display Name                            Name               Install State
+------------                            ----               -------------
+[X] Active Directory Domain Services    AD-Domain-Services     Installed
+[X] DNS Server                          DNS                    Installed
+[X] File and Storage Services           FileAndStorage-S...    Installed
+[X] Remote Server Administration Tools  RSAT                   Installed
+[X] Windows PowerShell                  PowerShellRoot         Installed
+
+Success Restart Needed Exit Code      Feature Result
+------- -------------- ---------      --------------
+True    No             Success        {Windows PowerShell 2.0 Engine}
 ```
 
 !!! danger "PowerShell v2"
@@ -244,6 +388,101 @@ New-Item -Path "HKLM:\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNE
 Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.1\Server" -Name "Enabled" -Value 0 -Type DWord
 Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\TLS 1.1\Server" -Name "DisabledByDefault" -Value 1 -Type DWord
 ```
+
+---
+
+## Scenario pratique
+
+!!! example "Scenario pratique"
+
+    **Contexte** : Sophie, administratrice systeme chez une PME, constate que le serveur de fichiers `SRV-01` (10.0.0.11) a ete compromis lors d'un audit de securite. L'auditeur signale que SMBv1 est actif, que le compte Administrator n'a pas ete renomme, et que plusieurs services inutiles tournent.
+
+    **Diagnostic** :
+
+    ```powershell
+    # Check SMBv1 status
+    Get-SmbServerConfiguration | Select-Object EnableSMB1Protocol
+    ```
+
+    Resultat :
+
+    ```text
+    EnableSMB1Protocol
+    ------------------
+                  True
+    ```
+
+    ```powershell
+    # Check local admin account name
+    Get-LocalUser | Where-Object { $_.SID -like "*-500" } | Select-Object Name, Enabled
+    ```
+
+    Resultat :
+
+    ```text
+    Name            Enabled
+    ----            -------
+    Administrator   True
+    ```
+
+    **Remediation** :
+
+    ```powershell
+    # 1. Disable SMBv1
+    Set-SmbServerConfiguration -EnableSMB1Protocol $false -Force
+
+    # 2. Rename the Administrator account
+    Rename-LocalUser -Name "Administrator" -NewName "SrvLocalAdmin"
+
+    # 3. Disable unnecessary services
+    $services = @('Fax', 'XblAuthManager', 'XblGameSave', 'WSearch', 'Spooler')
+    foreach ($svc in $services) {
+        Stop-Service -Name $svc -Force -ErrorAction SilentlyContinue
+        Set-Service -Name $svc -StartupType Disabled
+    }
+
+    # 4. Disable PowerShell v2
+    Disable-WindowsOptionalFeature -Online -FeatureName MicrosoftWindowsPowerShellV2Root -NoRestart
+
+    # 5. Verify all changes
+    Get-SmbServerConfiguration | Select-Object EnableSMB1Protocol
+    Get-LocalUser | Where-Object { $_.SID -like "*-500" } | Select-Object Name, Enabled
+    Get-Service -Name $services | Select-Object Name, Status, StartType
+    ```
+
+    Resultat :
+
+    ```text
+    EnableSMB1Protocol : False
+
+    Name            Enabled
+    ----            -------
+    SrvLocalAdmin   True
+
+    Name             Status  StartType
+    ----             ------  ---------
+    Fax              Stopped  Disabled
+    XblAuthManager   Stopped  Disabled
+    XblGameSave      Stopped  Disabled
+    WSearch          Stopped  Disabled
+    Spooler          Stopped  Disabled
+    ```
+
+    Sophie documente les changements et planifie un audit mensuel pour verifier la conformite de la configuration.
+
+---
+
+!!! danger "Erreurs courantes"
+
+    1. **Utiliser le compte Domain Admin pour les taches quotidiennes** : ce compte ne doit servir qu'a l'administration du domaine. Creez des comptes dedies pour chaque niveau de responsabilite.
+
+    2. **Desactiver le pare-feu Windows parce qu'un firewall reseau est en place** : le pare-feu Windows protege contre le mouvement lateral au sein du reseau interne. Les deux couches sont complementaires.
+
+    3. **Desactiver SMBv1 sans audit prealable** : certains anciens copieurs ou NAS necessitent SMBv1. Activez d'abord l'audit SMBv1 (`Set-SmbServerConfiguration -AuditSmb1Access $true`) pendant 2 semaines, puis desactivez le protocole.
+
+    4. **Oublier de desactiver PowerShell v2** : les attaquants utilisent `powershell -version 2` pour contourner la journalisation avancee (ScriptBlock Logging). Desactivez systematiquement cette version.
+
+    5. **Appliquer les patchs critiques sans environnement de test** : deployer un correctif directement en production peut causer des regressions. Testez toujours en pre-production, meme sous pression temporelle.
 
 ---
 

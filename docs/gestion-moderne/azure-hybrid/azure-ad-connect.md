@@ -27,6 +27,10 @@ graph LR
     F -->|Memes identifiants| D
 ```
 
+!!! example "Analogie"
+
+    Azure AD Connect, c'est comme un employe de la mairie qui transcrit chaque jour le registre civil local (votre Active Directory) vers une base nationale (Azure AD). Les deux bases restent independantes, mais sont synchronisees : ajouter un habitant dans le registre local le fait apparaitre automatiquement dans la base nationale.
+
 ## Modes d'authentification
 
 Azure AD Connect propose trois modes d'authentification :
@@ -189,6 +193,27 @@ Set-ADSyncScheduler -SyncCycleEnabled $true
 Set-ADSyncScheduler -CustomizedSyncCycleInterval 00:30:00
 ```
 
+Resultat :
+
+```text
+# Get-ADSyncScheduler
+AllowedSyncCycleInterval      : 00:30:00
+CurrentlyEffectiveSyncCycleInterval : 00:30:00
+CustomizedSyncCycleInterval   : 00:00:00
+NextSyncCyclePolicyType       : Delta
+NextSyncCycleStartTimeInUTC   : 2026-02-20T08:47:23.142Z
+PurgeRunHistoryInterval       : 7.00:00:00
+SyncCycleEnabled              : True
+MaintenanceEnabled            : True
+StagingModeEnabled            : False
+SchedulerSuspended            : False
+
+# Start-ADSyncSyncCycle -PolicyType Delta
+Result
+------
+Success
+```
+
 ## Seamless SSO
 
 Le Seamless Single Sign-On permet aux utilisateurs sur des postes joints au domaine de se connecter automatiquement aux services cloud sans ressaisir leur mot de passe.
@@ -240,6 +265,24 @@ Get-ADSyncConnectorStatistics -ConnectorName "winopslab.local"
 # Navigate to: portal.azure.com > Azure AD Connect Health
 ```
 
+Resultat :
+
+```text
+# Get-ADSyncRunProfileResult (extrait)
+StartDate               EndDate                 Result      NumberOfChangesImported NumberOfChangesExported
+---------               -------                 ------      ----------------------- -----------------------
+2026-02-20 08:17:23     2026-02-20 08:17:31     success     12                      8
+2026-02-20 07:47:19     2026-02-20 07:47:27     success     3                       2
+2026-02-20 07:17:16     2026-02-20 07:17:24     success     0                       0
+
+# Get-ADSyncConnectorStatistics
+ConnectorName                   : lab.local
+NumberOfObjects                 : 847
+NumberOfConnectors              : 847
+NumberOfDisconnectors           : 0
+NumberOfPendingExports          : 0
+```
+
 ### Erreurs courantes
 
 | Erreur | Cause probable | Solution |
@@ -248,6 +291,50 @@ Get-ADSyncConnectorStatistics -ConnectorName "winopslab.local"
 | **InvalidSoftMatch** | Objet existant dans Azure AD sans correspondance | Verifier le mappage des attributs |
 | **LargeObject** | Attribut depassant la limite de taille Azure AD | Reduire la taille de l'attribut |
 | **DataValidationFailed** | Format d'attribut invalide | Corriger le format (ex. : UPN valide) |
+
+!!! example "Scenario pratique"
+
+    **Context :** David, administrateur systeme, vient de creer 15 comptes utilisateurs dans l'AD on-premises de `lab.local` pour une nouvelle equipe. Ces utilisateurs doivent pouvoir acceder a Microsoft 365 (Teams, Exchange Online) dans la journee.
+
+    **Etape 1 : Verifier que les comptes sont correctement configures pour la sync**
+
+    ```powershell
+    # Verifier le UPN des nouveaux comptes
+    Get-ADUser -Filter { Department -eq "Nouvelle Equipe" } |
+        Select-Object SamAccountName, UserPrincipalName, Enabled
+    ```
+
+    David constate que deux comptes ont un UPN avec le domaine `lab.local` au lieu du domaine verifie `winopslab.com`. Il corrige :
+
+    ```powershell
+    Get-ADUser -Filter { UserPrincipalName -like "*@lab.local" } |
+        Set-ADUser -UserPrincipalName { $_.SamAccountName + "@winopslab.com" }
+    ```
+
+    **Etape 2 : Forcer une synchronisation delta**
+
+    ```powershell
+    Import-Module ADSync
+    Start-ADSyncSyncCycle -PolicyType Delta
+    ```
+
+    **Etape 3 : Verifier dans Azure AD**
+
+    David ouvre le portail Azure > Azure Active Directory > Utilisateurs. Les 15 nouveaux comptes sont bien visibles avec le statut "Synchronise depuis l'annuaire local". Il assigne les licences Microsoft 365 E3 depuis le portail.
+
+    **Resultat :** Les 15 utilisateurs peuvent se connecter a Teams et Outlook Online dans les minutes suivant la synchronisation, avec leurs identifiants Active Directory habituels.
+
+!!! danger "Erreurs courantes"
+
+    **Installer Azure AD Connect sur un controleur de domaine.** Bien que techniquement possible, cette configuration est deconseилlee. Le compte de service ADSync obtient des droits etendus sur l'AD ; un serveur dedie limite l'exposition en cas de compromission.
+
+    **Ignorer les erreurs de synchronisation dans le portail Azure AD Connect Health.** Les erreurs IdentitySynchronizationError (UPN en double, attribut proxyAddress conflict) bloquent silencieusement certains comptes. Verifier le portail de sante hebdomadairement.
+
+    **Modifier directement un objet Azure AD qui est synchronise depuis l'AD on-premises.** Les modifications cote Azure AD (portal) sont ecrasees au cycle de sync suivant. Toujours modifier l'objet dans l'AD on-premises, jamais directement dans Azure AD pour les comptes synchronises.
+
+    **Oublier le Password Writeback lors de l'activation du Self-Service Password Reset.** Sans Password Writeback active dans Azure AD Connect, les utilisateurs qui reinitalisent leur mot de passe via SSPR ne peuvent plus se connecter on-premises (le mot de passe n'est pas repercute dans l'AD local).
+
+    **Ne pas activer Password Hash Sync comme fallback.** Meme si PTA ou AD FS est utilise, activer PHS en complement garantit que les utilisateurs peuvent s'authentifier si l'infrastructure on-premises est indisponible.
 
 ## Points cles a retenir
 

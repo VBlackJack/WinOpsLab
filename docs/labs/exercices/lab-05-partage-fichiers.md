@@ -43,6 +43,14 @@ graph TD
 
 ## Instructions
 
+!!! example "Analogie"
+
+    Le modele AGDLP fonctionne comme le systeme de badges dans un immeuble de bureaux :
+    les employes (Accounts) ont un badge de service (Global Group), chaque badge de service
+    est programme pour ouvrir certaines portes specifiques (Domain Local Group), et les portes
+    definissent ce qu'on peut faire dans la piece (Permission NTFS). Si un employe change de
+    service, on change juste son badge — toutes les portes s'adaptent automatiquement.
+
 ### Partie 1 : Preparer les groupes AD (modele AGDLP)
 
 Creer les groupes globaux (GG) et locaux de domaine (DL) pour chaque service.
@@ -191,6 +199,18 @@ Creer les groupes globaux (GG) et locaux de domaine (DL) pour chaque service.
     # Test: read (should succeed), write (should be denied)
     ```
 
+    Resultat attendu de `Get-SmbShare | Where-Object { $_.Path -like "D:\Partages\*" }` :
+
+    ```text
+    Name          ScopeName  Path                    Description
+    ----          ---------  ----                    -----------
+    Commun        *          D:\Partages\Commun      Partage commun
+    Commercial    *          D:\Partages\Commercial  Partage Commercial
+    Comptabilite  *          D:\Partages\Comptabilite Partage Comptabilite
+    Direction     *          D:\Partages\Direction   Partage Direction
+    Informatique  *          D:\Partages\Informatique Partage Informatique
+    ```
+
 ## Verification
 
 !!! question "Questions de validation"
@@ -213,6 +233,32 @@ Creer les groupes globaux (GG) et locaux de domaine (DL) pour chaque service.
        mais le resultat final est le minimum des deux.
     4. Clic droit > Proprietes > Securite > Avance > **Acces effectif**. Ou en PowerShell :
        `Get-Acl "D:\Partages\Direction" | Format-List`
+
+!!! warning "Pieges frequents dans ce lab"
+
+    1. **Imbrication AGDLP dans le mauvais sens** : l'utilisateur doit etre dans GG, et GG
+       dans DL — pas l'inverse. Mettre directement l'utilisateur dans DL fonctionne en apparence
+       mais casse le modele AGDLP et complique la gestion future. Verifier avec
+       `Get-ADGroupMember "DL_Direction_Modification"` que le membre est un groupe global, pas
+       un utilisateur direct.
+
+    2. **Heritage NTFS non desactive** : si on n'appelle pas `SetAccessRuleProtection($true, $false)`
+       avant de definir les permissions, les ACL heritees du dossier parent (`D:\Partages`) se
+       combinent avec les nouvelles regles et donnent acces a des utilisateurs inattendus.
+
+    3. **Tester avec un compte ayant des jetons de securite expires** : apres avoir ajoute
+       un utilisateur a un groupe AD, il faut que l'utilisateur se deconnecte et se reconnecte
+       pour que le nouveau jeton Kerberos contenant le nouveau groupe soit emis. `gpupdate /force`
+       ne suffit pas pour les changements de groupes.
+
+    4. **Partage SMB cree avec des permissions restrictives** : si vous mettez autre chose que
+       "Everyone - Full Control" au niveau SMB, la permission effective sera la plus restrictive
+       des deux niveaux (SMB et NTFS), ce qui peut bloquer des acces attendus et creer une
+       confusion dans le diagnostic.
+
+    5. **SRV-FILE01 pas joint au domaine** : les permissions NTFS avec des noms de groupes
+       de domaine (WINOPSLAB\DL_Direction_Modification) echouent avec "account not found"
+       si le serveur de fichiers n'est pas joint au domaine winopslab.local.
 
 ## Nettoyage
 

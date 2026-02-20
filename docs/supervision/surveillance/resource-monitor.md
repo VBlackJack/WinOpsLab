@@ -28,6 +28,13 @@ graph TD
     F --> J[Connexions et ports]
 ```
 
+!!! example "Analogie"
+
+    Le Moniteur de ressources est comme une **camera de surveillance en direct** dans un entrepot.
+    Vous voyez en temps reel qui (quel processus) utilise quel espace (memoire), quel chariot
+    (disque) et quelle porte de sortie (reseau). En un coup d'oeil, vous identifiez le responsable
+    d'un embouteillage.
+
 ## Lancer le Moniteur de ressources
 
 ```powershell
@@ -226,6 +233,32 @@ Liste les ports ouverts en ecoute avec le processus associe. Equivalent graphiqu
 - La barre de memoire physique coloree donne une lecture immediate de l'etat de la RAM
 - L'onglet reseau fournit des informations detaillees sur les connexions TCP (latence, perte de paquets)
 - `resmon` est complementaire de `perfmon` : l'un pour le diagnostic instantane, l'autre pour la collecte sur la duree
+
+!!! example "Scenario pratique"
+
+    **Contexte :** Laura, technicienne support, recoit un ticket : impossible de supprimer un
+    fichier de rapport Excel sur le partage `\\SRV-01\Rapports`. Le message d'erreur indique
+    que le fichier est utilise par un autre processus.
+
+    **Diagnostic :**
+
+    1. Laura ouvre `resmon.exe` sur SRV-01
+    2. Dans l'onglet **CPU**, section **Handles associes**, elle saisit le nom du fichier : `rapport-financier-Q4.xlsx`
+    3. Le Moniteur de ressources identifie le processus `EXCEL.EXE` (PID 4872) avec l'utilisateur `lab\p.martin`
+
+    **Resolution :** Laura contacte Pierre Martin qui avait laisse le fichier ouvert. Apres fermeture du fichier, la suppression fonctionne. Pour prevenir ce probleme, Laura configure les cliches instantanes (shadow copies) sur le partage.
+
+!!! danger "Erreurs courantes"
+
+    - **Confondre memoire utilisee et memoire disponible** : la barre verte (En attente/Standby)
+      n'est pas de la memoire perdue. Windows l'utilise comme cache et la libere instantanement
+      si un processus en a besoin
+    - **Ne pas utiliser le filtrage par processus** : cocher la case d'un processus dans la
+      section CPU filtre toutes les sections. Sans cette astuce, l'analyse est beaucoup plus longue
+    - **Ignorer la colonne Temps de reponse (ms)** dans l'onglet Disque : c'est l'indicateur
+      le plus fiable de la sante du stockage. Au-dessus de 20 ms, il y a un probleme de performance disque
+    - **Oublier que resmon est un outil temps reel uniquement** : il ne conserve aucun historique.
+      Pour un suivi dans le temps, utilisez `perfmon.msc` avec des ensembles de collecteurs
 
 ## Pour aller plus loin
 

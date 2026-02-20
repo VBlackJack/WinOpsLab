@@ -28,6 +28,10 @@ graph TD
     D --> J[REST API]
 ```
 
+!!! example "Analogie"
+
+    IIS, c'est comme un bibliothecaire specialise : quand un visiteur arrive et demande un livre (une page web), le bibliothecaire sait exactement dans quelle salle aller chercher ce livre (quel dossier sur le disque), le format dans lequel le presenter, et qui a le droit de le consulter. Le pool d'applications, c'est comme avoir un bibliothecaire distinct par salle, pour que la desorganisation d'une salle n'affecte pas les autres.
+
 ## Installation du role
 
 ### Via Server Manager
@@ -137,6 +141,21 @@ Get-Website -Name "Default Web Site"
 Test-NetConnection -ComputerName localhost -Port 80
 ```
 
+Resultat :
+
+```text
+# Get-Website -Name "Default Web Site"
+Name             ID   State      Physical Path                  Bindings
+----             --   -----      -------------                  --------
+Default Web Site 1    Started    C:\inetpub\wwwroot             http *:80:
+
+# Test-NetConnection
+ComputerName     : localhost
+RemoteAddress    : 127.0.0.1
+RemotePort       : 80
+TcpTestSucceeded : True
+```
+
 ### Tester l'installation
 
 1. Ouvrir un navigateur sur le serveur
@@ -202,6 +221,15 @@ Set-ItemProperty "IIS:\AppPools\MonSitePool" -Name "managedRuntimeVersion" -Valu
     un acces specifique a des ressources reseau ou des bases de donnees. Chaque pool
     obtient une identite virtuelle unique (`IIS AppPool\NomDuPool`).
 
+Resultat apres creation du pool :
+
+```text
+# Get-WebAppPool -Name "MonSitePool"
+Name         State   ManagedRuntimeVersion ManagedPipelineMode
+----         -----   --------------------- -------------------
+MonSitePool  Started v4.0                  Integrated
+```
+
 ### Configuration du recyclage
 
 ```powershell
@@ -231,6 +259,66 @@ inetmgr
 | **Connexions (gauche)** | Arborescence : serveur > sites > applications |
 | **Fonctionnalites (centre)** | Parametres de l'element selectionne |
 | **Actions (droite)** | Actions contextuelles (demarrer, arreter, ajouter) |
+
+!!! example "Scenario pratique"
+
+    **Context :** Celine, administratrice systeme, doit deployer IIS sur SRV-WEB01 pour heberger une application intranet ASP.NET Core. Elle part d'un Windows Server 2022 en Core installation (sans GUI).
+
+    **Etape 1 : Installer IIS via PowerShell (a distance)**
+
+    ```powershell
+    Invoke-Command -ComputerName SRV-WEB01 -ScriptBlock {
+        Install-WindowsFeature -Name Web-Server,
+            Web-Common-Http, Web-Static-Content, Web-Default-Doc,
+            Web-Http-Errors, Web-Http-Logging, Web-Request-Monitor,
+            Web-Stat-Compression, Web-Dyn-Compression,
+            Web-Security, Web-Filtering, Web-Windows-Auth,
+            Web-Mgmt-Tools, Web-Mgmt-Console `
+            -IncludeManagementTools
+    }
+    ```
+
+    **Etape 2 : Verifier l'installation**
+
+    ```powershell
+    Invoke-Command -ComputerName SRV-WEB01 -ScriptBlock {
+        Get-WindowsFeature -Name Web-* | Where-Object Installed |
+            Select-Object Name, DisplayName
+    }
+    ```
+
+    **Etape 3 : Creer un pool d'applications dedie pour ASP.NET Core**
+
+    ASP.NET Core utilise le modele "No Managed Code" (le runtime est gere par le processus de l'application, pas par IIS) :
+
+    ```powershell
+    Invoke-Command -ComputerName SRV-WEB01 -ScriptBlock {
+        Import-Module WebAdministration
+        New-WebAppPool -Name "IntranetCorePool"
+        Set-ItemProperty "IIS:\AppPools\IntranetCorePool" `
+            -Name "managedRuntimeVersion" -Value ""
+    }
+    ```
+
+    **Etape 4 : Tester l'accessibilite**
+
+    ```powershell
+    Test-NetConnection -ComputerName SRV-WEB01 -Port 80
+    ```
+
+    IIS repond. Celine deploiera ensuite le package ASP.NET Core et creera un site dedie.
+
+!!! danger "Erreurs courantes"
+
+    **Laisser le Directory Browsing active en production.** Avec le Directory Browsing actif, un visiteur qui accede a un repertoire sans document par defaut voit la liste complete des fichiers. Cela peut exposer des fichiers de configuration, des logs ou des donnees sensibles. Desactiver systematiquement en production.
+
+    **Utiliser l'identite LocalSystem pour les pools d'applications.** LocalSystem a des privileges complets sur la machine. Une faille dans l'application web permet alors a un attaquant de prendre le controle total du serveur. Toujours utiliser ApplicationPoolIdentity ou un compte de domaine avec le minimum de droits.
+
+    **Ne pas installer le ASP.NET Core Hosting Bundle pour les applications Core.** IIS seul ne sait pas executer les applications ASP.NET Core. Sans le Hosting Bundle (composant supplementaire a telecharger depuis Microsoft), le site renvoie une erreur 500.19 ou 502.5. Installer le bundle avant de deployer l'application.
+
+    **Oublier de recycler ou redemarrer le pool apres modification de la configuration.** Certains changements IIS (identite du pool, version .NET) ne prennent effet qu'apres recyclage du pool. Si l'application ne se comporte pas comme attendu apres une modification, recycler le pool avant de chercher plus loin.
+
+    **Placer les fichiers du site dans C:\inetpub\wwwroot sans changer les permissions.** Le dossier wwwroot par defaut a des permissions larges. Pour des applications en production, creer un dossier dedie (ex. `D:\WebSites\monsite`) avec des permissions restreintes au compte du pool d'applications uniquement.
 
 ## Points cles a retenir
 

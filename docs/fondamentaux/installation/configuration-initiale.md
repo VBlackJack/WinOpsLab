@@ -13,6 +13,13 @@ tags:
 
 ## Introduction
 
+!!! example "Analogie"
+
+    Vous venez de recevoir les cles de votre nouveau bureau. Avant d'y travailler, il faut poser une
+    plaque avec votre nom sur la porte (renommer le serveur), brancher le telephone avec un numero fixe
+    (IP statique), regler l'horloge murale (fuseau horaire), installer une serrure sur la porte d'entree
+    (pare-feu) et donner un double de cle au gardien (acces a distance).
+
 Apres l'installation de Windows Server 2022, plusieurs etapes de configuration sont necessaires avant de mettre le serveur en production.
 
 ## Processus de configuration post-installation
@@ -61,6 +68,14 @@ Par defaut, Windows attribue un nom aleatoire (ex: `WIN-A1B2C3D4E5F6`). Il est e
     Rename-Computer -NewName "SRV-LAB-01" -Restart
     ```
 
+    Resultat :
+
+    ```text
+    WIN-A1B2C3D4E5F6
+
+    WARNING: The changes will take effect after you restart the computer SRV-LAB-01.
+    ```
+
 === "Server Manager"
 
     1. Ouvrir **Server Manager**
@@ -97,6 +112,26 @@ Un serveur doit toujours avoir une adresse IP statique pour etre fiable.
     Get-NetIPConfiguration
     ```
 
+    Resultat de `Get-NetAdapter` :
+
+    ```text
+    Name         InterfaceDescription                 ifIndex  Status   LinkSpeed
+    ----         --------------------                 -------  ------   ---------
+    Ethernet     Microsoft Hyper-V Network Adapter          3  Up       10 Gbps
+    ```
+
+    Resultat de `Get-NetIPConfiguration` :
+
+    ```text
+    InterfaceAlias       : Ethernet
+    InterfaceIndex       : 3
+    InterfaceDescription : Microsoft Hyper-V Network Adapter
+    NetProfile.Name      : lab.local
+    IPv4Address          : 10.0.0.20
+    IPv4DefaultGateway   : 10.0.0.1
+    DNSServer            : 10.0.0.10, 8.8.8.8
+    ```
+
 === "Interface graphique"
 
     1. Ouvrir **Parametres reseau** > **Modifier les options d'adaptateur**
@@ -129,6 +164,24 @@ Restart-Service w32time
 w32tm /resync
 ```
 
+Resultat de `Get-TimeZone` :
+
+```text
+Id                         : Romance Standard Time
+DisplayName                : (UTC+01:00) Brussels, Copenhagen, Madrid, Paris
+StandardName               : Romance Standard Time
+DaylightName               : Romance Daylight Time
+BaseUtcOffset              : 01:00:00
+SupportsDaylightSavingTime : True
+```
+
+Resultat de `w32tm /resync` :
+
+```text
+Sending resync command to local computer
+The command completed successfully.
+```
+
 !!! danger "Kerberos et le temps"
 
     Active Directory utilise Kerberos pour l'authentification. Kerberos tolere un ecart maximum
@@ -153,6 +206,21 @@ Set-ItemProperty `
     -Value 1
 ```
 
+Verification de l'etat RDP :
+
+```powershell
+# Verify RDP is enabled
+Get-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name "fDenyTSConnections"
+```
+
+```text
+fDenyTSConnections : 0
+PSPath             : Microsoft.PowerShell.Core\Registry::HKEY_LOCAL_MACHINE\System\CurrentControlSet\Control\Terminal Server
+PSParentPath       : Microsoft.PowerShell.Core\Registry::HKEY_LOCAL_MACHINE\System\CurrentControlSet\Control
+PSChildName        : Terminal Server
+PSProvider         : Microsoft.PowerShell.Core\Registry
+```
+
 !!! tip "Bonne pratique"
 
     Activez toujours **NLA (Network Level Authentication)** pour securiser les connexions RDP.
@@ -171,6 +239,16 @@ Install-WindowsUpdate -AcceptAll -AutoReboot
 
 # Configure automatic updates via Group Policy (sconfig on Core)
 # Or use sconfig option 6 on Server Core
+```
+
+Resultat de `Get-WindowsUpdate` :
+
+```text
+ComputerName Status KB          Size  Title
+------------ ------ --          ----  -----
+SRV-LAB-01   D-----  KB5034439  45MB  2024-01 Security Update for Windows Server 2022
+SRV-LAB-01   D-----  KB5034129 312MB  2024-01 Cumulative Update for Windows Server 2022
+SRV-LAB-01   D-----  KB5034286  18MB  2024-01 .NET Framework 4.8.1 Update
 ```
 
 === "Server Core"
@@ -201,6 +279,27 @@ Get-NetFirewallRule -Direction Inbound -Enabled True |
     Sort-Object DisplayName
 ```
 
+Resultat de `Get-NetFirewallProfile` :
+
+```text
+Name    Enabled
+----    -------
+Domain     True
+Private    True
+Public     True
+```
+
+Resultat partiel des regles entrantes :
+
+```text
+DisplayName                          Profile  Action
+-----------                          -------  ------
+Core Networking - DNS (UDP-In)       Any      Allow
+Core Networking - DHCP (DHCP-In)     Any      Allow
+Remote Desktop - User Mode (TCP-In)  Any      Allow
+Windows Remote Management (HTTP-In)  Domain   Allow
+```
+
 !!! danger "Ne jamais desactiver le pare-feu en production"
 
     En lab, il peut etre tentant de desactiver le pare-feu pour simplifier les tests.
@@ -221,6 +320,95 @@ Get-Service WinRM
 # Test remote connectivity from another machine
 # Test-WSMan -ComputerName SRV-LAB-01
 ```
+
+Resultat de `Get-Service WinRM` :
+
+```text
+Status   Name    DisplayName
+------   ----    -----------
+Running  WinRM   Windows Remote Management (WS-Manag...
+```
+
+## Scenario pratique
+
+!!! example "Scenario pratique"
+
+    **Contexte** : Ahmed, administrateur junior, vient d'installer Windows Server 2022 sur un nouveau
+    serveur qui doit devenir controleur de domaine du lab. Il se connecte en RDP mais constate que le
+    serveur s'appelle `WIN-R4ND0M123456` et n'a pas d'IP statique.
+
+    **Probleme** : Le serveur est en DHCP avec un nom generique. Impossible de promouvoir un DC avec
+    cette configuration.
+
+    **Diagnostic pas a pas** :
+
+    ```powershell
+    # Step 1: Check the current hostname
+    hostname
+
+    # Step 2: Check the current IP configuration
+    Get-NetIPConfiguration
+
+    # Step 3: Check the time zone
+    Get-TimeZone
+    ```
+
+    ```text
+    WIN-R4ND0M123456
+
+    InterfaceAlias       : Ethernet
+    InterfaceIndex       : 3
+    IPv4Address          : 10.0.0.105
+    IPv4DefaultGateway   : 10.0.0.1
+    DNSServer            : 10.0.0.1
+
+    Id          : Pacific Standard Time
+    DisplayName : (UTC-08:00) Pacific Time (US & Canada)
+    ```
+
+    **Problemes identifies** : nom generique, IP dynamique, fuseau horaire incorrect, DNS pointe vers le routeur.
+
+    **Solution complete** :
+
+    ```powershell
+    # Fix the hostname
+    Rename-Computer -NewName "DC-01" -Restart
+
+    # After restart, fix the static IP
+    New-NetIPAddress -InterfaceAlias "Ethernet" -IPAddress 10.0.0.10 -PrefixLength 24 -DefaultGateway 10.0.0.1
+    Set-DnsClientServerAddress -InterfaceAlias "Ethernet" -ServerAddresses 127.0.0.1, 10.0.0.1
+
+    # Fix time zone
+    Set-TimeZone -Id "Romance Standard Time"
+
+    # Enable remote management
+    Enable-PSRemoting -Force
+    ```
+
+    **Resultat** : Le serveur DC-01 est pret pour la promotion en controleur de domaine avec une
+    configuration reseau stable et un fuseau horaire correct.
+
+## Erreurs courantes
+
+!!! danger "Erreurs courantes"
+
+    1. **Oublier de configurer le DNS avant de promouvoir un DC** : Lors de la configuration IP, le DNS
+       doit pointer vers lui-meme (127.0.0.1) s'il sera le premier DC, ou vers un DC existant. Pointer
+       vers le routeur (ex: 10.0.0.1) provoque des erreurs lors de `dcpromo`.
+
+    2. **Ne pas redemarrer apres le renommage** : La commande `Rename-Computer` exige un redemarrage.
+       Si vous enchainez d'autres configurations sans redemarrer, le nom ne sera pas pris en compte
+       et certaines operations echoueront.
+
+    3. **Laisser le fuseau horaire par defaut (Pacific Time)** : Un ecart de temps entre client et
+       serveur provoque des echecs Kerberos. Configurez le fuseau horaire **avant** de joindre
+       des machines au domaine.
+
+    4. **Desactiver le pare-feu au lieu de creer des regles** : C'est une mauvaise habitude de lab
+       qui se retrouve parfois en production. Creez des regles specifiques pour chaque service.
+
+    5. **Ne pas activer NLA pour RDP** : Sans Network Level Authentication, un attaquant peut atteindre
+       l'ecran de connexion RDP sans s'authentifier, ce qui expose le serveur aux attaques par force brute.
 
 ## Checklist de configuration initiale
 

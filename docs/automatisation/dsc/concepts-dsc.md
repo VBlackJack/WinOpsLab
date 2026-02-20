@@ -16,6 +16,10 @@ tags:
 
 **Desired State Configuration** (DSC) est un framework de gestion de configuration integre a PowerShell. Il permet de definir l'etat souhaite d'un serveur de maniere **declarative** : on decrit **ce que** le serveur doit etre, pas **comment** y parvenir. DSC se charge ensuite d'appliquer et de maintenir cette configuration.
 
+!!! example "Analogie"
+
+    Imaginez que vous commandez un meuble. Avec l'approche **imperative**, vous recevez une liste d'instructions : "coupez la planche a 80 cm, percez un trou a 15 cm du bord, vissez l'etagere..." Avec l'approche **declarative** (DSC), vous montrez simplement une photo du meuble fini et dites "je veux ca". Le systeme se debrouille pour atteindre le resultat. Et si quelqu'un enleve une etagere, DSC la remet automatiquement en place.
+
 ## Approche declarative vs imperative
 
 ### Approche imperative (script classique)
@@ -139,6 +143,16 @@ Configuration BaseServerConfig {
 BaseServerConfig -OutputPath "C:\DSC\Configs"
 ```
 
+Resultat :
+
+```text
+    Directory: C:\DSC\Configs
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+-a----         2/20/2026  10:30 AM          2584 SRV01.mof
+```
+
 La compilation produit le fichier `C:\DSC\Configs\SRV01.mof`.
 
 ## Fichiers MOF
@@ -148,6 +162,16 @@ Le fichier **MOF** est le format intermediaire compile que DSC applique au serve
 ```powershell
 # List generated MOF files
 Get-ChildItem -Path "C:\DSC\Configs" -Filter "*.mof"
+```
+
+Resultat :
+
+```text
+    Directory: C:\DSC\Configs
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+-a----         2/20/2026  10:30 AM          2584 SRV01.mof
 ```
 
 | Fichier | Role |
@@ -223,6 +247,38 @@ Get-DscConfigurationStatus -CimSession "SRV01"
 Test-DscConfiguration -CimSession "SRV01" -Detailed
 ```
 
+Resultat (Get-DscLocalConfigurationManager) :
+
+```text
+ActionAfterReboot              : ContinueConfiguration
+AgentId                        : A1B2C3D4-E5F6-7890-ABCD-EF0123456789
+AllowModuleOverwrite           : True
+CertificateID                  :
+ConfigurationDownloadManagers  : {}
+ConfigurationID                :
+ConfigurationMode              : ApplyAndAutoCorrect
+ConfigurationModeFrequencyMins : 30
+Credential                     :
+DebugMode                      : {NONE}
+LCMCompatibleVersions          : {1.0, 2.0}
+LCMState                       : Idle
+LCMVersion                     : 2.0
+RefreshFrequencyMins           : 15
+RefreshMode                    : Push
+RebootNodeIfNeeded             : True
+StatusRetentionTimeInDays      : 10
+```
+
+Resultat (Test-DscConfiguration) :
+
+```text
+InDesiredState            : False
+ResourcesInDesiredState   : {[WindowsFeature]TelnetAbsent}
+ResourcesNotInDesiredState: {[Registry]DisableIPv6}
+ReturnValue               : 0
+PSComputerName            : SRV-01
+```
+
 ## Appliquer une configuration (mode Push)
 
 ```powershell
@@ -236,6 +292,23 @@ Get-DscConfiguration -CimSession "SRV01"
 $testResult = Test-DscConfiguration -CimSession "SRV01" -Detailed
 $testResult.ResourcesInDesiredState
 $testResult.ResourcesNotInDesiredState
+```
+
+Resultat (Start-DscConfiguration) :
+
+```text
+VERBOSE: Perform operation 'Invoke CimMethod' with following parameters, ''methodName' = SendConfigurationApply'.
+VERBOSE: An LCM method call arrived from computer SRV-01 with user sid S-1-5-21-xxx.
+VERBOSE: [SRV-01]: LCM:  [ Start  Set      ]
+VERBOSE: [SRV-01]: LCM:  [ Start  Resource ]  [[WindowsFeature]TelnetAbsent]
+VERBOSE: [SRV-01]: LCM:  [ Start  Test     ]  [[WindowsFeature]TelnetAbsent]
+VERBOSE: [SRV-01]:                            [[WindowsFeature]TelnetAbsent] The operation 'Get' did not return
+ any result.
+VERBOSE: [SRV-01]: LCM:  [ End    Test     ]  [[WindowsFeature]TelnetAbsent] True in 0.4200 seconds.
+VERBOSE: [SRV-01]: LCM:  [ Skip   Set      ]  [[WindowsFeature]TelnetAbsent]
+VERBOSE: [SRV-01]: LCM:  [ End    Resource ]  [[WindowsFeature]TelnetAbsent]
+VERBOSE: [SRV-01]: LCM:  [ End    Set      ]    in  1.2340 seconds.
+VERBOSE: Operation 'Invoke CimMethod' complete.
 ```
 
 ```mermaid
@@ -273,6 +346,85 @@ sequenceDiagram
 - Le **LCM** est le moteur qui applique, teste et corrige les configurations
 - Le mode **ApplyAndAutoCorrect** garantit que le serveur reste conforme en permanence
 - DSC est un pilier de l'**Infrastructure as Code** pour les environnements Windows
+
+!!! example "Scenario pratique"
+
+    **Laurent**, administrateur systeme, gere 8 serveurs web. Apres un audit de securite, il decouvre que le client Telnet a ete installe manuellement sur 3 serveurs et que le pare-feu est desactive sur 2 autres. Il doit garantir la conformite de tous les serveurs en permanence.
+
+    **Diagnostic :**
+
+    1. Ecrire une configuration DSC pour l'etat souhaite :
+    ```powershell
+    Configuration WebServerBaseline {
+        Import-DscResource -ModuleName PSDesiredStateConfiguration
+
+        Node @("SRV-01", "SRV-02", "SRV-03", "SRV-04", "SRV-05", "SRV-06", "SRV-07", "SRV-08") {
+            WindowsFeature TelnetAbsent {
+                Name   = "Telnet-Client"
+                Ensure = "Absent"
+            }
+            WindowsFeature IISPresent {
+                Name   = "Web-Server"
+                Ensure = "Present"
+            }
+            Service W3SVC {
+                Name        = "W3SVC"
+                State       = "Running"
+                StartupType = "Automatic"
+                DependsOn   = "[WindowsFeature]IISPresent"
+            }
+        }
+    }
+    WebServerBaseline -OutputPath "C:\DSC\WebBaseline"
+    ```
+    Resultat :
+    ```text
+        Directory: C:\DSC\WebBaseline
+
+    Mode                 LastWriteTime         Length Name
+    ----                 -------------         ------ ----
+    -a----         2/20/2026  11:00 AM          3215 SRV-01.mof
+    -a----         2/20/2026  11:00 AM          3215 SRV-02.mof
+    ...
+    -a----         2/20/2026  11:00 AM          3215 SRV-08.mof
+    ```
+
+    2. Configurer le LCM en mode `ApplyAndAutoCorrect` et pousser la configuration :
+    ```powershell
+    Start-DscConfiguration -Path "C:\DSC\WebBaseline" -Wait -Verbose -Force
+    ```
+
+    3. Verifier la conformite :
+    ```powershell
+    $servers = @("SRV-01", "SRV-02", "SRV-03", "SRV-04", "SRV-05", "SRV-06", "SRV-07", "SRV-08")
+    foreach ($server in $servers) {
+        $result = Test-DscConfiguration -CimSession $server
+        [PSCustomObject]@{ Server = $server; Compliant = $result }
+    }
+    ```
+    Resultat :
+    ```text
+    Server Compliant
+    ------ ---------
+    SRV-01      True
+    SRV-02      True
+    SRV-03      True
+    SRV-04      True
+    SRV-05      True
+    SRV-06      True
+    SRV-07      True
+    SRV-08      True
+    ```
+
+    **Resolution :** DSC a automatiquement desinstalle Telnet sur les 3 serveurs non conformes, demarre le pare-feu sur les 2 serveurs ou il etait desactive, et garantit que toute derive future sera corrigee automatiquement par le LCM.
+
+!!! danger "Erreurs courantes"
+
+    - **Modifier les fichiers MOF manuellement** : les fichiers MOF sont generes par la compilation. Toute modification manuelle sera ecrasee lors de la prochaine compilation. Modifiez toujours la configuration source `.ps1`.
+    - **Oublier `Import-DscResource`** : sans cette directive, la compilation echoue avec un message d'erreur peu explicite. Importez toujours les modules de ressources en debut de configuration.
+    - **Confondre les modes du LCM** : `ApplyOnly` n'applique qu'une seule fois, `ApplyAndMonitor` detecte les derives sans corriger, seul `ApplyAndAutoCorrect` corrige automatiquement. Choisissez en fonction du niveau d'automatisation souhaite.
+    - **Ne pas tester avant de deployer** : utilisez toujours `Test-DscConfiguration -Detailed` avant `Start-DscConfiguration` pour visualiser les changements qui seront appliques.
+    - **Oublier les dependances (`DependsOn`)** : sans dependances explicites, DSC peut tenter de demarrer un service avant que le role correspondant ne soit installe, provoquant un echec.
 
 ## Pour aller plus loin
 

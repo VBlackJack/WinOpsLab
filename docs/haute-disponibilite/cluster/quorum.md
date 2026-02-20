@@ -16,6 +16,10 @@ tags:
 
 Le **quorum** est le mecanisme qui permet a un cluster de determiner s'il peut continuer a fonctionner. Il garantit qu'une majorite de noeuds (ou de votes) est disponible pour eviter les situations de **split-brain**, ou deux groupes de noeuds fonctionneraient independamment en croyant chacun etre le cluster actif.
 
+!!! example "Analogie"
+
+    Le quorum fonctionne comme un vote au sein d'un conseil d'administration. Pour qu'une decision soit valide, il faut que la majorite des membres soient presents et votent. Si la moitie des membres quittent la salle, le conseil ne peut plus deliberer. Le temoin (witness) joue le role d'un membre supplementaire qui peut departager en cas d'egalite, comme un president qui a la voix preponderante.
+
 ## Le concept de vote
 
 Chaque element participant au quorum dispose d'un **vote**. Le cluster reste operationnel tant qu'il detient la **majorite des votes** (plus de la moitie).
@@ -64,6 +68,14 @@ Un petit LUN (minimum 512 Mo) sur le stockage partage dedie au quorum.
 Set-ClusterQuorum -Cluster "YOURCLUSTER" -NodeAndDiskMajority "Cluster Disk 3"
 ```
 
+Resultat :
+
+```text
+Cluster          : CLUSTER01
+QuorumResource   : Cluster Disk 3
+QuorumType       : NodeAndDiskMajority
+```
+
 | Avantage | Inconvenient |
 |---|---|
 | Fiable et rapide | Necessite un stockage partage |
@@ -80,6 +92,24 @@ New-SmbShare -Name "ClusterWitness" -Path "C:\ClusterWitness" -FullAccess "YOURD
 
 # Configure the file share witness
 Set-ClusterQuorum -Cluster "YOURCLUSTER" -NodeAndFileShareMajority "\\YOURFILESERVER\ClusterWitness"
+```
+
+Resultat :
+
+```text
+    Directory: C:\
+
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+d-----        01/15/2025   16:00                  ClusterWitness
+
+Name             ScopeName Path                 Description
+----             --------- ----                 -----------
+ClusterWitness   *         C:\ClusterWitness
+
+Cluster          : CLUSTER01
+QuorumResource   : File Share Witness (\\DC-01\ClusterWitness)
+QuorumType       : NodeAndFileShareMajority
 ```
 
 | Avantage | Inconvenient |
@@ -101,6 +131,14 @@ Set-ClusterQuorum -Cluster "YOURCLUSTER" -CloudWitness `
     -AccountName "yourstorageaccount" `
     -AccessKey "YOURSTORAGEACCESSKEY" `
     -Endpoint "core.windows.net"
+```
+
+Resultat :
+
+```text
+Cluster          : CLUSTER01
+QuorumResource   : Cloud Witness (labclusterwitness)
+QuorumType       : CloudWitness
 ```
 
 | Avantage | Inconvenient |
@@ -133,6 +171,16 @@ Set-ClusterQuorum -Cluster "YOURCLUSTER" -NodeMajority
 
 # Let Windows decide the best quorum configuration
 Set-ClusterQuorum -Cluster "YOURCLUSTER" -NoWitness
+```
+
+Resultat :
+
+```text
+Cluster                   : CLUSTER01
+QuorumResource            : File Share Witness (\\DC-01\ClusterWitness)
+QuorumType                : NodeAndFileShareMajority
+QuorumResourceName        : File Share Witness
+QuorumResourceOwnerNode   : SRV-01
 ```
 
 ### Guide de selection
@@ -169,6 +217,12 @@ Lorsqu'un noeud quitte le cluster de maniere controlee (arret planifie), son vot
 (Get-Cluster -Name "YOURCLUSTER").DynamicQuorum = 0
 ```
 
+Resultat :
+
+```text
+1
+```
+
 ### Exemple concret
 
 Cluster de 5 noeuds avec quorum dynamique :
@@ -202,6 +256,16 @@ Dans certains cas (noeud DR distant), il peut etre utile de retirer le vote d'un
 Get-ClusterNode -Cluster "YOURCLUSTER" | Format-Table Name, State, NodeWeight, DynamicWeight
 ```
 
+Resultat :
+
+```text
+Name       State  NodeWeight DynamicWeight
+----       -----  ---------- -------------
+SRV-01     Up     1          1
+SRV-02     Up     1          1
+SRV-DR     Up     0          0
+```
+
 ## Diagnostic du quorum
 
 ```powershell
@@ -214,6 +278,84 @@ Get-ClusterResource -Cluster "YOURCLUSTER" | Where-Object { $_.ResourceType -lik
 # View cluster events related to quorum
 Get-ClusterLog -Cluster "YOURCLUSTER" -TimeSpan 60 -Destination "C:\Temp\ClusterLogs"
 ```
+
+Resultat :
+
+```text
+Cluster                   : CLUSTER01
+QuorumResource            : File Share Witness (\\DC-01\ClusterWitness)
+QuorumType                : NodeAndFileShareMajority
+
+Name                     State  OwnerGroup    ResourceType
+----                     -----  ----------    ------------
+File Share Witness       Online Cluster Group File Share Witness
+```
+
+!!! example "Scenario pratique"
+
+    **Contexte :** Antoine, administrateur systeme dans une societe d'assurance, gere un cluster a 2 noeuds (SRV-01, SRV-02) avec un temoin partage de fichiers heberge sur DC-01. Un matin, le cluster entier est hors service alors qu'un seul noeud est en panne.
+
+    **Probleme :** SRV-02 est arrete pour maintenance, mais le cluster ne bascule pas : SRV-01 refuse de prendre les roles en indiquant un manque de quorum.
+
+    **Diagnostic :**
+
+    1. Antoine verifie l'etat du quorum depuis SRV-01 :
+
+        ```powershell
+        Get-ClusterQuorum -Cluster "CLUSTER01" | Format-List *
+        ```
+
+        Resultat :
+
+        ```text
+        Cluster          : CLUSTER01
+        QuorumResource   : File Share Witness (\\DC-01\ClusterWitness)
+        QuorumType       : NodeAndFileShareMajority
+        ```
+
+    2. Il verifie l'etat de la ressource temoin :
+
+        ```powershell
+        Get-ClusterResource -Cluster "CLUSTER01" | Where-Object { $_.ResourceType -like "*Witness*" }
+        ```
+
+        Resultat :
+
+        ```text
+        Name                     State    OwnerGroup    ResourceType
+        ----                     -----    ----------    ------------
+        File Share Witness       Failed   Cluster Group File Share Witness
+        ```
+
+    3. Le temoin est en echec. Il teste l'acces au partage :
+
+        ```powershell
+        Test-Path "\\DC-01\ClusterWitness"
+        ```
+
+        Resultat :
+
+        ```text
+        False
+        ```
+
+    4. DC-01 est inaccessible (mise a jour en cours). Sans temoin et avec SRV-02 arrete, SRV-01 n'a qu'1 vote sur 3 : pas de majorite.
+
+    **Solution :** Antoine force temporairement le cluster a demarrer :
+
+    ```powershell
+    Stop-ClusterNode -Name "SRV-01"
+    Start-ClusterNode -Name "SRV-01" -FixQuorum
+    ```
+
+    Il planifie ensuite les maintenances de DC-01 et SRV-02 a des moments differents pour eviter cette situation.
+
+!!! danger "Erreurs courantes"
+
+    - **Ne pas configurer de temoin avec un nombre pair de noeuds** : un cluster a 2 noeuds sans temoin perd la majorite des qu'un noeud tombe. La probabilite de panne complete est tres elevee.
+    - **Heberger le temoin sur un noeud du cluster** : le partage de fichiers temoin doit etre sur un serveur tiers. Si le temoin est sur un noeud du cluster, sa panne fait perdre a la fois un noeud et le vote temoin.
+    - **Oublier de verifier le temoin apres une mise a jour du serveur hote** : le redemarrage du serveur hebergeant le file share witness peut desactiver le partage ou changer les permissions.
+    - **Desactiver le quorum dynamique** : le quorum dynamique est active par defaut et ameliore la resilience lors des arrets planifies. Le desactiver reduit la tolerance aux pannes.
 
 ## Points cles a retenir
 

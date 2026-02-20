@@ -27,6 +27,10 @@ graph LR
     E --> H[Etat systeme]
 ```
 
+!!! example "Analogie"
+
+    Azure Backup avec l'agent MARS, c'est comme confier une copie de vos documents importants a un garde-meuble securise en dehors de votre maison. Si un incendie detruit votre maison (panne serveur, ransomware), vous pouvez recuperer vos documents au garde-meuble. La passphrase de chiffrement, c'est la cle unique du garde-meuble que seul vous possedez.
+
 ## Composants
 
 | Composant | Description |
@@ -135,6 +139,20 @@ $policy = Get-OBPolicy
 Start-OBBackup -Policy $policy
 ```
 
+Resultat :
+
+```text
+# Get-OBPolicy
+PolicyState     : Active
+PolicyName      : WinOpsLab-Backup-Policy
+BackupSchedule  : Daily at 22:00, 06:00
+RetentionPolicy : Retain daily for 30 days, weekly for 12 weeks
+
+# Start-OBBackup
+Backup job started. Job ID: {a8f42c10-d1b3-4e7f-95c2-3e4f8b6c7d1a}
+Backup started at: 2026-02-20 10:14:32
+```
+
 ## Restauration
 
 ### Restaurer des fichiers
@@ -190,6 +208,19 @@ $policy | Format-List
 Get-OBJob -Previous 5 | Select-Object JobStatus, StartTime, EndTime, WorkItemType
 ```
 
+Resultat :
+
+```text
+# Get-OBJob -Previous 5
+JobStatus  StartTime             EndTime               WorkItemType
+---------  ---------             -------               ------------
+Completed  2026-02-20 22:00:14   2026-02-20 22:47:38   Backup
+Completed  2026-02-19 22:00:11   2026-02-19 22:45:22   Backup
+Completed  2026-02-19 06:00:09   2026-02-19 06:41:15   Backup
+Completed  2026-02-18 22:00:13   2026-02-18 22:49:07   Backup
+Completed  2026-02-18 06:00:11   2026-02-18 06:42:33   Backup
+```
+
 ## Estimation des couts
 
 | Composant | Facturation |
@@ -204,6 +235,44 @@ Get-OBJob -Previous 5 | Select-Object JobStatus, StartTime, EndTime, WorkItemTyp
     - Utilisez **LRS** si les donnees sont deja repliquees localement
     - Ajustez les politiques de retention pour ne garder que le necessaire
     - Excluez les fichiers temporaires et les caches des sauvegardes
+
+!!! example "Scenario pratique"
+
+    **Context :** Emilie, administratrice systeme, recoit un appel a 9h : un utilisateur a supprime accidentellement un dossier entier (`D:\Partages\RH\Contrats\2025`) contenant 340 fichiers. SRV-FS01 est protege par Azure Backup (agent MARS, sauvegarde quotidienne a 22h).
+
+    **Etape 1 : Ouvrir la console MARS**
+
+    Emilie se connecte en RDP sur SRV-FS01 et ouvre la console MARS : `"C:\Program Files\Microsoft Azure Recovery Services Agent\bin\wabadmin.msc"`.
+
+    **Etape 2 : Lancer la restauration de fichiers**
+
+    Elle clique sur **Recuperer des donnees** > **Ce serveur** > **Fichiers et dossiers** > point de restauration du 19 fevrier 22:47 (la derniere sauvegarde).
+
+    **Etape 3 : Selectionner les elements**
+
+    Elle navigue jusqu'a `D:\Partages\RH\Contrats\2025` et selectionne le dossier complet.
+
+    **Etape 4 : Choisir la destination**
+
+    Emilie choisit **Autre emplacement** et specifie `D:\Restauration\2025-02-20` pour eviter d'ecraser des fichiers potentiellement existants.
+
+    **Etape 5 : Lancer et valider**
+
+    La restauration de 340 fichiers (environ 1,2 Go) prend 18 minutes. Emilie verifie l'integrite de quelques fichiers, puis deplace le dossier restaure vers son emplacement d'origine.
+
+    **Resultat :** L'utilisateur retrouve ses fichiers a 9h35. La perte de donnees se limite aux modifications effectuees entre 22h47 et l'heure de suppression (9h), soit moins de 11 heures de travail dans le pire cas, couvertes par d'autres sauvegardes locales.
+
+!!! danger "Erreurs courantes"
+
+    **Perdre ou oublier la passphrase de chiffrement.** C'est l'erreur la plus grave : sans la passphrase, toutes les sauvegardes sont irrecuperables, meme si le coffre Azure est intact. La passphrase doit etre stockee dans un gestionnaire de mots de passe ou un coffre physique, independamment du serveur sauvegarde.
+
+    **Sauvegarder les fichiers temporaires, les caches et les bases de donnees ouvertes.** Les bases SQL ou Exchange ne doivent pas etre sauvegardees avec MARS "a chaud" via le systeme de fichiers. Utiliser les sauvegardes applicatives natives (SQL Server Backup, Exchange-aware backup). MARS est adapte aux fichiers et a l'etat systeme.
+
+    **Ne pas tester la restauration.** Une sauvegarde n'est valable que si la restauration fonctionne. Planifier des tests de restauration trimestriels sur un environnement isole pour valider l'integrite des sauvegardes.
+
+    **Ignorer les alertes de sauvegarde manquee.** Si le serveur est eteint a l'heure planifiee, la sauvegarde est manquee sans retentative automatique. Verifier les travaux hebdomadairement dans le portail Azure (coffre > Travaux de sauvegarde).
+
+    **Choisir LRS pour des donnees critiques sans copie locale.** Le LRS (Locally Redundant Storage) replique les donnees dans le meme datacenter Azure. En cas de sinistre affectant la region entiere, les donnees seraient perdues. Pour des donnees critiques, privilegier GRS (Geo-Redundant Storage).
 
 ## Points cles a retenir
 

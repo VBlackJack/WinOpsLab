@@ -16,6 +16,10 @@ Les conteneurs Windows permettent d'executer des applications dans des environne
 
 ---
 
+!!! example "Analogie"
+
+    Un conteneur, c'est comme une chambre dans un hotel. Chaque chambre est isolee, avec sa propre cle, sa propre decoration et ses propres affaires — mais elles partagent toutes le meme batiment, le meme ascenseur, la meme electricite. Si vous avez besoin d'un isolement total (une maison entiere), vous prenez une VM — mais cela coute plus cher et prend plus de temps a preparer. Le conteneur, c'est la chambre d'hotel : rapide a preparer, efficace pour l'usage prevu, et des dizaines peuvent coexister dans le meme immeuble.
+
 ## Qu'est-ce qu'un conteneur ?
 
 Un conteneur est une instance isolee d'un systeme d'exploitation qui partage le noyau de l'hote. Contrairement a une VM, il ne virtualise pas le materiel mais isole les processus, le systeme de fichiers et le reseau.
@@ -119,6 +123,18 @@ docker pull mcr.microsoft.com/windows/nanoserver:ltsc2022
 docker images
 ```
 
+Resultat :
+
+```text
+ltsc2022: Pulling from windows/servercore
+Digest: sha256:4a7d2d7e8f3c1b9a6e5f0d2c8b3a4e7f...
+Status: Downloaded newer image for mcr.microsoft.com/windows/servercore:ltsc2022
+
+REPOSITORY                                    TAG       IMAGE ID       CREATED        SIZE
+mcr.microsoft.com/windows/servercore          ltsc2022  a1b2c3d4e5f6   3 weeks ago    2.79GB
+mcr.microsoft.com/windows/nanoserver          ltsc2022  b2c3d4e5f6a7   3 weeks ago    277MB
+```
+
 !!! tip "Nano Server"
 
     Privilegiez **Nano Server** pour les nouvelles applications (.NET 6+, Node.js, Python). Sa taille reduite offre une surface d'attaque minimale et des temps de deploiement rapides.
@@ -181,6 +197,14 @@ docker run -d --name secure-app --isolation=hyperv `
 
 # Check isolation mode of a running container
 docker inspect --format='{{.HostConfig.Isolation}}' secure-app
+```
+
+Resultat :
+
+```text
+c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8
+
+hyperv
 ```
 
 ---
@@ -251,6 +275,74 @@ docker stats --no-stream
 ```
 
 ---
+
+!!! example "Scenario pratique"
+
+    **Contexte :** Lucas est developpeur .NET dans une equipe qui livre deux applications web : une ancienne application `.NET Framework 4.8` (qui necessite Windows Server Core) et une nouvelle API `.NET 8` (qui tourne sur Nano Server). Les deux doivent coexister sur le meme serveur `SRV-01` (Windows Server 2022).
+
+    **Probleme :** Sans conteneurs, les deux applications partagent les memes pools IIS et peuvent interferer. Avec des VMs, le cout en ressources est trop eleve pour ce besoin.
+
+    **Solution :** Lucas deploie chaque application dans son propre conteneur :
+
+    ```powershell
+    # Step 1: Run the legacy .NET Framework app (Server Core, process isolation)
+    docker run -d --name legacy-app `
+        -p 8080:80 `
+        --isolation=process `
+        mcr.microsoft.com/dotnet/framework/aspnet:4.8-windowsservercore-ltsc2022
+    ```
+
+    ```text
+    Unable to find image 'mcr.microsoft.com/dotnet/framework/aspnet:4.8-windowsservercore-ltsc2022' locally
+    4.8-windowsservercore-ltsc2022: Pulling from dotnet/framework/aspnet
+    ...
+    Status: Downloaded newer image
+    d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4
+    ```
+
+    ```powershell
+    # Step 2: Run the .NET 8 API (Nano Server, process isolation)
+    docker run -d --name modern-api `
+        -p 5000:5000 `
+        --isolation=process `
+        mcr.microsoft.com/dotnet/aspnet:8.0-nanoserver-ltsc2022
+    ```
+
+    ```powershell
+    # Step 3: Verify both containers are running
+    docker ps --format "table {{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}"
+    ```
+
+    ```text
+    NAMES         IMAGE                                                    STATUS          PORTS
+    modern-api    mcr.microsoft.com/dotnet/aspnet:8.0-nanoserver-ltsc2022  Up 2 minutes    0.0.0.0:5000->5000/tcp
+    legacy-app    mcr.microsoft.com/dotnet/framework/aspnet:4.8-...        Up 3 minutes    0.0.0.0:8080->80/tcp
+    ```
+
+    ```powershell
+    # Step 4: Check resource usage
+    docker stats --no-stream
+    ```
+
+    ```text
+    CONTAINER     CPU %   MEM USAGE / LIMIT   MEM %
+    modern-api    0.02%   182MiB / 16GiB      1.11%
+    legacy-app    0.05%   412MiB / 16GiB      2.51%
+    ```
+
+    Les deux applications coexistent sur le meme hote, completement isolees, en consommant ensemble moins de 600 Mo de RAM — soit bien moins qu'une VM supplementaire.
+
+!!! danger "Erreurs courantes"
+
+    **Incompatibilite de version du noyau** — En mode Process Isolation, la version du noyau Windows de l'image doit correspondre a celle de l'hote (meme build ou version compatible). Si vous tirez une image `ltsc2019` sur un hote `ltsc2022` en mode process, le conteneur peut refuser de demarrer. Utilisez Hyper-V Isolation pour contourner cette contrainte.
+
+    **Donnees dans le conteneur sans volume** — Toutes les donnees ecrites dans le systeme de fichiers d'un conteneur sont perdues a sa suppression. Pour toute donnee persistante (logs, bases de donnees, uploads), montez toujours un volume ou un bind mount.
+
+    **Port deja utilise sur l'hote** — Si le port hote est deja occupe (par IIS, un autre conteneur ou un service), le `docker run` echoue avec "port already in use". Verifiez avec `netstat -ano | findstr :8080` avant de lancer.
+
+    **Conteneur arrete vs conteneur supprime** — `docker stop` arrete le conteneur mais le conserve. `docker rm` le supprime definitivement. `docker ps` ne montre que les conteneurs en cours d'execution. Utilisez `docker ps -a` pour voir tous les conteneurs, y compris les arretes.
+
+    **Image trop volumineuse** — Windows Server Core pese pres de 3 Go et l'image complète Windows depasse 6 Go. Pour les nouvelles applications, privilegiez Nano Server (277 Mo). La taille de l'image impacte directement le temps de deploiement et l'espace disque du registre.
 
 ## Points cles a retenir
 

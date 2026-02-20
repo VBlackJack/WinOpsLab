@@ -19,6 +19,10 @@ Les modeles de certificats (Certificate Templates) definissent les proprietes de
 
 ## Principe des modeles
 
+!!! example "Analogie"
+
+    Un modele de certificat est comparable a un formulaire administratif pre-rempli : le formulaire de passeport (modele) definit les champs obligatoires, les pieces justificatives et les droits du titulaire. Vous ne remplissez pas un formulaire de passeport pour demander un permis de conduire. De meme, chaque type de certificat a son propre modele adapte a son usage.
+
 Un modele de certificat est un objet stocke dans Active Directory qui definit :
 
 - Le **type de certificat** : serveur, utilisateur, code signing, etc.
@@ -85,6 +89,21 @@ $templateContainer = "CN=Certificate Templates,CN=Public Key Services,CN=Service
 Get-ADObject -SearchBase $templateContainer -Filter { objectClass -eq "pKICertificateTemplate" } |
     Select-Object Name, DistinguishedName |
     Sort-Object Name
+```
+
+Resultat :
+
+```text
+Name                    DistinguishedName
+----                    -----------------
+ClientAuth              CN=ClientAuth,CN=Certificate Templates,CN=Public Key Services,...
+CodeSigning             CN=CodeSigning,CN=Certificate Templates,CN=Public Key Services,...
+Computer                CN=Computer,CN=Certificate Templates,CN=Public Key Services,...
+DomainController        CN=DomainController,CN=Certificate Templates,CN=Public Key Services,...
+EFS                     CN=EFS,CN=Certificate Templates,CN=Public Key Services,...
+Lab-WebServer           CN=Lab-WebServer,CN=Certificate Templates,CN=Public Key Services,...
+User                    CN=User,CN=Certificate Templates,CN=Public Key Services,...
+WebServer               CN=WebServer,CN=Certificate Templates,CN=Public Key Services,...
 ```
 
 !!! tip "Versions de modele"
@@ -179,6 +198,20 @@ dsacls $templateDN
 # - "PKI-Template-Managers" : administrators who manage templates
 ```
 
+Resultat :
+
+```text
+Access list:
+  {Enroll}
+    Allow LAB\PKI-WebServer-Enroll   SPECIAL ACCESS
+                                       Enroll
+                                       Autoenroll
+    Allow LAB\Domain Admins          FULL CONTROL
+    Allow LAB\Enterprise Admins      FULL CONTROL
+    Allow NT AUTHORITY\Authenticated Users
+                                       READ
+```
+
 ### Recommandations
 
 - Creer des **groupes de securite dedies** pour chaque modele (`PKI-<Template>-Enroll`)
@@ -211,6 +244,18 @@ certutil -SetCATemplates +$templateName
 
 # Verify published templates
 certutil -CATemplates
+```
+
+Resultat :
+
+```text
+CertUtil: -SetCATemplates command completed successfully.
+
+Lab-WebServer -- Lab-WebServer
+DomainController -- Domain Controller
+Computer -- Computer
+User -- User
+WebServer -- Web Server
 ```
 
 ### Retirer un modele de la publication
@@ -294,6 +339,57 @@ certreq -submit -config "LAB-SUB-CA\Lab-SUB-CA" "C:\Temp\certrequest.req" "C:\Te
 # Install the certificate
 certreq -accept "C:\Temp\certresponse.cer"
 ```
+
+---
+
+## Scenario pratique
+
+!!! example "Scenario pratique"
+
+    **Contexte** : Lucas, administrateur PKI, doit creer un modele de certificat pour les serveurs web internes. Les developpeurs doivent pouvoir demander des certificats SSL pour leurs applications hebergees sur IIS, mais il faut eviter qu'ils puissent generer des certificats pour des noms de domaine qu'ils ne gerent pas.
+
+    **Solution** :
+
+    1. Dupliquer le modele `Web Server` integre via `certtmpl.msc`
+    2. Nommer le nouveau modele `Lab-WebServer`
+    3. Configurer les proprietes :
+
+    ```powershell
+    # Verify the template exists after creation
+    $configContext = ([ADSI]"LDAP://RootDSE").configurationNamingContext
+    $templateDN = "CN=Lab-WebServer,CN=Certificate Templates,CN=Public Key Services,CN=Services,$configContext"
+    Get-ADObject -Identity $templateDN -Properties DisplayName, msPKI-Cert-Template-OID
+    ```
+
+    Resultat :
+
+    ```text
+    DisplayName                : Lab-WebServer
+    DistinguishedName          : CN=Lab-WebServer,CN=Certificate Templates,...
+    msPKI-Cert-Template-OID    : 1.3.6.1.4.1.311.21.8.12345678.1234567.1234567
+    ```
+
+    4. Configurer la securite : seul le groupe `PKI-WebServer-Enroll` peut demander un certificat
+    5. Activer l'approbation par un gestionnaire de CA pour les demandes avec `Supply in the request`
+    6. Publier le modele sur la CA :
+
+    ```powershell
+    certutil -SetCATemplates +Lab-WebServer
+    ```
+
+    Lucas cree ensuite le groupe `PKI-WebServer-Enroll` dans AD et y ajoute les comptes machine des serveurs web autorises.
+
+---
+
+!!! danger "Erreurs courantes"
+
+    1. **Modifier le modele original au lieu de le dupliquer** : les modeles integres peuvent etre reinitialises par des mises a jour Windows. Toute personnalisation serait perdue. Dupliquez toujours avant de modifier.
+
+    2. **Accorder `Enroll` a `Authenticated Users` sur un modele avec `Supply in the request`** : n'importe quel utilisateur du domaine pourrait demander un certificat pour n'importe quel nom DNS, permettant des attaques de type man-in-the-middle. Restreignez les permissions et activez l'approbation manuelle.
+
+    3. **Oublier de publier le modele sur la CA** : un modele cree dans AD n'est pas automatiquement disponible. Sans la publication via `certsrv.msc` ou `certutil -SetCATemplates`, les demandes echoueront avec l'erreur "template not found".
+
+    4. **Utiliser des modeles version 1 pour de nouvelles installations** : les modeles v1 ne supportent ni l'auto-enrollment, ni l'archivage de cle, ni les algorithmes CNG modernes. Privilegiez les versions 3 ou 4.
 
 ---
 

@@ -13,6 +13,10 @@ tags:
 
 ## Concept
 
+!!! example "Analogie"
+
+    Les niveaux fonctionnels fonctionnent comme les **regles d'un immeuble en copropriete**. Tant qu'un copropietaire (DC) possede un ancien reglement (version ancienne de Windows Server), tout l'immeuble doit suivre les anciennes regles. Pour adopter de nouvelles fonctionnalites (ascenseur connecte, interphone video), il faut d'abord que tous les copropietaires aient mis a jour leur reglement. Et une fois les nouvelles regles adoptees, impossible de revenir en arriere.
+
 Les **niveaux fonctionnels** determinent les fonctionnalites AD disponibles. Ils dependent de la version minimale de Windows Server parmi tous les DC.
 
 !!! warning "Elevation irreversible"
@@ -76,6 +80,19 @@ Get-ADDomainController -Filter * |
     Select-Object Name, OperatingSystem, OperatingSystemVersion
 ```
 
+Resultat :
+
+```text
+Windows2016Domain
+
+Windows2016Forest
+
+Name  OperatingSystem                OperatingSystemVersion
+----  ---------------                ----------------------
+DC-01 Windows Server 2022 Datacenter 10.0 (20348)
+DC-02 Windows Server 2022 Standard   10.0 (20348)
+```
+
 ## Elever le niveau fonctionnel
 
 ### Prerequis
@@ -91,11 +108,27 @@ Get-ADDomainController -Filter * |
 Set-ADDomainMode -Identity "lab.local" -DomainMode Windows2016Domain -Confirm:$false
 ```
 
+Resultat :
+
+```text
+# Verify after elevation
+PS> (Get-ADDomain).DomainMode
+Windows2016Domain
+```
+
 ### Elever le niveau de la foret
 
 ```powershell
 # Raise forest functional level (after all domains are at the target level)
 Set-ADForestMode -Identity "lab.local" -ForestMode Windows2016Forest -Confirm:$false
+```
+
+Resultat :
+
+```text
+# Verify after elevation
+PS> (Get-ADForest).ForestMode
+Windows2016Forest
 ```
 
 ## Fonctionnalites debloquees par niveau
@@ -121,6 +154,73 @@ Set-ADForestMode -Identity "lab.local" -ForestMode Windows2016Forest -Confirm:$f
 - L'elevation est irreversible
 - Verifiez la replication et sauvegardez avant d'elever
 - Les nouvelles fonctionnalites de securite (Protected Users, PAM) necessitent des niveaux eleves
+
+!!! example "Scenario pratique"
+
+    **Contexte :** Lucas, administrateur AD, souhaite activer la fonctionnalite **AD Recycle Bin** pour pouvoir restaurer des objets supprimes accidentellement. La commande `Enable-ADOptionalFeature` echoue avec l'erreur « The forest is not at a functional level that can support this feature ».
+
+    **Diagnostic :**
+
+    ```powershell
+    # Check current levels
+    (Get-ADForest).ForestMode
+    (Get-ADDomain).DomainMode
+
+    # Check all DC versions to see if elevation is possible
+    Get-ADDomainController -Filter * |
+        Select-Object Name, OperatingSystem, OperatingSystemVersion
+    ```
+
+    Resultat :
+
+    ```text
+    Windows2008R2Domain
+
+    Windows2008R2Domain
+
+    Name  OperatingSystem                OperatingSystemVersion
+    ----  ---------------                ----------------------
+    DC-01 Windows Server 2022 Datacenter 10.0 (20348)
+    DC-02 Windows Server 2012 R2 Standard 6.3 (9600)
+    ```
+
+    Le niveau fonctionnel est bloque a 2008 R2 car `DC-02` est un ancien serveur sous Windows Server 2012 R2. La Corbeille AD necessite au minimum le niveau 2008 R2 (qui est atteint), mais Lucas souhaite aussi les fonctionnalites du niveau 2012 R2 (Protected Users, Authentication Policies).
+
+    **Solution :**
+
+    ```powershell
+    # Step 1: AD Recycle Bin works at 2008 R2 level - enable it directly
+    Enable-ADOptionalFeature -Identity "Recycle Bin Feature" `
+        -Scope ForestOrConfigurationSet -Target "lab.local" -Confirm:$false
+
+    # Step 2: To go higher, first migrate DC-02 to WS 2022
+    # After DC-02 migration, raise both levels
+    Set-ADDomainMode -Identity "lab.local" -DomainMode Windows2016Domain -Confirm:$false
+    Set-ADForestMode -Identity "lab.local" -ForestMode Windows2016Forest -Confirm:$false
+
+    # Verify
+    (Get-ADForest).ForestMode
+    ```
+
+    Resultat :
+
+    ```text
+    Windows2016Forest
+    ```
+
+    Lucas peut maintenant profiter de toutes les fonctionnalites jusqu'au niveau 2016 : Protected Users, Authentication Policies, PAM et chiffrement AES Kerberos.
+
+!!! danger "Erreurs courantes"
+
+    1. **Elever le niveau sans verifier tous les DC** : si un DC ancien est hors ligne ou oublie dans un site distant, l'elevation peut provoquer des erreurs de replication et l'isoler definitivement du domaine.
+
+    2. **Penser que l'elevation est reversible** : une fois le niveau fonctionnel eleve, il est **impossible** de revenir en arriere. Il faut etre certain que tous les DC sont prets et qu'aucun nouveau DC d'ancienne version ne sera ajoute.
+
+    3. **Confondre version de l'OS et niveau fonctionnel** : un DC sous Windows Server 2022 peut parfaitement fonctionner avec un niveau fonctionnel 2008 R2. Le niveau depend du DC le plus ancien, pas du plus recent.
+
+    4. **Ne pas sauvegarder avant l'elevation** : bien que l'elevation soit generalement sans risque, une sauvegarde complete de l'AD (`System State`) est indispensable avant toute operation irreversible.
+
+    5. **Ne pas verifier la replication avant l'elevation** : utilisez `repadmin /replsummary` pour confirmer que tous les DC repliquent correctement. Elever le niveau pendant un probleme de replication peut provoquer des incoherences.
 
 ## Pour aller plus loin
 

@@ -16,6 +16,10 @@ tags:
 
 ## Prerequis
 
+!!! example "Analogie"
+
+    Installer un serveur DHCP, c'est comme ouvrir un guichet de distribution de badges dans une entreprise. Avant d'ouvrir le guichet, il faut un local fixe (IP statique), l'autorisation de la direction (autorisation dans Active Directory), et un registre pour savoir qui a recu quel badge (journal d'audit). Sans l'autorisation de la direction, le guichet ne peut pas distribuer de badges, meme s'il est physiquement installe.
+
 Avant d'installer le role DHCP, verifiez les points suivants :
 
 | Prerequis                        | Detail                                                |
@@ -43,6 +47,18 @@ Avant d'installer le role DHCP, verifiez les points suivants :
 
     # Verify the installation
     Get-WindowsFeature -Name DHCP
+    ```
+
+    Resultat :
+
+    ```text
+    Success Restart Needed Exit Code      Feature Result
+    ------- -------------- ---------      --------------
+    True    No             Success        {DHCP Server, DHCP Server Tools}
+
+    Display Name                                            Name       Install State
+    ------------                                            ----       -------------
+    [X] DHCP Server                                         DHCP       Installed
     ```
 
     Le parametre `-IncludeManagementTools` installe automatiquement la console
@@ -131,6 +147,16 @@ flowchart TD
         -Name "ConfigurationState" -Value 2
     ```
 
+    Resultat :
+
+    ```text
+    PS> Get-DhcpServerInDC
+
+    IPAddress        DnsName
+    ---------        -------
+    10.0.0.10        SRV-DHCP01.lab.local
+    ```
+
 === "GUI"
 
     1. Ouvrir la console **DHCP** (`dhcpmgmt.msc`)
@@ -168,6 +194,31 @@ Get-LocalGroup | Where-Object { $_.Name -like "*DHCP*" }
 
 # Check Windows Firewall rules for DHCP
 Get-NetFirewallRule -DisplayGroup "DHCP Server" | Select-Object DisplayName, Enabled, Direction
+```
+
+Resultat :
+
+```text
+PS> Get-Service -Name DHCPServer
+
+Status   Name          DisplayName
+------   ----          -----------
+Running  DHCPServer    DHCP Server
+
+PS> Get-LocalGroup | Where-Object { $_.Name -like "*DHCP*" }
+
+Name                       Description
+----                       -----------
+DHCP Administrators        Members who have administrator access to the DHCP service
+DHCP Users                 Members who have view-only access to the DHCP service
+
+PS> Get-NetFirewallRule -DisplayGroup "DHCP Server" | Select-Object DisplayName, Enabled, Direction
+
+DisplayName                          Enabled  Direction
+-----------                          -------  ---------
+DHCP Server v4 (UDP-In)              True     Inbound
+DHCP Server v6 (UDP-In)              True     Inbound
+DHCP Server Failover (TCP-In)        True     Inbound
 ```
 
 ---
@@ -303,6 +354,56 @@ Get-DhcpServerInDC
 ```
 
 ---
+
+!!! example "Scenario pratique"
+
+    **Situation** : Alexandre, administrateur junior, vient d'installer le role DHCP sur `SRV-01` et a cree une etendue. Pourtant, aucun client ne recoit d'adresse IP. La console DHCP affiche le serveur avec une icone rouge.
+
+    **Diagnostic** :
+
+    ```powershell
+    # Etape 1 : Verifier si le service DHCP est demarre
+    Get-Service -Name DHCPServer -ComputerName "SRV-01"
+    ```
+
+    Resultat : le service est bien en cours d'execution.
+
+    ```powershell
+    # Etape 2 : Verifier l'autorisation dans Active Directory
+    Get-DhcpServerInDC
+    ```
+
+    Resultat : la liste est vide. Le serveur n'est pas autorise dans AD.
+
+    ```powershell
+    # Etape 3 : Verifier les journaux d'evenements
+    Get-WinEvent -LogName "Microsoft-Windows-DHCP-Server/Operational" -MaxEvents 5 -ComputerName "SRV-01"
+    ```
+
+    Resultat : l'evenement indique "The DHCP service is not authorized in this domain."
+
+    **Solution** :
+
+    ```powershell
+    # Autoriser le serveur DHCP dans Active Directory
+    Add-DhcpServerInDC -DnsName "SRV-01.lab.local" -IPAddress 10.0.0.20
+
+    # Redemarrer le service pour appliquer
+    Restart-Service -Name DHCPServer
+
+    # Verifier
+    Get-DhcpServerInDC
+    ```
+
+    L'icone du serveur passe au vert et les clients commencent a recevoir des adresses IP.
+
+!!! danger "Erreurs courantes"
+
+    - **Installer DHCP sur un serveur avec une IP obtenue par DHCP** : le serveur DHCP doit imperativement avoir une adresse IP statique. Un serveur DHCP qui obtient sa propre adresse par DHCP peut changer d'adresse et devenir injoignable par les agents relais.
+    - **Oublier l'autorisation dans Active Directory** : c'est l'erreur la plus frequente. Sans autorisation, le serveur DHCP detecte qu'il n'est pas approuve et refuse de distribuer des adresses. Verifiez toujours avec `Get-DhcpServerInDC`.
+    - **Ne pas creer les groupes de securite DHCP** : oublier l'etape post-installation qui cree les groupes "Administrateurs DHCP" et "Utilisateurs DHCP" peut causer des problemes de permissions lors de l'administration.
+    - **Activer la detection de conflits avec trop de tentatives** : une valeur de 5 ou plus ralentit considerablement l'attribution des adresses. Utilisez 1 ou 2 tentatives au maximum en production.
+    - **Ne pas activer la mise a jour dynamique DNS** : sans cette option, les clients DHCP ne sont pas automatiquement enregistres dans le DNS, ce qui complique la resolution de noms sur le reseau.
 
 ## Points cles a retenir
 

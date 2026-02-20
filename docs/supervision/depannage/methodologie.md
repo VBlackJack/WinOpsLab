@@ -15,6 +15,14 @@ tags:
 
 Le depannage efficace repose sur une methode structuree, et non sur de l'intuition. Une approche methodique permet de resoudre les problemes plus rapidement, d'eviter les actions contre-productives et de capitaliser sur les incidents passes.
 
+!!! example "Analogie"
+
+    Le depannage methodique fonctionne comme un **medecin face a un patient**. Le medecin ne
+    prescrit jamais un medicament au hasard : il pose des questions (symptomes), fait des examens
+    (tests), elimine les hypotheses une par une (diagnostic differentiel) et ne traite qu'apres
+    avoir identifie la cause. Redemarrer un serveur sans comprendre, c'est comme donner un
+    antidouleur sans chercher l'origine de la douleur.
+
 ## Les 6 etapes du depannage
 
 ```mermaid
@@ -136,6 +144,28 @@ Test-NetConnection -ComputerName SRV-DC01 -Port 389  # LDAP
 Test-NetConnection -ComputerName SRV-DC01 -Port 53   # DNS
 ```
 
+Resultat :
+
+```text
+# Test-NetConnection -ComputerName SRV-DC01
+ComputerName     : SRV-DC01
+RemoteAddress    : 10.0.0.10
+InterfaceAlias   : Ethernet
+SourceAddress    : 10.0.0.20
+PingSucceeded    : True
+PingReplyDetails (RTT) : 1 ms
+
+# Get-NetAdapter
+Name       Status    LinkSpeed
+----       ------    ---------
+Ethernet   Up        1 Gbps
+
+# Test-NetConnection -ComputerName SRV-DC01 -Port 389
+ComputerName     : SRV-DC01
+RemotePort       : 389
+TcpTestSucceeded : True
+```
+
 ## Collecte d'informations initiale
 
 ### Script de diagnostic rapide
@@ -173,6 +203,45 @@ Get-NetIPConfiguration | Select-Object InterfaceAlias, IPv4Address,
     IPv4DefaultGateway, DNSServer
 ```
 
+Resultat :
+
+```text
+=== System Information ===
+CsName                : SRV-01
+WindowsProductName    : Windows Server 2022 Standard
+OsVersion             : 10.0.20348
+OsArchitecture        : 64 bits
+CsTotalPhysicalMemory : 17179869184
+
+=== Uptime ===
+Days              : 12
+Hours             : 7
+Minutes           : 43
+
+=== Disk Space ===
+DriveLetter FileSystemLabel SizeGB FreeGB FreePercent
+----------- --------------- ------ ------ -----------
+C           System          127.00  42.30        33.3
+D           Data            500.00 312.50        62.5
+
+=== Recent Critical/Error Events (last 24h) ===
+TimeCreated           LogName     Id LevelDisplayName Message
+-----------           -------     -- --------------- -------
+2026-02-20 10:28:45   System    7034 Error           The DNS Client service terminated...
+2026-02-20 08:15:22   Application 1000 Error          Faulting application name: w3wp.exe...
+
+=== Stopped Services (that should be running) ===
+Name        DisplayName                     Status
+----        -----------                     ------
+spooler     Print Spooler                   Stopped
+BITS        Background Intelligent Transfer Stopped
+
+=== Network Configuration ===
+InterfaceAlias IPv4Address   IPv4DefaultGateway DNSServer
+-------------- -----------   ------------------ ---------
+Ethernet       10.0.0.20     10.0.0.1           10.0.0.10
+```
+
 ## Erreurs courantes a eviter
 
 !!! danger "Anti-patterns"
@@ -204,6 +273,54 @@ Get-NetIPConfiguration | Select-Object InterfaceAlias, IPv4Address,
 - Toujours collecter les informations avant d'agir : journaux, compteurs, configuration
 - **Documenter chaque incident** : la capitalisation evite de repeter les memes erreurs
 - Preparer un plan de retour arriere avant toute modification
+
+!!! example "Scenario pratique"
+
+    **Contexte :** Alexandre, administrateur junior, recoit un appel du service comptabilite :
+    l'application de facturation hebergee sur SRV-WEB01 ne repond plus depuis 10 minutes.
+
+    **Diagnostic (approche divide-and-conquer) :**
+
+    1. Test couche 3 (reseau) depuis son poste :
+
+    ```powershell
+    Test-NetConnection -ComputerName SRV-WEB01
+    ```
+    Resultat : `PingSucceeded: True` -- le serveur est joignable.
+
+    2. Test couche 4 (port applicatif) :
+
+    ```powershell
+    Test-NetConnection -ComputerName SRV-WEB01 -Port 443
+    ```
+    Resultat : `TcpTestSucceeded: False` -- le port HTTPS ne repond pas.
+
+    3. Il se connecte a SRV-WEB01 et verifie le service IIS :
+
+    ```powershell
+    Get-Service W3SVC
+    ```
+    Resultat : `Status: Stopped` -- le service IIS est arrete.
+
+    4. Il consulte les journaux pour comprendre pourquoi :
+
+    ```powershell
+    Get-WinEvent -FilterHashtable @{LogName='System'; Id=7034; StartTime=(Get-Date).AddHours(-1)}
+    ```
+    Resultat : le service W3SVC s'est arrete inopinement a cause d'un crash du pool d'applications.
+
+    **Resolution :** Alexandre redemarre le service IIS (`Start-Service W3SVC`), verifie que l'application fonctionne, puis investigue le crash du pool dans les journaux applicatifs. Il documente l'incident avec la cause, les etapes suivies et la solution.
+
+!!! danger "Erreurs courantes"
+
+    - **Agir avant de comprendre** : modifier la configuration ou redemarrer des services sans
+      avoir identifie la cause risque d'aggraver la situation ou de masquer les indices
+    - **Ne pas documenter ses actions** : si vous avez teste 5 hypotheses, notez-les toutes.
+      Sans documentation, vous risquez de tourner en rond
+    - **Oublier la question "Qu'est-ce qui a change ?"** : dans 80% des cas, un incident
+      est declenche par un changement recent (mise a jour, modification de GPO, nouvel equipement)
+    - **Sauter les etapes simples** : verifier le cable reseau, l'espace disque ou l'etat d'un
+      service avant de chercher un probleme complexe
 
 ## Pour aller plus loin
 

@@ -21,6 +21,10 @@ La **corbeille Active Directory** (AD Recycle Bin) est une fonctionnalite qui pe
 
     La corbeille AD necessite un **niveau fonctionnel de foret** minimum de Windows Server 2008 R2. Verifiez le niveau fonctionnel avant d'activer la fonctionnalite.
 
+!!! example "Analogie"
+
+    La corbeille Active Directory fonctionne exactement comme la corbeille du bureau d'un ordinateur. Quand vous supprimez un fichier, il va dans la corbeille et vous pouvez le restaurer avec tous ses attributs intacts (nom, date, contenu). Sans la corbeille AD, supprimer un compte utilisateur revient a utiliser "Supprimer definitivement" (Shift+Suppr) : l'objet disparait immediatement et ses attributs sont effaces. Avec la corbeille AD, il suffit de faire un clic droit > Restaurer pour recuperer le compte avec tous ses groupes, ses mots de passe speciaux et ses permissions.
+
 ## Cycle de vie d'un objet AD supprime
 
 ### Sans la corbeille AD
@@ -69,6 +73,14 @@ stateDiagram-v2
     -Properties tombstoneLifetime).tombstoneLifetime
 ```
 
+Resultat :
+
+```text
+180
+
+180
+```
+
 ## Verification du niveau fonctionnel
 
 ```powershell
@@ -106,6 +118,18 @@ Enable-ADOptionalFeature `
 Get-ADOptionalFeature -Filter 'Name -like "Recycle*"' | Format-List Name, EnabledScopes
 ```
 
+Resultat :
+
+```text
+Confirm
+Are you sure you want to perform this action?
+Performing the operation "Enable" on target "Recycle Bin Feature:CN=Recycle Bin Feature,CN=Optional Features,...".
+[Y] Yes [A] Yes to All [N] No [L] No to All [S] Suspend [?] Help (default is "Y"): Y
+
+Name          : Recycle Bin Feature
+EnabledScopes : {CN=Partitions,CN=Configuration,DC=lab,DC=local}
+```
+
 ### Via Active Directory Administrative Center (ADAC)
 
 1. Ouvrir **Active Directory Administrative Center** (`dsac.exe`)
@@ -139,6 +163,25 @@ Get-ADObject -Filter 'IsDeleted -eq $true -and Name -like "*jdupont*"' `
 # Restore a deleted user to a different OU
 Get-ADObject -Filter 'IsDeleted -eq $true -and Name -like "*jdupont*"' `
     -IncludeDeletedObjects | Restore-ADObject -TargetPath "OU=Users,DC=yourdomain,DC=local"
+```
+
+Resultat :
+
+```text
+Name                  ObjectClass  WhenChanged           IsDeleted
+----                  -----------  -----------           ---------
+jdupont\0ADEL:abc123  user         20/02/2026 14:23:11   True
+GRP-Finance\0ADEL:xyz group        19/02/2026 09:10:05   True
+OU-Marketing\0ADEL:fg  org.Unit   18/02/2026 16:45:22   True
+
+DistinguishedName : CN=jdupont\0ADEL:abc123,...,CN=Deleted Objects,...
+Name              : jdupont
+SamAccountName    : jdupont
+DisplayName       : Jean Dupont
+Department        : Comptabilite
+Manager           : CN=Marie Martin,...
+
+(Restore-ADObject ne produit pas de sortie en cas de succes)
 ```
 
 ### Restaurer une OU et son contenu
@@ -221,6 +264,82 @@ Get-ADOrganizationalUnit -Filter * | Set-ADOrganizationalUnit -ProtectedFromAcci
 Get-ADOrganizationalUnit -Filter * -Properties ProtectedFromAccidentalDeletion |
     Select-Object Name, ProtectedFromAccidentalDeletion
 ```
+
+!!! example "Scenario pratique"
+
+    **Contexte :** Emilie est administratrice AD dans une entreprise de 300 personnes (domaine `lab.local`). Lors d'une reorganisation, un technicien junior a supprime par erreur l'OU `OU=Comptabilite` qui contenait 22 comptes utilisateurs et 4 groupes. La suppression a ete effectuee il y a 2 heures. Les utilisateurs de la comptabilite ne peuvent plus se connecter.
+
+    **Verification de la corbeille AD :**
+
+    ```powershell
+    # Check if AD Recycle Bin is enabled
+    Get-ADOptionalFeature -Filter 'Name -like "Recycle*"' | Select-Object Name, EnabledScopes
+    ```
+
+    ```text
+    Name               EnabledScopes
+    ----               -------------
+    Recycle Bin Feature {CN=Partitions,CN=Configuration,DC=lab,DC=local}
+    ```
+
+    La corbeille est active. Emilie peut restaurer les objets.
+
+    ```powershell
+    # Step 1: Find the deleted OU
+    Get-ADObject -Filter 'IsDeleted -eq $true -and Name -like "*Comptabilite*"' `
+        -IncludeDeletedObjects -Properties WhenChanged | Select-Object Name, WhenChanged
+    ```
+
+    ```text
+    Name                              WhenChanged
+    ----                              -----------
+    Comptabilite\0ADEL:f1e2d3c4-...   20/02/2026 14:23:11
+    ```
+
+    ```powershell
+    # Step 2: Restore the OU first (container before its contents)
+    Get-ADObject -Filter 'IsDeleted -eq $true -and Name -like "*Comptabilite*" -and ObjectClass -eq "organizationalUnit"' `
+        -IncludeDeletedObjects | Restore-ADObject
+
+    # Step 3: Restore all users and groups that were in the OU
+    $deleted = Get-ADObject -Filter 'IsDeleted -eq $true -and LastKnownParent -like "*OU=Comptabilite*"' `
+        -IncludeDeletedObjects -Properties ObjectClass, DisplayName
+    $deleted | ForEach-Object {
+        Restore-ADObject -Identity $_
+        Write-Host "Restored: $($_.DisplayName) ($($_.ObjectClass))"
+    }
+    ```
+
+    ```text
+    Restored: Jean Dupont (user)
+    Restored: Marie Martin (user)
+    Restored: Pierre Leclerc (user)
+    ... (22 utilisateurs + 4 groupes)
+    Restored: GRP-Comptabilite-RW (group)
+    ```
+
+    ```powershell
+    # Step 4: Verify users can be found again
+    Get-ADUser -Filter 'Department -eq "Comptabilite"' | Measure-Object
+    ```
+
+    ```text
+    Count : 22
+    ```
+
+    L'integralite des 22 comptes et des 4 groupes a ete restauree en 4 minutes, avec tous leurs attributs (mot de passe, groupes d'appartenance, profil). Les utilisateurs ont pu se reconnecter immediatement.
+
+!!! danger "Erreurs courantes"
+
+    **Restaurer les objets enfants avant le conteneur** — Si l'OU a ete supprimee avec son contenu, il faut restaurer l'OU en premier, puis les objets qu'elle contenait. Inverser cet ordre fait echouer la restauration car les objets enfants n'ont plus de conteneur valide.
+
+    **La corbeille AD n'est pas encore activee** — Si la corbeille n'a pas ete activee avant la suppression, les objets passent directement en etat tombstone et perdent la plupart de leurs attributs. Sans corbeille, la seule option est une restauration authoritative depuis une sauvegarde — bien plus complexe.
+
+    **Elever le niveau fonctionnel sans verifier tous les DC** — L'elevation du niveau fonctionnel de la foret echoue si un DC execute une version de Windows Server anterieure au niveau cible. Verifiez tous les DC avec `Get-ADDomainController -Filter *` avant de proceder.
+
+    **Confondre la duree de vie "Deleted" et "Recycled"** — La periode de 180 jours pendant laquelle tous les attributs sont conserves correspond a l'etat "Deleted". Apres, l'objet passe en etat "Recycled" et perd la plupart de ses attributs (comme un tombstone classique). Ne vous fiez pas a la duree de vie du tombstone pour estimer la fenetre de restauration complete.
+
+    **Negliger la protection contre la suppression accidentelle** — La corbeille AD est un filet de securite, pas une excuse pour ne pas activer `ProtectedFromAccidentalDeletion` sur les OU critiques. Une suppression protegee echoue immediatement et evite d'avoir a recourir a la corbeille.
 
 ## Points cles a retenir
 

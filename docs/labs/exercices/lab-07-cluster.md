@@ -44,6 +44,15 @@ graph LR
 
 ## Instructions
 
+!!! example "Analogie"
+
+    Un cluster de basculement, c'est comme deux pompiers de garde dans une caserne : si l'un
+    est indisponible, l'autre prend immediatement le service sans interruption pour les habitants.
+    Le stockage partage est leur casier commun avec les equipements (les donnees), accessible
+    par les deux. Le quorum est le reglement qui decide qui a l'autorite — sans cette regle,
+    les deux pompiers pourraient croire etre en charge simultanement et agir de facon incoherente
+    (split-brain).
+
 ### Partie 1 : Preparer le stockage partage
 
 Creer un disque VHDX partage accessible par les deux noeuds (simule un stockage SAN).
@@ -166,6 +175,24 @@ Creer un disque VHDX partage accessible par les deux noeuds (simule un stockage 
     Get-ClusterGroup "FS-CLUSTER" | Select-Object Name, OwnerNode, State
     ```
 
+    Resultat attendu apres `Get-ClusterNode | Select-Object Name, State` :
+
+    ```text
+    Name       State
+    ----       -----
+    SRV-FILE01 Up
+    SRV-DC02   Up
+    ```
+
+    Resultat attendu apres basculement planifie (`Move-ClusterGroup`) :
+
+    ```text
+    # Get-ClusterGroup "FS-CLUSTER" | Select-Object Name, OwnerNode, State
+    Name       OwnerNode  State
+    ----       ---------  -----
+    FS-CLUSTER SRV-DC02   Online
+    ```
+
 ## Verification
 
 !!! question "Questions de validation"
@@ -186,6 +213,32 @@ Creer un disque VHDX partage accessible par les deux noeuds (simule un stockage 
        automatiquement (quelques secondes d'indisponibilite).
     4. La validation detecte les problemes de configuration (reseau, stockage, DNS) avant la
        creation. Elle est obligatoire pour le support Microsoft.
+
+!!! warning "Pieges frequents dans ce lab"
+
+    1. **Sauter la validation du cluster** : la commande `Test-Cluster` est obligatoire, pas
+       optionnelle. Sans validation reussie, la creation du cluster avec `New-Cluster` peut
+       echouer ou produire un cluster instable. Lire attentivement le rapport HTML — les
+       avertissements sur les reseaux multiples sont normaux en lab, mais les erreurs de
+       stockage doivent etre corrigees.
+
+    2. **VHDX partage cree sans l'option `-Fixed`** : un disque de taille dynamique ne supporte
+       pas les reservations persistantes (`-SupportPersistentReservations`). Utiliser
+       `New-VHD -Fixed` pour le stockage partage du cluster, sinon l'ajout du disque au cluster
+       echoue avec une erreur de reservation SCSI.
+
+    3. **Creer le cluster avec `-StaticAddress` erronee** : l'adresse IP virtuelle du cluster
+       (192.168.10.50) doit etre dans le meme sous-reseau que les noeuds et ne doit pas etre
+       deja utilisee. Verifier avec `ping 192.168.10.50` avant de creer le cluster.
+
+    4. **Oublier `-NoStorage` lors de la creation** : si le disque partage est detecte mais pas
+       encore initialise proprement, omettre `-NoStorage` fait echouer `New-Cluster`. Ajouter
+       le disque manuellement avec `Get-ClusterAvailableDisk | Add-ClusterDisk` apres la creation.
+
+    5. **SRV-DC02 utilise comme noeud de cluster ET comme DC** : dans ce lab, SRV-DC02 joue
+       plusieurs roles simultanement. Si SRV-DC02 est stoppe pour simuler une panne, le domaine
+       perd un DC. S'assurer que SRV-DC01 est operationnel avant de stopper SRV-DC02 pour eviter
+       une perte d'authentification sur le reste du lab.
 
 ## Nettoyage
 

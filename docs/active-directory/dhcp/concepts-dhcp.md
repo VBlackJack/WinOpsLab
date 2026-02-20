@@ -15,6 +15,10 @@ tags:
 
 ## Qu'est-ce que le DHCP ?
 
+!!! example "Analogie"
+
+    Imaginez un hotel : quand un client arrive, la reception lui attribue une chambre (adresse IP), lui donne la cle (masque de sous-reseau), lui indique ou se trouve le restaurant (passerelle) et le numero du concierge (serveur DNS). Le client garde sa chambre pour la duree de son sejour (bail DHCP). S'il prolonge son sejour, la chambre reste la meme. S'il part, la chambre est liberee pour le prochain client. C'est exactement ce que fait un serveur DHCP.
+
 Le **DHCP** (Dynamic Host Configuration Protocol) est un protocole reseau
 client-serveur defini par la [RFC 2131](https://datatracker.ietf.org/doc/html/rfc2131).
 Il permet aux machines d'un reseau d'obtenir automatiquement une configuration
@@ -189,9 +193,39 @@ Quelques cmdlets pour observer le comportement DHCP cote client :
         Select-Object DhcpIPAddress, DhcpSubnetMask, DhcpServer, LeaseObtainedTime, LeaseTerminatesTime
     ```
 
+    Resultat :
+
+    ```text
+    PS> Get-NetIPAddress -AddressFamily IPv4 | Where-Object { $_.PrefixOrigin -eq "Dhcp" }
+
+    IPAddress         : 10.0.0.105
+    InterfaceIndex    : 6
+    InterfaceAlias    : Ethernet
+    AddressFamily     : IPv4
+    PrefixLength      : 24
+    PrefixOrigin      : Dhcp
+    SuffixOrigin      : Dhcp
+    ValidLifetime     : 06:42:15
+    PreferredLifetime : 06:42:15
+
+    PS> ipconfig /renew
+
+    Windows IP Configuration
+
+    Ethernet adapter Ethernet:
+       Connection-specific DNS Suffix  . : lab.local
+       IPv4 Address. . . . . . . . . . . : 10.0.0.105
+       Subnet Mask . . . . . . . . . . . : 255.255.255.0
+       Default Gateway . . . . . . . . . : 10.0.0.1
+    ```
+
 ---
 
 ## L'agent relais DHCP (DHCP Relay Agent)
+
+!!! example "Analogie"
+
+    Imaginez un employe dans un bureau satellite qui crie pour demander une fourniture. Son cri (broadcast) ne depasse pas les murs de son etage. L'agent relais, c'est la secretaire de l'etage qui entend la demande et passe un coup de telephone (unicast) au service logistique du siege. La reponse revient par telephone, et la secretaire la transmet a l'employe.
 
 ### Le probleme : les broadcasts ne traversent pas les routeurs
 
@@ -270,6 +304,45 @@ flowchart LR
     necessaires lors de l'installation.
 
 ---
+
+!!! example "Scenario pratique"
+
+    **Situation** : Nadia, technicienne reseau, recoit un appel de l'equipe du 3e etage : les postes de travail nouvellement branches n'obtiennent plus d'adresse IP. Ils affichent une adresse APIPA en `169.254.x.x`. Les postes existants fonctionnent toujours.
+
+    **Diagnostic** :
+
+    ```powershell
+    # Etape 1 : Depuis un poste affecte, verifier la configuration IP
+    ipconfig /all
+    ```
+
+    Resultat : l'adresse est `169.254.12.45`, pas de passerelle, pas de DNS. Le client n'a pas recu de bail DHCP.
+
+    ```powershell
+    # Etape 2 : Tenter un renouvellement manuel
+    ipconfig /release
+    ipconfig /renew
+    ```
+
+    Resultat : "An error occurred while renewing interface Ethernet: unable to contact your DHCP server."
+
+    ```powershell
+    # Etape 3 : Depuis un poste fonctionnel, verifier le serveur DHCP
+    Get-DhcpServerv4ScopeStatistics -ComputerName "SRV-01"
+    ```
+
+    Resultat : l'etendue `10.0.0.0` affiche 100 % d'utilisation. Toutes les adresses disponibles sont distribuees.
+
+    **Solution** :
+
+    Nadia etend la plage d'adresses de l'etendue ou raccourcit la duree du bail pour recycler les adresses inutilisees plus rapidement. Les nouveaux postes obtiennent ensuite leur configuration IP normalement.
+
+!!! danger "Erreurs courantes"
+
+    - **Confondre adresse APIPA et adresse DHCP** : une adresse en `169.254.x.x` signifie que le client n'a pas recu de bail DHCP. Ce n'est pas une adresse distribuee par le serveur, c'est une auto-configuration de dernier recours.
+    - **Oublier l'agent relais sur un nouveau sous-reseau** : si un nouveau VLAN est cree sans agent relais (`ip helper-address`), les broadcasts DHCP ne parviendront jamais au serveur DHCP, et aucun client ne recevra d'adresse.
+    - **Configurer un bail trop court sur un reseau stable** : un bail de 30 minutes sur un reseau de bureaux fixes genere un trafic DHCP inutile et augmente la charge sur le serveur. Un bail de 8 heures est generalement adapte.
+    - **Avoir deux serveurs DHCP non coordonnes sur le meme sous-reseau** : sans basculement DHCP configure, deux serveurs peuvent distribuer la meme adresse IP a deux clients differents, causant des conflits d'adresses.
 
 ## Points cles a retenir
 

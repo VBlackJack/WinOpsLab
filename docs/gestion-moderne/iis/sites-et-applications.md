@@ -25,6 +25,10 @@ graph TD
     E --> G[Contenu de l'application blog]
 ```
 
+!!! example "Analogie"
+
+    Un serveur IIS, c'est comme un immeuble de bureaux. Chaque site est un locataire avec sa propre porte d'entree (binding : IP + port + nom d'hote). Les applications sont les differents departements au sein d'un meme locataire, chacun avec sa propre organisation. Les repertoires virtuels sont des panneaux directionnels qui indiquent "les archives sont dans le sous-sol voisin" sans que les visiteurs sachent qu'ils changent de batiment.
+
 ## Concepts fondamentaux
 
 | Concept | Description |
@@ -215,6 +219,17 @@ Get-Website | Select-Object Name, ID, State,
 Remove-Website -Name "intranet"
 ```
 
+Resultat :
+
+```text
+# Get-Website
+Name             ID   State   Bindings
+----             --   -----   --------
+Default Web Site 1    Stopped *:80:
+intranet         2    Started *:80:intranet.lab.local
+api              3    Started *:443:api.lab.local
+```
+
 ## Configuration du fichier web.config
 
 Chaque site peut avoir un fichier `web.config` qui surcharge la configuration IIS pour ce site.
@@ -257,6 +272,71 @@ Set-ItemProperty "IIS:\Sites\intranet" -Name "logFile.logExtFileFlags" -Value `
 # View recent logs
 Get-ChildItem "D:\Logs\IIS\W3SVC*" | Sort-Object LastWriteTime -Descending | Select-Object -First 5
 ```
+
+Resultat :
+
+```text
+# Get-ChildItem "D:\Logs\IIS\W3SVC*"
+Mode   LastWriteTime          Length Name
+----   -------------          ------ ----
+-a---- 2026-02-20 23:59:58   1847392 u_ex260220.log
+-a---- 2026-02-19 23:59:58   1923104 u_ex260219.log
+-a---- 2026-02-18 23:59:58   1765840 u_ex260218.log
+-a---- 2026-02-17 23:59:58   1654912 u_ex260217.log
+-a---- 2026-02-16 23:59:58   1712048 u_ex260216.log
+```
+
+!!! example "Scenario pratique"
+
+    **Context :** Antoine administre SRV-WEB01 et doit heberger trois sites distincts sur la meme adresse IP (10.0.0.20) : l'intranet (`intranet.lab.local`), un portail RH (`rh.lab.local`) et une API REST (`api.lab.local` sur le port 8080).
+
+    **Etape 1 : Preparer les dossiers et pools**
+
+    ```powershell
+    Import-Module WebAdministration
+    $sites = @{
+        "intranet" = "D:\WebSites\intranet"
+        "rh"       = "D:\WebSites\rh"
+        "api"      = "D:\WebSites\api"
+    }
+    foreach ($name in $sites.Keys) {
+        New-Item -Path $sites[$name] -ItemType Directory -Force
+        New-WebAppPool -Name "${name}Pool"
+    }
+    ```
+
+    **Etape 2 : Creer les sites avec host headers**
+
+    ```powershell
+    New-Website -Name "intranet" -PhysicalPath "D:\WebSites\intranet" `
+        -ApplicationPool "intranetPool" -HostHeader "intranet.lab.local" -Port 80 -IPAddress "*"
+
+    New-Website -Name "rh" -PhysicalPath "D:\WebSites\rh" `
+        -ApplicationPool "rhPool" -HostHeader "rh.lab.local" -Port 80 -IPAddress "*"
+
+    New-Website -Name "api" -PhysicalPath "D:\WebSites\api" `
+        -ApplicationPool "apiPool" -HostHeader "api.lab.local" -Port 8080 -IPAddress "*"
+    ```
+
+    **Etape 3 : Verifier les bindings**
+
+    ```powershell
+    Get-WebBinding | Select-Object protocol, bindingInformation
+    ```
+
+    Les trois sites sont actifs et bien isoles : si le pool `rhPool` plante, l'intranet et l'API continuent de fonctionner sans interruption.
+
+!!! danger "Erreurs courantes"
+
+    **Creer plusieurs sites avec le meme binding (IP + port + host header).** IIS refuse de demarrer un site dont le binding entre en conflit avec un site existant. Le second site reste dans l'etat "Stopped" avec une erreur dans les logs. Verifier les bindings existants avant d'en creer de nouveaux avec `Get-WebBinding`.
+
+    **Placer plusieurs applications dans le meme pool d'applications sans raison.** Si une application plante le pool, toutes les autres applications partageant ce pool tombent simultanement. Utiliser un pool dedie par application critique.
+
+    **Oublier de mettre a jour les enregistrements DNS.** Creer un site avec le host header `intranet.lab.local` ne sert a rien si DNS ne resout pas ce nom vers l'IP du serveur IIS. Creer l'enregistrement A ou CNAME correspondant dans le DNS interne avant de tester.
+
+    **Modifier directement `applicationHost.config` a la main.** Ce fichier XML est la configuration centrale d'IIS. Une erreur de syntaxe empechera IIS de demarrer. Toujours utiliser IIS Manager ou les cmdlets PowerShell WebAdministration. Si une edition manuelle est indispensable, faire une sauvegarde au prealable.
+
+    **Ne pas configurer les en-tetes de securite HTTP.** Sans en-tetes comme `X-Content-Type-Options`, `X-Frame-Options` ou `Content-Security-Policy`, les sites sont vulnerables a des attaques de type clickjacking ou injection de contenu. Les ajouter dans `web.config` ou dans la configuration IIS du site.
 
 ## Points cles a retenir
 

@@ -15,6 +15,10 @@ tags:
 
 ## Vue d'ensemble
 
+!!! example "Analogie"
+
+    Les permissions NTFS fonctionnent comme les **serrures et cles d'un immeuble de bureaux**. Chaque porte (dossier ou fichier) possede sa propre serrure. Certaines cles ouvrent toutes les portes (Full Control), d'autres permettent seulement d'entrer dans le bureau et lire les documents sur la table (Read), et d'autres encore permettent de modifier les documents (Modify). L'heritage, c'est quand la cle de l'etage ouvre aussi toutes les portes des bureaux de cet etage.
+
 Les permissions NTFS controlent l'acces aux fichiers et dossiers sur un volume NTFS, que l'acces soit local ou distant. Elles sont stockees dans la liste de controle d'acces (ACL) de chaque objet du systeme de fichiers.
 
 !!! tip "NTFS vs partage"
@@ -148,6 +152,17 @@ Get-Acl -Path "D:\Partages\Comptabilite" | Format-List
     Format-Table -AutoSize
 ```
 
+Resultat :
+
+```text
+IdentityReference          FileSystemRights  AccessControlType IsInherited InheritanceFlags       PropagationFlags
+-----------------          ----------------  ----------------- ----------- ----------------       ----------------
+BUILTIN\Administrators     FullControl       Allow             False       ContainerInherit, ...  None
+NT AUTHORITY\SYSTEM         FullControl       Allow             False       ContainerInherit, ...  None
+LAB\GRP-Comptabilite       Modify            Allow             False       ContainerInherit, ...  None
+BUILTIN\Users              ReadAndExecute    Allow             True        ContainerInherit, ...  None
+```
+
 ### Ajouter une permission
 
 ```powershell
@@ -258,6 +273,15 @@ $acl.Access |
     Format-Table IdentityReference, FileSystemRights, AccessControlType -AutoSize
 ```
 
+Resultat :
+
+```text
+IdentityReference     FileSystemRights AccessControlType
+-----------------     ---------------- -----------------
+LAB\GRP-Comptabilite  Modify           Allow
+BUILTIN\Users         ReadAndExecute   Allow
+```
+
 Via l'interface graphique :
 
 1. Clic droit sur le dossier > **Properties** > onglet **Security**
@@ -316,6 +340,64 @@ D:\Partages\                         Administrators: Full Control
 - La strategie **AGDLP** est la methode recommandee pour l'attribution des permissions
 - Attribuez les permissions aux **groupes**, pas aux utilisateurs individuels
 - Les permissions **effectives** sont la combinaison de toutes les regles applicables
+
+!!! example "Scenario pratique"
+
+    **Contexte :** Julie, administratrice systeme, recoit un ticket : Marie du service comptabilite ne peut pas modifier les fichiers dans `\\SRV-01\Comptabilite\Archives` alors qu'elle est membre du groupe `GRP-Comptabilite` qui a les droits Modify sur le dossier parent.
+
+    **Diagnostic :**
+
+    ```powershell
+    # Check ACL on the Archives subfolder
+    (Get-Acl -Path "D:\Partages\Comptabilite\Archives").Access |
+        Select-Object IdentityReference, FileSystemRights, AccessControlType,
+            IsInherited |
+        Format-Table -AutoSize
+    ```
+
+    Resultat :
+
+    ```text
+    IdentityReference        FileSystemRights  AccessControlType IsInherited
+    -----------------        ----------------  ----------------- -----------
+    BUILTIN\Administrators   FullControl       Allow             False
+    LAB\GRP-Comptabilite     ReadAndExecute    Allow             False
+    ```
+
+    L'heritage a ete coupe sur le dossier `Archives`, et seule la permission Read & Execute a ete ajoutee pour GRP-Comptabilite.
+
+    **Solution :**
+
+    ```powershell
+    # Add Modify permission explicitly on Archives
+    $acl = Get-Acl -Path "D:\Partages\Comptabilite\Archives"
+    $rule = New-Object System.Security.AccessControl.FileSystemAccessRule(
+        "LAB\GRP-Comptabilite", "Modify",
+        "ContainerInherit,ObjectInherit", "None", "Allow"
+    )
+    # Remove the old Read rule first
+    $oldRule = New-Object System.Security.AccessControl.FileSystemAccessRule(
+        "LAB\GRP-Comptabilite", "ReadAndExecute",
+        "ContainerInherit,ObjectInherit", "None", "Allow"
+    )
+    $acl.RemoveAccessRule($oldRule)
+    $acl.AddAccessRule($rule)
+    Set-Acl -Path "D:\Partages\Comptabilite\Archives" -AclObject $acl
+    ```
+
+    Marie peut maintenant modifier les fichiers dans le dossier Archives. Julie documente la rupture d'heritage pour reference future.
+
+!!! danger "Erreurs courantes"
+
+    1. **Attribuer des permissions directement aux utilisateurs** : cela rend la gestion impossible a grande echelle. Quand un employe change de poste, il faut modifier les permissions sur chaque dossier individuellement. Utilisez toujours la strategie AGDLP avec des groupes.
+
+    2. **Abuser des permissions Deny** : les Deny s'appliquent en priorite sur les Allow et se propagent par heritage. Un Deny mal place peut bloquer tout un arbre de dossiers. Preferez simplement ne pas accorder de permissions plutot que d'utiliser Deny.
+
+    3. **Couper l'heritage sans documenter** : une rupture d'heritage cree un ilot de permissions independant. Sans documentation, le prochain administrateur ne comprendra pas pourquoi certains utilisateurs n'ont pas acces a un sous-dossier.
+
+    4. **Accorder Full Control aux utilisateurs** : Full Control permet de modifier les permissions elles-memes et de prendre possession du dossier. Accordez Modify au maximum pour les utilisateurs ; reservez Full Control aux administrateurs.
+
+    5. **Oublier SYSTEM dans les ACL** : le compte `NT AUTHORITY\SYSTEM` est necessaire pour que Windows Server et ses services (sauvegarde, antivirus, indexation) fonctionnent. Si vous reinitialisez les ACL d'un dossier, ajoutez toujours SYSTEM en Full Control.
 
 ## Pour aller plus loin
 

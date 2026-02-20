@@ -13,6 +13,10 @@ tags:
 
 ## Vue d'ensemble
 
+!!! example "Analogie"
+
+    Imaginez que vous avez plusieurs **tirelires** de tailles differentes (vos disques physiques). Plutot que de gerer chaque tirelire separement, vous versez tout dans un **coffre-fort commun** (le pool de stockage). Ensuite, vous creez des **enveloppes budgetaires** (les disques virtuels) avec des regles de protection : une enveloppe en double exemplaire pour vos documents importants (miroir), ou une enveloppe moins protegee pour vos brouillons (simple).
+
 Storage Spaces est la technologie de virtualisation du stockage integree a Windows Server. Elle permet de regrouper des disques physiques heterogenes dans un pool commun, puis de creer des disques virtuels avec differents niveaux de resilience.
 
 ```mermaid
@@ -204,6 +208,18 @@ Get-PhysicalDisk -StoragePool (Get-StoragePool -FriendlyName "MonPool") |
     Format-Table -AutoSize
 ```
 
+Resultat :
+
+```text
+FriendlyName   MediaType SizeGB
+------------   --------- ------
+ATA Disk 1     SSD       200.00
+ATA Disk 2     SSD       200.00
+ATA Disk 3     HDD      1024.00
+ATA Disk 4     HDD      1024.00
+ATA Disk 5     HDD      1024.00
+```
+
 ## Provisioning : fixe vs dynamique
 
 ### Provisioning fixe (Fixed / Thick)
@@ -236,6 +252,15 @@ Get-StoragePool -FriendlyName "MonPool" |
     Format-List
 ```
 
+Resultat :
+
+```text
+FriendlyName : MonPool
+SizeGB       : 2448.00
+AllocatedGB  : 350.00
+FreeGB       : 2098.00
+```
+
 ## Disques de secours (Hot Spare)
 
 Un disque de secours reste inactif dans le pool jusqu'a ce qu'un disque actif tombe en panne. Storage Spaces reconstruit alors automatiquement les donnees sur le disque de secours.
@@ -248,6 +273,18 @@ Set-PhysicalDisk -FriendlyName "Disk5" -Usage HotSpare
 Get-PhysicalDisk -StoragePool (Get-StoragePool -FriendlyName "MonPool") |
     Select-Object FriendlyName, Usage, HealthStatus |
     Format-Table -AutoSize
+```
+
+Resultat :
+
+```text
+FriendlyName   Usage      HealthStatus
+------------   -----      ------------
+ATA Disk 1     Auto-Select Healthy
+ATA Disk 2     Auto-Select Healthy
+ATA Disk 3     Auto-Select Healthy
+ATA Disk 4     Auto-Select Healthy
+ATA Disk 5     HotSpare    Healthy
 ```
 
 Les roles possibles d'un disque physique :
@@ -268,6 +305,47 @@ Les roles possibles d'un disque physique :
 - Les **tiers de stockage** (SSD + HDD) optimisent automatiquement le placement des donnees
 - Le **provisioning dynamique** (thin) permet la sur-allocation mais necessite une surveillance attentive
 - Les **disques de secours** (hot spare) assurent une reconstruction automatique apres une panne
+
+!!! example "Scenario pratique"
+
+    **Contexte :** Claire, responsable IT d'une PME, doit choisir le mode de resilience pour le nouveau serveur de fichiers SRV-01. Elle dispose de 4 disques HDD de 2 To. Les donnees sont critiques (contrats, factures) et la direction refuse tout risque de perte.
+
+    **Analyse :**
+
+    ```powershell
+    # Check available disks
+    Get-PhysicalDisk -CanPool $true |
+        Select-Object DeviceId, FriendlyName, MediaType,
+            @{N='SizeGB';E={[math]::Round($_.Size/1GB,2)}} |
+        Format-Table -AutoSize
+    ```
+
+    Resultat :
+
+    ```text
+    DeviceId FriendlyName MediaType SizeGB
+    -------- ------------ --------- ------
+    1        ATA Disk 1   HDD       2048.00
+    2        ATA Disk 2   HDD       2048.00
+    3        ATA Disk 3   HDD       2048.00
+    4        ATA Disk 4   HDD       2048.00
+    ```
+
+    **Decision :** Avec 4 disques HDD et des donnees critiques, Claire choisit le **miroir bidirectionnel**. Ce mode tolere la panne d'un disque tout en offrant de bonnes performances en lecture. L'espace utilisable sera de 50%, soit environ 4 To sur 8 To bruts. La **parite** aurait offert plus d'espace (~67%), mais les performances en ecriture seraient penalisees pour les fichiers bureautiques modifies frequemment.
+
+    Elle reserve le 4e disque comme **hot spare** pour une reconstruction automatique en cas de defaillance.
+
+!!! danger "Erreurs courantes"
+
+    1. **Choisir le mode Simple pour des donnees de production** : le mode Simple n'offre aucune tolerance de pannes. La perte d'un seul disque entraine la perte de toutes les donnees. Reservez-le aux caches temporaires ou aux donnees facilement regenerables.
+
+    2. **Sous-estimer le nombre de disques requis** : le miroir tridirectionnel necessite 5 disques minimum, pas 3. Verifiez les prerequis avant de planifier vos achats.
+
+    3. **Utiliser la parite pour des charges en ecriture intensive** : la parite (RAID 5 equivalent) impose une penalite de lecture-modification-ecriture a chaque operation. Les bases de donnees et les machines virtuelles necessitent un mode miroir.
+
+    4. **Oublier de surveiller le thin provisioning** : avec le provisioning dynamique, vous pouvez creer des volumes plus grands que l'espace physique. Si le pool se remplit sans alerte, les volumes passent hors ligne et les applications s'arretent.
+
+    5. **Ne pas prevoir de disque hot spare** : sans disque de secours, la reconstruction apres une panne attend l'intervention manuelle. Pendant ce temps, le pool fonctionne en mode degrade et une deuxieme defaillance peut etre fatale.
 
 ## Pour aller plus loin
 

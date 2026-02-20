@@ -19,6 +19,10 @@ Les comptes privilegies sont la cible prioritaire des attaquants. Un compte Doma
 
 ## Le modele d'administration en tiers
 
+!!! example "Analogie"
+
+    Le modele en tiers fonctionne comme la securite d'une banque : le coffre-fort (Tier 0) n'est accessible qu'au directeur, les guichets (Tier 1) sont geres par les employes de la banque, et l'accueil (Tier 2) est ouvert au public. Un agent d'accueil n'a jamais la cle du coffre-fort, et le directeur ne descend pas a l'accueil pour eviter de se faire derober ses cles.
+
 Le **Tiered Administration Model** (modele en niveaux) segmente l'administration en trois zones de confiance pour limiter la propagation d'une compromission.
 
 ```mermaid
@@ -76,6 +80,25 @@ foreach ($account in $tiers) {
         -Enabled $true `
         -AccountPassword (Read-Host -AsSecureString "Password for $($account.Name)")
 }
+```
+
+Resultat :
+
+```text
+PS C:\> New-ADUser -Name "T0-jdupont" ...
+PS C:\> New-ADUser -Name "T1-jdupont" ...
+PS C:\> New-ADUser -Name "T2-jdupont" ...
+
+PS C:\> Get-ADUser -Filter * -SearchBase "OU=Admin Accounts,DC=lab,DC=local" | Select-Object Name, Enabled
+
+Name          Enabled
+----          -------
+T0-jdupont    True
+T1-jdupont    True
+T2-jdupont    True
+T0-mlambert   True
+T1-mlambert   True
+T2-mlambert   True
 ```
 
 ### Restrictions de connexion par GPO
@@ -173,6 +196,17 @@ $user = Get-ADUser "T0-jdupont" -Properties MemberOf
 $user.MemberOf | Where-Object { $_ -match "Protected Users" }
 ```
 
+Resultat :
+
+```text
+Name            SamAccountName
+----            --------------
+T0-jdupont      T0-jdupont
+T0-mlambert     T0-mlambert
+
+CN=Protected Users,CN=Users,DC=lab,DC=local
+```
+
 !!! warning "Impacts operationnels"
 
     L'ajout au groupe Protected Users peut casser certaines applications :
@@ -239,6 +273,14 @@ $devGuard | Select-Object -Property SecurityServicesRunning, VirtualizationBased
 # > Credential Guard > Running
 ```
 
+Resultat :
+
+```text
+SecurityServicesRunning          VirtualizationBasedSecurityStatus
+--------------------------       --------------------------------
+{0, 1}                           2
+```
+
 !!! danger "UEFI Lock"
 
     Avec l'option **UEFI lock**, Credential Guard ne peut pas etre desactive a distance. Il faut un acces physique au serveur pour modifier la configuration UEFI. Cela protege contre la desactivation par un attaquant, mais complique les operations de maintenance.
@@ -280,6 +322,103 @@ foreach ($group in $privilegedGroups) {
     $members | Select-Object Name, SamAccountName, objectClass | Format-Table -AutoSize
 }
 ```
+
+Resultat :
+
+```text
+=== Domain Admins (3 members) ===
+Name            SamAccountName  objectClass
+----            --------------  -----------
+Administrator   Administrator   user
+T0-jdupont      T0-jdupont      user
+T0-mlambert     T0-mlambert     user
+
+=== Enterprise Admins (1 members) ===
+Name            SamAccountName  objectClass
+----            --------------  -----------
+Administrator   Administrator   user
+
+=== Schema Admins (1 members) ===
+Name            SamAccountName  objectClass
+----            --------------  -----------
+Administrator   Administrator   user
+
+=== Administrators (4 members) ===
+Name            SamAccountName  objectClass
+----            --------------  -----------
+Administrator   Administrator   user
+Domain Admins   Domain Admins   group
+Enterprise A... Enterprise A... group
+T0-jdupont      T0-jdupont      user
+```
+
+---
+
+## Scenario pratique
+
+!!! example "Scenario pratique"
+
+    **Contexte** : Marc, responsable securite, decouvre lors d'un test de penetration que l'auditeur a pu extraire les credentials d'un compte Domain Admin depuis la memoire d'un serveur applicatif (SRV-APP01, 10.0.0.20). L'attaquant a utilise Mimikatz pour effectuer un Pass-the-Hash.
+
+    **Diagnostic** :
+
+    ```powershell
+    # Check if the compromised admin is in Protected Users
+    Get-ADGroupMember -Identity "Protected Users" | Select-Object Name
+    ```
+
+    Resultat :
+
+    ```text
+    Name
+    ----
+    (vide - aucun membre)
+    ```
+
+    ```powershell
+    # Check Credential Guard status on the server
+    Invoke-Command -ComputerName "SRV-APP01" -ScriptBlock {
+        (Get-CimInstance -ClassName Win32_DeviceGuard -Namespace root\Microsoft\Windows\DeviceGuard).VirtualizationBasedSecurityStatus
+    }
+    ```
+
+    Resultat :
+
+    ```text
+    0
+    ```
+
+    **Resolution** :
+
+    1. Les comptes Tier 0 n'etaient pas dans le groupe Protected Users
+    2. Credential Guard n'etait pas active sur les serveurs
+    3. Le compte Domain Admin avait ouvert une session RDP sur un serveur Tier 1 (violation du modele en tiers)
+
+    ```powershell
+    # 1. Add Tier 0 accounts to Protected Users
+    Add-ADGroupMember -Identity "Protected Users" -Members "T0-jdupont", "T0-mlambert"
+
+    # 2. Verify no Tier 0 sessions on Tier 1 servers
+    $tier1Servers = Get-ADComputer -Filter * -SearchBase "OU=Servers,DC=lab,DC=local" | Select-Object -ExpandProperty Name
+    foreach ($srv in $tier1Servers) {
+        $sessions = query user /server:$srv 2>$null
+        Write-Output "=== $srv ===" ; $sessions
+    }
+    ```
+
+    Marc deploie ensuite Credential Guard via GPO sur tous les serveurs et met en place les restrictions de connexion par tier.
+
+---
+
+!!! danger "Erreurs courantes"
+
+    1. **Utiliser un seul compte admin pour tous les niveaux** : un meme compte ne doit jamais se connecter a des systemes de tiers differents. Si un poste Tier 2 est compromis et que votre compte Tier 0 y a une session, toute l'infrastructure est en danger.
+
+    2. **Ajouter des comptes de service au groupe Protected Users** : les services utilisant la delegation Kerberos ou NTLM cesseront de fonctionner. Le groupe Protected Users est reserve aux comptes interactifs d'administration.
+
+    3. **Activer Credential Guard avec UEFI Lock sans plan de recuperation** : avec le verrouillage UEFI, Credential Guard ne peut etre desactive qu'avec un acces physique au serveur. Prevoyez une procedure documentee pour les cas de maintenance.
+
+    4. **Ne pas tester l'impact de Protected Users avant le deploiement** : certains outils d'administration legacy ne supportent que NTLM. Testez dans un environnement de pre-production avec des comptes pilotes avant de generaliser.
 
 ---
 

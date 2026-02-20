@@ -19,6 +19,10 @@ Hyper-V Replica replique une machine virtuelle d'un hote principal vers un hote 
 
 ## Principe de fonctionnement
 
+!!! example "Analogie"
+
+    Hyper-V Replica fonctionne comme un **systeme de copie automatique de documents entre deux bureaux**. Votre bureau principal (site primaire) travaille normalement sur ses dossiers (VMs). Toutes les 5 minutes, un coursier envoie une copie des pages modifiees au bureau de secours (site secondaire). Si le bureau principal est inonde (sinistre), le bureau de secours a une copie recente de tous les dossiers et peut reprendre le travail presque immediatement.
+
 ```mermaid
 flowchart LR
     subgraph SitePrimaire["Site principal"]
@@ -84,6 +88,14 @@ Set-VMReplicationServer -ReplicationEnabled $true `
 Get-VMReplicationServer
 ```
 
+Resultat :
+
+```text
+RepEnabled AllowedAuthType KerberosAuthPort CertAuthPort DefaultStoreLoc
+---------- --------------- ---------------- ------------ ---------------
+True       Kerberos        80                            D:\Hyper-V\Replica
+```
+
 ### Etape 2 : configurer le pare-feu
 
 ```powershell
@@ -97,6 +109,15 @@ Enable-NetFirewallRule -DisplayName "Hyper-V Replica HTTPS Listener (TCP-In)"
 # Verify firewall rules
 Get-NetFirewallRule -DisplayName "Hyper-V Replica*" |
     Select-Object DisplayName, Enabled, Direction
+```
+
+Resultat :
+
+```text
+DisplayName                                  Enabled Direction
+-----------                                  ------- ---------
+Hyper-V Replica HTTP Listener (TCP-In)       True    Inbound
+Hyper-V Replica HTTPS Listener (TCP-In)      False   Inbound
 ```
 
 ### Etape 3 : activer la replication sur la VM (hote source)
@@ -162,6 +183,24 @@ Get-VMReplication | Select-Object VMName, State, Health, LastReplicationTime |
     Format-Table -AutoSize
 ```
 
+Resultat :
+
+```text
+VMName    State      Health   Mode    PrimaryServerName   ReplicaServerName    ReplicationFrequencySec LastReplicationTime
+------    -----      ------   ----    -----------------   -----------------    ----------------------- -------------------
+SRV-APP01 Replicating Normal  Primary HV-SRV01.lab.local  HV-DR01.lab.local    300                     2026-02-20 14:25:00
+
+VMName                  AverageReplicationSize AverageReplicationLatency ReplicationHealth LastReplicationTime  MissedCount
+------                  ---------------------- ------------------------- ----------------- -------------------  -----------
+SRV-APP01               45 MB                  00:00:12                  Normal            2026-02-20 14:25:00  0
+
+VMName    State       Health   LastReplicationTime
+------    -----       ------   -------------------
+SRV-APP01 Replicating Normal   2026-02-20 14:25:00
+SRV-WEB01 Replicating Normal   2026-02-20 14:24:30
+DC-01     Replicating Warning  2026-02-20 14:15:00
+```
+
 ### Etats de sante
 
 | Etat | Signification | Action |
@@ -173,6 +212,10 @@ Get-VMReplication | Select-Object VMName, State, Health, LastReplicationTime |
 ---
 
 ## Types de basculement (Failover)
+
+!!! example "Analogie"
+
+    Imaginez trois scenarios de demenagement. Le **Test Failover**, c'est visiter le nouvel appartement avec un plan pour verifier que vos meubles rentrent, sans rien deplacer. Le **Planned Failover**, c'est un demenagement organise : vous emballez tout proprement, verifiez que rien ne manque, puis vous installez dans le nouvel appartement. Le **Unplanned Failover**, c'est un incendie : vous courez dans le nouvel appartement avec ce que le coursier avait deja copie, en acceptant que les dernieres modifications soient peut-etre perdues.
 
 ### Test Failover (sans impact)
 
@@ -292,6 +335,58 @@ Start-VMInitialReplication -VMName "SRV-APP01"
 - Le **Unplanned Failover** est utilise en cas de sinistre (perte possible selon le RPO)
 - La replication etendue permet de proteger sur un **troisieme site**
 - Hyper-V Replica est **gratuit** (inclus dans la licence Windows Server)
+
+---
+
+!!! example "Scenario pratique"
+
+    **Contexte :** Laurent, responsable infrastructure dans une entreprise de e-commerce, a configure Hyper-V Replica entre le site principal (Paris) et le site de secours (Lyon) pour les VMs critiques. La replication est configuree toutes les 5 minutes via HTTP.
+
+    **Probleme :** Le tableau de bord montre un etat "Warning" sur la replication de `SRV-APP01` depuis 2 jours. La replication accumule du retard.
+
+    **Diagnostic :**
+
+    ```powershell
+    # Check replication statistics
+    Measure-VMReplication -VMName "SRV-APP01" |
+        Select-Object VMName, ReplicationHealth, AverageReplicationSize,
+            AverageReplicationLatency, MissedReplicationCount
+    ```
+
+    ```text
+    VMName    ReplicationHealth AverageReplicationSize AverageReplicationLatency MissedReplicationCount
+    ------    ----------------- ---------------------- ------------------------- ----------------------
+    SRV-APP01 Warning           250 MB                 00:04:55                  12
+    ```
+
+    La taille moyenne de replication etait de 250 Mo par cycle, avec une latence proche des 5 minutes. La liaison WAN entre Paris et Lyon ne suffisait plus.
+
+    **Solution :**
+
+    ```powershell
+    # Enable compression to reduce bandwidth usage
+    Set-VMReplication -VMName "SRV-APP01" -CompressionEnabled $true
+
+    # Increase replication frequency to reduce per-cycle size
+    Set-VMReplication -VMName "SRV-APP01" -ReplicationFrequencySec 300
+
+    # Resynchronize to resolve the warning state
+    Resume-VMReplication -VMName "SRV-APP01" -Resynchronize
+    ```
+
+    Apres activation de la compression, la taille moyenne de replication est passee de 250 Mo a 80 Mo par cycle. Laurent a egalement demande une augmentation de la bande passante WAN et planifie un Test Failover mensuel pour valider la replication.
+
+!!! danger "Erreurs courantes"
+
+    1. **Ne jamais tester le failover** : Configurer la replication sans jamais faire de Test Failover, c'est comme avoir une assurance sans verifier les clauses. Planifiez un test mensuel pour valider que la VM repliquee demarre correctement.
+
+    2. **Oublier de configurer le pare-feu** : La replication echoue silencieusement si les regles de pare-feu pour les ports HTTP (80) ou HTTPS (443) ne sont pas activees sur le serveur replica.
+
+    3. **Utiliser HTTP entre sites distants** : HTTP transmet les donnees en clair. Pour la replication entre sites distants (surtout via Internet), utilisez toujours HTTPS avec des certificats.
+
+    4. **Ignorer les alertes Warning** : Un etat Warning signifie que la replication accumule du retard. Si le site principal tombe, la perte de donnees sera superieure au RPO prevu. Reagissez immediatement.
+
+    5. **Oublier de configurer le DNS apres un failover** : Apres un basculement, la VM repliquee demarre avec la meme adresse IP. Si les clients resolvent le nom via DNS, il faut mettre a jour l'enregistrement DNS pour pointer vers le site de secours.
 
 ---
 

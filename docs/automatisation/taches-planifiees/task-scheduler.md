@@ -37,6 +37,10 @@ flowchart TD
     T --> S[Settings<br/>Comportement]
 ```
 
+!!! example "Analogie"
+
+    Le Planificateur de taches, c'est comme un agenda electronique pour votre serveur. Vous y notez : "tous les jours a 22h, lance le script de sauvegarde" ou "chaque fois qu'une alarme specifique sonne dans les journaux, envoie une alerte". Le serveur execute ces instructions automatiquement, meme quand personne n'est connecte.
+
 ## Triggers (declencheurs)
 
 Un trigger definit **quand** la tache doit s'executer. Une tache peut avoir plusieurs triggers.
@@ -145,12 +149,30 @@ L'historique des taches est desactive par defaut sur Windows Server. Pour l'acti
 wevtutil set-log Microsoft-Windows-TaskScheduler/Operational /enabled:true
 ```
 
+Resultat :
+
+```text
+(La commande ne produit pas de sortie si elle reussit. Le journal est desormais actif.)
+```
+
 ### Consulter l'historique
 
 ```powershell
 # View recent task scheduler events
 Get-WinEvent -LogName "Microsoft-Windows-TaskScheduler/Operational" -MaxEvents 50 |
     Format-Table TimeCreated, Id, Message -Wrap
+```
+
+Resultat :
+
+```text
+TimeCreated             Id  Message
+-----------             --  -------
+20/02/2026 22:00:01    102  Task Scheduler successfully finished "{CustomTasks}\Daily-ServerBackup" ...
+20/02/2026 22:00:00    100  Task Scheduler launched action "powershell.exe" in instance ...
+20/02/2026 21:00:01    102  Task Scheduler successfully finished "{CustomTasks}\Daily-ServerBackup" ...
+19/02/2026 22:05:13    110  Task Scheduler failed to start instance of "\CustomTasks\Monitor-DiskSpace" task for user "SYSTEM". ...
+19/02/2026 22:05:00    100  Task Scheduler launched action "powershell.exe" in instance ...
 ```
 
 ## Taches d'administration courantes
@@ -202,6 +224,59 @@ New-ADServiceAccount -Name "gMSA-Tasks" `
 # Install the gMSA on the server
 Install-ADServiceAccount -Identity "gMSA-Tasks"
 ```
+
+Resultat :
+
+```text
+(New-ADServiceAccount ne produit pas de sortie en cas de succes)
+
+AccountName : gMSA-Tasks
+ObjectClass : msDS-GroupManagedServiceAccount
+(Install-ADServiceAccount retourne True si l'installation est reussie)
+```
+
+!!! example "Scenario pratique"
+
+    **Contexte :** Marc administre SRV-01, un serveur de fichiers chez un cabinet comptable. Le lundi matin, les collaborateurs signalent regulierement que le lecteur reseau est lent ou indisponible. Apres investigation, Marc constate que le script de sauvegarde nocturne tourne encore le matin car il n'est pas limite dans le temps et que le disque est plein.
+
+    **Probleme :** La tache de sauvegarde n'a pas de timeout et aucune protection contre les executions paralleles.
+
+    **Solution :** Marc reconfigure la tache via l'interface graphique :
+
+    1. Dans Task Scheduler, naviguer vers la tache `Daily-FileServerBackup`
+    2. Onglet **Settings** :
+        - Cocher **Stop the task if it runs longer than** : `3 hours`
+        - Selectionner **Do not start a new instance** pour la politique d'instances
+        - Cocher **Run task as soon as possible after a scheduled start is missed**
+    3. Onglet **General** :
+        - Verifier que **Run whether user is logged on or not** est coche
+        - Remplacer le compte de service par `lab\svc-backup` (compte dedie avec droits minimaux)
+
+    Il ajoute aussi une verification dans le script lui-meme :
+
+    ```powershell
+    # Check free disk space before starting backup
+    $freePct = (Get-PSDrive C).Free / ((Get-PSDrive C).Used + (Get-PSDrive C).Free) * 100
+    if ($freePct -lt 15) {
+        Write-EventLog -LogName Application -Source "BackupScript" -EventId 1001 `
+            -EntryType Warning -Message "Backup aborted: less than 15% free on C: ($([math]::Round($freePct,1))%)"
+        exit 1
+    }
+    ```
+
+    Apres ces modifications, la tache s'arrete automatiquement si elle depasse 3 heures, et une nouvelle instance ne demarre jamais tant que la precedente est en cours.
+
+!!! danger "Erreurs courantes"
+
+    **Tache qui ne s'execute pas quand personne n'est connecte** — L'option **Run whether user is logged on or not** n'est pas cochee. Sur un serveur, cette option est indispensable. Son activation demande la saisie du mot de passe du compte de service.
+
+    **Script PowerShell bloque par la politique d'execution** — Sans `-ExecutionPolicy Bypass` dans les arguments de la tache, le script peut etre bloque si la politique systeme est `Restricted` ou `AllSigned`. Ajoutez toujours `-ExecutionPolicy Bypass -NoProfile`.
+
+    **Executions paralleles non voulues** — Si la tache prend plus de temps que prevu (sauvegarde lente, reseau lent), une nouvelle instance peut demarrer avant la fin de la precedente. Configurez **Do not start a new instance** et definissez un timeout avec **Stop the task if it runs longer than**.
+
+    **Historique desactive** — Par defaut, l'historique des taches est desactive sur Windows Server. Sans lui, il est impossible de savoir si une tache s'est bien executee ou a echoue. Activez-le des la mise en production (`wevtutil set-log ... /enabled:true`).
+
+    **Compte SYSTEM sans acces reseau** — Le compte SYSTEM a des droits complets en local, mais il ne peut pas acceder aux partages reseau avec son identite. Pour les taches necessitant un acces reseau, utilisez le compte **Network Service** ou un compte de service dedie.
 
 ## Points cles a retenir
 

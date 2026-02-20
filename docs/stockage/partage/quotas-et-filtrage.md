@@ -14,6 +14,10 @@ tags:
 
 ## Qu'est-ce que FSRM ?
 
+!!! example "Analogie"
+
+    FSRM fonctionne comme le **reglement interieur d'un parking de bureau**. Les **quotas** sont l'equivalent des places de parking attribuees : chaque service a un nombre limite de places (espace disque) et recoit un avertissement quand il n'en reste plus qu'une. Le **filtrage de fichiers** est le vigile a l'entree qui refuse les camions (fichiers .exe, .mp3) mais laisse passer les voitures (documents bureautiques). Les **rapports**, ce sont les statistiques mensuelles d'occupation du parking.
+
 Le Gestionnaire de ressources du serveur de fichiers (File Server Resource Manager, FSRM) est un ensemble d'outils integres a Windows Server pour controler et gerer les donnees stockees sur les serveurs de fichiers :
 
 - **Quotas** : limiter l'espace disque utilise par dossier
@@ -37,6 +41,18 @@ Install-WindowsFeature FS-Resource-Manager -IncludeManagementTools
 
 # Verify installation
 Get-WindowsFeature FS-Resource-Manager | Select-Object Name, InstallState
+```
+
+Resultat :
+
+```text
+Success Restart Needed Exit Code      Feature Result
+------- -------------- ---------      --------------
+True    No             Success        {File Server Resource Manager}
+
+Name                    InstallState
+----                    ------------
+FS-Resource-Manager     Installed
 ```
 
 La console de gestion est accessible via :
@@ -144,6 +160,18 @@ Get-FsrmQuotaTemplate | Select-Object Name, Size, SoftLimit |
     Format-Table -AutoSize
 ```
 
+Resultat :
+
+```text
+Name                              Size     SoftLimit
+----                              ----     ---------
+100 MB Limit                      104857600    False
+200 MB Limit Reports to User      209715200    False
+200 GB Limit Reports to User      214748364800 False
+Monitor 200 GB Usage              214748364800  True
+Monitor 500 MB Usage              524288000     True
+```
+
 ### Creer un modele personnalise
 
 ```powershell
@@ -187,6 +215,16 @@ Get-FsrmQuota | Select-Object Path,
     Format-Table -AutoSize
 ```
 
+Resultat :
+
+```text
+Path                        SizeGB UsedGB Used% SoftLimit
+----                        ------ ------ ----- ---------
+D:\Partages\Comptabilite      5.00   3.24  64.8     False
+D:\Partages\Commun           10.00   7.85  78.5      True
+D:\Partages\RH                5.00   1.12  22.4     False
+```
+
 ### Modifier un quota
 
 ```powershell
@@ -216,6 +254,20 @@ Les groupes de fichiers definissent les extensions a filtrer :
 # List built-in file groups
 Get-FsrmFileGroup | Select-Object Name, IncludePattern |
     Format-Table -AutoSize
+```
+
+Resultat :
+
+```text
+Name                    IncludePattern
+----                    --------------
+Audio and Video Files   {*.aac, *.aif, *.aiff, *.au...}
+Backup Files            {*.bak, *.bkf}
+Compressed Files        {*.bz2, *.gz, *.lzh, *.rar...}
+E-mail Files            {*.eml, *.msg, *.ost, *.pst}
+Executable Files        {*.bat, *.cmd, *.com, *.exe...}
+Image Files             {*.bmp, *.dib, *.eps, *.gif...}
+Office Files            {*.doc, *.docx, *.ppt, *.xls...}
 ```
 
 Groupes integres courants :
@@ -416,6 +468,71 @@ New-FsrmAutoQuota -Path "D:\HomeDirectories" -Template "Home 2GB"
 - Les **exceptions** de filtre permettent d'autoriser des types specifiques dans certains sous-dossiers
 - Les **rapports de stockage** identifient les fichiers volumineux, les doublons et l'utilisation par proprietaire
 - Configurez le **serveur SMTP** pour recevoir les notifications par e-mail
+
+!!! example "Scenario pratique"
+
+    **Contexte :** David, administrateur systeme, constate que le volume de donnees du serveur de fichiers SRV-01 est sature a 95%. Apres investigation, il decouvre que des utilisateurs stockent des fichiers personnels volumineux (films, musique) dans le partage commun.
+
+    **Diagnostic :**
+
+    ```powershell
+    # Generate a report to find large files and files by type
+    New-FsrmStorageReport -Name "Audit Urgence" `
+        -Namespace "D:\Partages\Commun" `
+        -ReportType LargeFiles, FilesByFileGroup `
+        -LargeFileMinimum 100MB `
+        -ReportFormat HTML `
+        -Interactive
+
+    # Check file groups consuming space
+    Get-ChildItem -Path "D:\Partages\Commun" -Recurse -File |
+        Where-Object { $_.Extension -match '\.(mp4|avi|mkv|mp3|flac)$' } |
+        Measure-Object Length -Sum |
+        Select-Object @{N='TotalGB';E={[math]::Round($_.Sum/1GB,2)}}, Count
+    ```
+
+    Resultat :
+
+    ```text
+    TotalGB Count
+    ------- -----
+      45.67   128
+    ```
+
+    45 Go de fichiers multimedia dans le partage commun.
+
+    **Solution en 3 etapes :**
+
+    ```powershell
+    # 1. Block multimedia files going forward
+    New-FsrmFileScreen -Path "D:\Partages\Commun" `
+        -IncludeGroup "Audio and Video Files" `
+        -Description "Block multimedia in common share"
+
+    # 2. Set a quota to prevent future saturation
+    New-FsrmQuota -Path "D:\Partages\Commun" -Size 50GB `
+        -Description "Quota 50 Go partage commun"
+
+    # 3. Notify users and clean up existing files
+    Get-ChildItem -Path "D:\Partages\Commun" -Recurse -File |
+        Where-Object { $_.Extension -match '\.(mp4|avi|mkv|mp3|flac)$' } |
+        Select-Object FullName, @{N='SizeMB';E={[math]::Round($_.Length/1MB,1)}} |
+        Export-Csv -Path "C:\Reports\fichiers-multimedia.csv" -NoTypeInformation
+    ```
+
+    David envoie la liste aux managers pour validation avant suppression. Le filtre FSRM empeche les nouveaux fichiers multimedia, et le quota alerte en cas de saturation future.
+
+!!! danger "Erreurs courantes"
+
+    1. **Utiliser un hard quota sans avertissement prealable** : un quota strict sans seuils de notification a 70% et 85% surprend les utilisateurs. Ils decouvrent le blocage au pire moment (fichier important non sauvegarde). Configurez toujours des seuils d'alerte progressifs.
+
+    2. **Oublier les quotas automatiques pour les home directories** : sans `New-FsrmAutoQuota`, les nouveaux dossiers utilisateur n'auront pas de quota. Un seul utilisateur peut alors consommer tout l'espace du volume.
+
+    3. **Filtrage actif sans exception pour les services IT** : bloquer les executables sur tous les partages empeche le service IT de deployer des logiciels. Creez toujours une exception FSRM (`New-FsrmFileScreenException`) sur les dossiers IT.
+
+    4. **Ne pas configurer le serveur SMTP** : sans configuration SMTP (`Set-FsrmSetting`), aucune notification par e-mail n'est envoyee. Les alertes se limitent au journal d'evenements que personne ne consulte proactivement.
+
+    5. **Sous-estimer l'impact du soft quota** : un soft quota alerte mais ne bloque pas. Si personne ne reagit aux alertes, le volume se remplit tout de meme. Pour les dossiers a risque, privilegiez un hard quota combine a des alertes par e-mail.
 
 ## Pour aller plus loin
 

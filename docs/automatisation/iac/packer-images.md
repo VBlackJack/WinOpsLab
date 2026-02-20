@@ -17,6 +17,10 @@ tags:
 
 **Packer** est un outil open source de HashiCorp qui automatise la creation d'images de machines (VM templates, AMI, images Azure, etc.). Pour les environnements Windows Server, Packer permet de construire des **golden images** : des images de base standardisees, securisees et preconfigures qui servent de point de depart pour tous les nouveaux deploiements.
 
+!!! example "Analogie"
+
+    Une golden image Packer, c'est comme un moule de boulangerie. On prepare le moule une seule fois avec la bonne forme, les bons ingredients, les bons reglages de four. Ensuite, chaque gateau qui en sort est identique — meme taille, meme cuisson, meme qualite. Si on veut ameliorer la recette, on modifie le moule et on relance la production. Comparez ca a cuire chaque gateau manuellement : chacun sera un peu different et le premier sera rarement le meilleur.
+
 ## Pourquoi des golden images ?
 
 ```mermaid
@@ -50,6 +54,20 @@ choco install packer -y
 
 # Verify installation
 packer version
+```
+
+Resultat :
+
+```text
+Chocolatey v2.3.0
+Downloading Packer 1.11.0...
+Installing packer...
+packer has been installed.
+
+Packer v1.11.0
+
+Your version of Packer is out of date! The latest version
+is 1.11.0. You can update by downloading from www.packer.io/downloads.html
 ```
 
 ## Structure d'un projet Packer
@@ -278,6 +296,45 @@ packer build -var-file="variables.pkrvars.hcl" windows-server-2022.pkr.hcl
 packer build -var "image_version=1.1.0" -var-file="variables.pkrvars.hcl" windows-server-2022.pkr.hcl
 ```
 
+Resultat :
+
+```text
+azure-arm.windows-2022: output will be in this color.
+
+==> azure-arm.windows-2022: Running builder ...
+==> azure-arm.windows-2022: Getting tokens using client secret
+==> azure-arm.windows-2022: Creating resource group ...
+==> azure-arm.windows-2022:  -> ResourceGroupName : 'pkr-Resource-Group-abc123'
+==> azure-arm.windows-2022:  -> Location          : 'westeurope'
+==> azure-arm.windows-2022: Validating deployment template ...
+==> azure-arm.windows-2022: Deploying deployment template ...
+==> azure-arm.windows-2022: Getting the public IP address ...
+==> azure-arm.windows-2022: Waiting for WinRM to become available...
+==> azure-arm.windows-2022: Connected to WinRM!
+==> azure-arm.windows-2022: Provisioning with Powershell...
+==> azure-arm.windows-2022: Provisioning with shell script: scripts/Install-WindowsUpdates.ps1
+    azure-arm.windows-2022: Found 12 updates to install
+==> azure-arm.windows-2022: Provisioning with shell script: scripts/Configure-Baseline.ps1
+    azure-arm.windows-2022: Baseline configuration completed
+==> azure-arm.windows-2022: Provisioning with shell script: scripts/Cleanup-Image.ps1
+    azure-arm.windows-2022: Image cleanup completed
+==> azure-arm.windows-2022: Generalizing machine ...
+==> azure-arm.windows-2022: Capturing image ...
+==> azure-arm.windows-2022:  -> Image ResourceGroupName   : 'rg-images'
+==> azure-arm.windows-2022:  -> Image Name                : 'ws2022-golden-1.1.0'
+==> azure-arm.windows-2022: Deleting resource group ...
+Build 'azure-arm.windows-2022' finished after 42 minutes 17 seconds.
+
+==> Wait completed after 42 minutes 17 seconds
+==> Builds finished. The artifacts of successful builds are:
+--> azure-arm.windows-2022: Azure.ResourceManagement.VMImage:
+
+OSType: Windows
+ManagedImageResourceGroupName: rg-images
+ManagedImageName: ws2022-golden-1.1.0
+ManagedImageLocation: westeurope
+```
+
 ### Fichier de variables
 
 ```hcl
@@ -354,6 +411,61 @@ flowchart LR
 | Tests | Tester l'image avec Pester ou InSpec apres construction |
 | Nettoyage | Toujours nettoyer et sysprep avant de finaliser l'image |
 | Documentation | Documenter le contenu de chaque version d'image |
+
+!!! example "Scenario pratique"
+
+    **Contexte :** Nathalie est responsable infrastructure dans une entreprise utilisant Hyper-V. Chaque trimestre, l'equipe securite exige que tous les nouveaux serveurs partent d'une image a jour (Patch Tuesday applique) avec SMBv1 desactive et la transcription PowerShell activee. Actuellement, ces operations sont faites a la main lors de chaque provisionnement — certains serveurs manquent des etapes.
+
+    **Probleme :** Sans image standardisee, la conformite depend de la rigueur de chaque technicien. Le dernier audit a releve 3 serveurs avec SMBv1 encore actif.
+
+    **Solution :** Nathalie met en place un pipeline Packer pour Hyper-V :
+
+    ```powershell
+    # Step 1: Validate the template
+    packer validate .\windows-server-2022.pkr.hcl
+    ```
+
+    ```text
+    The configuration is valid.
+    ```
+
+    ```powershell
+    # Step 2: Build the image (monthly, after Patch Tuesday)
+    packer build -var "image_version=2026.02" .\windows-server-2022.pkr.hcl
+    ```
+
+    ```text
+    hyperv-iso.windows-2022: output will be in this color.
+    ==> hyperv-iso.windows-2022: Creating virtual switch ...
+    ==> hyperv-iso.windows-2022: Creating virtual machine ...
+    ==> hyperv-iso.windows-2022: Starting virtual machine ...
+    ==> hyperv-iso.windows-2022: Waiting for WinRM to become available...
+    ==> hyperv-iso.windows-2022: Connected to WinRM!
+    ==> hyperv-iso.windows-2022: Provisioning with shell script: Install-WindowsUpdates.ps1
+        hyperv-iso.windows-2022: Found 0 updates to install (already up to date)
+    ==> hyperv-iso.windows-2022: Provisioning with shell script: Configure-Baseline.ps1
+        hyperv-iso.windows-2022: Baseline configuration completed
+    ==> hyperv-iso.windows-2022: Provisioning with shell script: Cleanup-Image.ps1
+        hyperv-iso.windows-2022: Image cleanup completed
+    ==> hyperv-iso.windows-2022: Shutting down virtual machine ...
+    ==> hyperv-iso.windows-2022: Exporting virtual machine ...
+    Build 'hyperv-iso.windows-2022' finished after 38 minutes 4 seconds.
+    --> hyperv-iso.windows-2022: VM: ws2022-golden-2026.02
+    ```
+
+    Nathalie planifie ce build via une tache planifiee le second mercredi de chaque mois (apres Patch Tuesday). Chaque nouveau serveur part desormais de cette image et tous les controles de conformite sont garantis des le premier demarrage.
+
+!!! danger "Erreurs courantes"
+
+    **Timeout WinRM** — Si Packer ne peut pas se connecter au serveur en construction via WinRM dans le delai imparti (`winrm_timeout`), le build echoue. Verifiez que le fichier `autounattend.xml` configure bien WinRM et que le pare-feu de l'hote autorise le trafic.
+
+    **Sysprep non execute ou incomplet** — Une image non generalisee avec Sysprep produira des conflits de SID, de nom de machine et de licences lors du deploiement. Le Sysprep doit s'executer et le VM doit atteindre l'etat `IMAGE_STATE_GENERALIZE_RESEAL_TO_OOBE` avant que Packer finalise l'image.
+
+    **Secrets dans `variables.pkrvars.hcl` commites dans Git** — Les fichiers `.pkrvars.hcl` contenant `client_secret` ou des mots de passe ne doivent jamais etre commites. Ajoutez-les au `.gitignore` et passez les secrets via des variables d'environnement (`PKR_VAR_client_secret`).
+
+    **Image non mise a jour apres Patch Tuesday** — Une golden image avec des vulnerabilites connues est pire qu'une installation fraiche car elle donne un faux sentiment de securite. Automatisez la reconstruction mensuelle et versionnez les images avec la date (`2026.02`).
+
+    **Packer et Hyper-V : switch reseau manquant** — Le build Hyper-V necessite un switch reseau nomme dans la configuration. Si le switch `Default Switch` n'existe pas ou a un nom different, le build echoue. Verifiez le nom exact avec `Get-VMSwitch`.
 
 ## Points cles a retenir
 

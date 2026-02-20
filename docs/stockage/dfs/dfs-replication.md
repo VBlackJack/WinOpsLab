@@ -14,6 +14,10 @@ tags:
 
 ## Qu'est-ce que DFS Replication ?
 
+!!! example "Analogie"
+
+    Imaginez deux collegues travaillant sur le meme dossier papier, chacun dans un bureau different. DFS Replication agit comme un **coursier intelligent** : au lieu de photocopier tout le dossier a chaque modification, il ne transmet que les **pages modifiees** (compression differentielle). Si les deux collegues modifient la meme page en meme temps, le coursier garde la version la plus recente et archive l'autre dans un tiroir de secours (dossier ConflictAndDeleted).
+
 DFS Replication (DFS-R) est un moteur de replication multi-maitre qui synchronise des dossiers entre plusieurs serveurs de maniere efficace. Il utilise la compression differetielle a distance (RDC) pour ne transmettre que les blocs modifies des fichiers, minimisant ainsi l'utilisation de la bande passante.
 
 ```mermaid
@@ -101,6 +105,18 @@ Install-WindowsFeature FS-DFS-Replication -IncludeManagementTools
 
 # Verify installation
 Get-WindowsFeature FS-DFS-Replication | Select-Object Name, InstallState
+```
+
+Resultat :
+
+```text
+Success Restart Needed Exit Code      Feature Result
+------- -------------- ---------      --------------
+True    No             Success        {DFS Replication}
+
+Name                InstallState
+----                ------------
+FS-DFS-Replication  Installed
 ```
 
 ## Configurer DFS Replication avec PowerShell
@@ -202,6 +218,19 @@ Get-DfsrBacklog -GroupName "RG-Partages" `
     -DestinationComputerName "SRV-FILE02").Count
 ```
 
+Resultat :
+
+```text
+FileName              BacklogCount
+--------              ------------
+Budget_2026.xlsx               1
+Rapport_annuel.docx            1
+
+42
+```
+
+Le backlog de 42 fichiers indique que 42 fichiers attendent d'etre repliques de SRV-FILE01 vers SRV-FILE02.
+
 ## Planification et bande passante
 
 ### Limiter la bande passante
@@ -268,6 +297,12 @@ $stagingSize = ($topFiles | Measure-Object Length -Sum).Sum
 Write-Output "Recommended staging size: $([math]::Round($stagingSize/1GB,2)) GB"
 ```
 
+Resultat :
+
+```text
+Recommended staging size: 2.84 GB
+```
+
 ### Modifier la taille du staging
 
 ```powershell
@@ -306,6 +341,20 @@ Get-DfsrBacklog -GroupName "RG-Partages" -FolderName "Comptabilite" `
 Write-DfsrHealthReport -GroupName "RG-Partages" `
     -ReferenceComputerName "SRV-FILE01" `
     -Path "C:\Reports"
+```
+
+Resultat :
+
+```text
+GroupName               : RG-Partages
+BandwidthLevel          : Full
+ScheduleType            : UseGroupSchedule
+
+Sending Member  Receiving Member Files      Size
+--------------  ---------------- -----      ----
+SRV-FILE01      SRV-FILE02       3          1.24 MB
+
+Report generated: C:\Reports\RG-Partages-health-20260220.html
 ```
 
 ### Rapports de diagnostic
@@ -368,6 +417,77 @@ L'utilisateur accede au namespace DFS, est oriente vers la cible la plus proche,
 - La **bande passante** peut etre limitee par plage horaire pour eviter la saturation du reseau
 - Les **conflits** sont resolus par horodatage (le fichier le plus recent gagne)
 - Surveillez le **backlog** avec `Get-DfsrBacklog` pour verifier que la replication suit
+
+!!! example "Scenario pratique"
+
+    **Contexte :** Lucas, administrateur dans un cabinet d'architectes, constate que la replication DFS-R entre le siege (SRV-FILE01) et la succursale (SRV-FILE02) est bloquee depuis 2 jours. Les utilisateurs de la succursale se plaignent de fichiers obsoletes.
+
+    **Diagnostic :**
+
+    ```powershell
+    # Check the replication backlog
+    (Get-DfsrBacklog -GroupName "RG-Partages" -FolderName "Projets" `
+        -SourceComputerName "SRV-FILE01" `
+        -DestinationComputerName "SRV-FILE02").Count
+    ```
+
+    Resultat :
+
+    ```text
+    15847
+    ```
+
+    Le backlog est enorme. Lucas verifie les evenements :
+
+    ```powershell
+    # Check recent DFSR events
+    Get-WinEvent -LogName "DFS Replication" -MaxEvents 10 |
+        Select-Object TimeCreated, Id, Message | Format-Table -Wrap
+    ```
+
+    Resultat :
+
+    ```text
+    TimeCreated           Id Message
+    -----------           -- -------
+    2026-02-18 14:32:10 4412 The DFS Replication service detected that the staging
+                              space in use for the replicated folder Projets is above
+                              the high watermark. The service will attempt to delete
+                              the oldest staging files...
+    ```
+
+    **Solution :** Le staging est sous-dimensionne. Les gros fichiers AutoCAD (.dwg) saturent le staging.
+
+    ```powershell
+    # Calculate the right staging size
+    $topFiles = Get-ChildItem -Path "D:\Partages\Projets" -Recurse -File |
+        Sort-Object Length -Descending | Select-Object -First 32
+    $stagingSize = ($topFiles | Measure-Object Length -Sum).Sum
+    Write-Output "Recommended: $([math]::Round($stagingSize/1GB,2)) GB"
+
+    # Increase staging quota to 32 GB
+    Set-DfsrMembership -GroupName "RG-Partages" `
+        -FolderName "Projets" -ComputerName "SRV-FILE01" `
+        -StagingPathQuotaInMB 32768
+
+    Set-DfsrMembership -GroupName "RG-Partages" `
+        -FolderName "Projets" -ComputerName "SRV-FILE02" `
+        -StagingPathQuotaInMB 32768
+    ```
+
+    Apres augmentation du staging, le backlog commence a diminuer et la replication reprend normalement en quelques heures.
+
+!!! danger "Erreurs courantes"
+
+    1. **Choisir le mauvais membre principal** : le membre principal fait autorite lors de la synchronisation initiale. Si vous designez un serveur vide comme principal, les fichiers du serveur secondaire seront deplaces dans `PreExisting` et sembleront avoir disparu.
+
+    2. **Sous-dimensionner le staging** : la taille par defaut de 4 Go est insuffisante pour la plupart des environnements de production. Le staging sature entraine un ralentissement severe de la replication. Calculez la taille avec la somme des 32 plus gros fichiers.
+
+    3. **Modifier le meme fichier sur deux serveurs simultanement** : DFS-R est multi-maitre, mais la resolution de conflits signifie qu'une des modifications sera perdue. Etablissez une convention : un seul site modifie activement les fichiers.
+
+    4. **Oublier le pre-seeding pour les grands volumes** : sans pre-seeding (robocopy), la synchronisation initiale de plusieurs teraoctets peut prendre des jours, voire des semaines, en saturant le lien WAN. Copiez les donnees via un support physique ou un transfert hors heures.
+
+    5. **Ne pas surveiller le backlog regulierement** : un backlog qui ne diminue jamais indique un probleme de bande passante, de staging ou de connectivite. Mettez en place un script de surveillance automatique avec `Get-DfsrBacklog` et des alertes par e-mail.
 
 ## Pour aller plus loin
 

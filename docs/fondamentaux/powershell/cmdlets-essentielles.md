@@ -13,6 +13,10 @@ tags:
 
 ## Informations systeme
 
+!!! example "Analogie"
+
+    Les cmdlets PowerShell sont comme la boite a outils d'un technicien de maintenance. Chaque outil a un usage precis : le multimetre pour mesurer (`Get-`), le tournevis pour ajuster (`Set-`), la cle a molette pour assembler (`New-`). Un bon technicien connait ses outils de base par coeur — c'est exactement ce que cette page vous apprend.
+
 ```powershell
 # OS information
 Get-ComputerInfo | Select-Object WindowsProductName, OsVersion, OsBuildNumber
@@ -28,6 +32,28 @@ Get-HotFix | Sort-Object InstalledOn -Descending | Select-Object -First 10
 
 # System environment variables
 Get-ChildItem Env:
+```
+
+Resultat :
+
+```text
+PS C:\> Get-ComputerInfo | Select-Object WindowsProductName, OsVersion, OsBuildNumber
+
+WindowsProductName              OsVersion  OsBuildNumber
+------------------              ---------  -------------
+Windows Server 2022 Standard    10.0.20348 20348
+
+PS C:\> $env:COMPUTERNAME
+SRV-DC01
+
+PS C:\> (Get-Date) - (Get-CimInstance Win32_OperatingSystem).LastBootUpTime
+
+Days              : 3
+Hours             : 7
+Minutes           : 42
+Seconds           : 15
+TotalHours        : 79.70
+TotalMinutes      : 4782.25
 ```
 
 ## Gestion des services
@@ -58,6 +84,29 @@ Set-Service -Name "WinRM" -StartupType Automatic
 Set-Service -Name "Spooler" -StartupType Disabled
 ```
 
+Resultat (extrait) :
+
+```text
+PS C:\> Get-Service -Name "WinRM"
+
+Status   Name               DisplayName
+------   ----               -----------
+Running  WinRM              Windows Remote Management (WS-Manag...
+
+PS C:\> Get-Service | Where-Object Status -eq "Running"
+
+Status   Name               DisplayName
+------   ----               -----------
+Running  CryptSvc           Cryptographic Services
+Running  DcomLaunch         DCOM Server Process Launcher
+Running  Dhcp               DHCP Client
+Running  DNS                DNS Server
+Running  EventLog           Windows Event Log
+Running  LanmanServer       Server
+Running  WinRM              Windows Remote Management (WS-Manag...
+...
+```
+
 ## Gestion des processus
 
 ```powershell
@@ -81,6 +130,20 @@ Stop-Process -Name "notepad" -Force
 
 # Stop a process by PID
 Stop-Process -Id 1234 -Force
+```
+
+Resultat (extrait) :
+
+```text
+PS C:\> Get-Process | Sort-Object CPU -Descending | Select-Object -First 10
+
+Handles  NPM(K)    PM(K)      WS(K)   CPU(s)     Id  SI ProcessName
+-------  ------    -----      -----   ------     --  -- -----------
+    842      45   185432     192048   312.45   1284   0 dns
+    523      32    98764     104520   187.22   2048   0 lsass
+    312      28    67432      72180    95.67    892   0 svchost
+    198      15    42156      45680    54.33   3456   1 ServerManager
+    156      12    28940      31204    32.11   1876   0 WmiPrvSE
 ```
 
 ## Gestion du reseau
@@ -111,6 +174,42 @@ Get-NetRoute -AddressFamily IPv4
 Get-NetTCPConnection -State Established
 ```
 
+Resultat (extrait) :
+
+```text
+PS C:\> Get-NetIPConfiguration
+
+InterfaceAlias       : Ethernet0
+InterfaceIndex       : 4
+InterfaceDescription : Intel(R) 82574L Gigabit Network Connection
+NetProfile.Name      : lab.local
+IPv4Address          : 10.0.0.10
+IPv4DefaultGateway   : 10.0.0.1
+DNSServer            : 10.0.0.10
+                       10.0.0.11
+
+PS C:\> Test-Connection -ComputerName 10.0.0.1 -Count 4
+
+   Destination: 10.0.0.1
+
+Ping Source           Address          Latency Status
+                                        (ms)
+---- ------           -------          ------- ------
+   1 SRV-DC01         10.0.0.1               1 Success
+   2 SRV-DC01         10.0.0.1               1 Success
+   3 SRV-DC01         10.0.0.1               1 Success
+   4 SRV-DC01         10.0.0.1               1 Success
+
+PS C:\> Test-NetConnection -ComputerName "SRV-DC01" -Port 3389
+
+ComputerName     : SRV-DC01
+RemoteAddress    : 10.0.0.10
+RemotePort       : 3389
+InterfaceAlias   : Ethernet0
+SourceAddress    : 10.0.0.10
+TcpTestSucceeded : True
+```
+
 ## Gestion des fichiers et dossiers
 
 ```powershell
@@ -136,6 +235,25 @@ Add-Content -Path "C:\Temp\test.txt" -Value "New line"
 Select-String -Path "C:\Temp\*.log" -Pattern "error"
 ```
 
+Resultat (extrait) :
+
+```text
+PS C:\> Get-Content -Path "C:\Windows\System32\drivers\etc\hosts"
+# Copyright (c) 1993-2009 Microsoft Corp.
+#
+# This is a sample HOSTS file used by Microsoft TCP/IP for Windows.
+#
+# localhost name resolution is handled within DNS itself.
+#	127.0.0.1       localhost
+#	::1             localhost
+10.0.0.10    SRV-DC01.lab.local    SRV-DC01
+10.0.0.11    SRV-01.lab.local      SRV-01
+
+PS C:\> Select-String -Path "C:\Temp\*.log" -Pattern "error"
+C:\Temp\install.log:42:  [ERROR] Failed to connect to 10.0.0.10:445
+C:\Temp\install.log:87:  [ERROR] Timeout waiting for DNS response
+```
+
 ## Gestion des roles et fonctionnalites
 
 ```powershell
@@ -156,6 +274,23 @@ Install-WindowsFeature -Name "AD-Domain-Services", "DNS" -IncludeManagementTools
 
 # Remove a role
 Uninstall-WindowsFeature -Name "DHCP"
+```
+
+Resultat (extrait) :
+
+```text
+PS C:\> Get-WindowsFeature -Name "*DNS*"
+
+Display Name                                            Name            Install State
+------------                                            ----            -------------
+    [X] DNS Server                                      DNS             Installed
+        [X] DNS Server Tools                            RSAT-DNS-Server Installed
+
+PS C:\> Install-WindowsFeature -Name "DNS" -IncludeManagementTools
+
+Success Restart Needed Exit Code      Feature Result
+------- -------------- ---------      --------------
+True    No             NoChangeNeeded {}
 ```
 
 ## Gestion des utilisateurs locaux
@@ -183,6 +318,27 @@ Get-LocalGroup
 Get-LocalGroupMember -Group "Administrators"
 ```
 
+Resultat (extrait) :
+
+```text
+PS C:\> Get-LocalUser
+
+Name               Enabled Description
+----               ------- -----------
+Administrator      True    Built-in account for administering the computer/domain
+DefaultAccount     False   A user account managed by the system.
+Guest              False   Built-in account for guest access to the computer/domain
+labuser            True    Lab User
+
+PS C:\> Get-LocalGroupMember -Group "Administrators"
+
+ObjectClass Name                      PrincipalSource
+----------- ----                      ---------------
+User        SRV-DC01\Administrator    Local
+User        SRV-DC01\labuser          Local
+Group       LAB\Domain Admins         ActiveDirectory
+```
+
 ## Journaux d'evenements
 
 ```powershell
@@ -204,6 +360,18 @@ Get-WinEvent -FilterHashtable @{
     Id        = 6005, 6006  # System startup/shutdown
     StartTime = (Get-Date).AddDays(-7)
 }
+```
+
+Resultat (extrait) :
+
+```text
+PS C:\> Get-EventLog -LogName System -EntryType Error -Newest 10
+
+   Index Time          EntryType   Source                 InstanceID Message
+   ----- ----          ---------   ------                 ---------- -------
+   14523 Feb 19 14:12  Error       DCOM                        10016 The application-specific permission settings...
+   14501 Feb 19 08:45  Error       Service Control M...   3221232472 The DNS Client service terminated unexpect...
+   14487 Feb 18 22:30  Error       Disk                          153 The IO operation at logical block address...
 ```
 
 ## Gestion du pare-feu
@@ -231,6 +399,18 @@ Disable-NetFirewallRule -DisplayName "Allow ICMP"
 Remove-NetFirewallRule -DisplayName "Allow ICMP"
 ```
 
+Resultat (extrait) :
+
+```text
+PS C:\> Get-NetFirewallProfile | Select-Object Name, Enabled
+
+Name    Enabled
+----    -------
+Domain     True
+Private    True
+Public     True
+```
+
 ## Commandes utilitaires
 
 ```powershell
@@ -256,6 +436,20 @@ Restart-Computer -Force
 Stop-Computer -Force
 ```
 
+Resultat (extrait de `Measure-Command`) :
+
+```text
+PS C:\> Measure-Command { Get-Process }
+
+Days              : 0
+Hours             : 0
+Minutes           : 0
+Seconds           : 0
+Milliseconds      : 47
+Ticks             : 478923
+TotalMilliseconds : 47.8923
+```
+
 ## Tableau recapitulatif
 
 | Domaine | Cmdlets cles |
@@ -269,6 +463,74 @@ Stop-Computer -Force
 | Utilisateurs | `Get-LocalUser`, `New-LocalUser` |
 | Evenements | `Get-EventLog`, `Get-WinEvent` |
 | Pare-feu | `Get-NetFirewallRule`, `New-NetFirewallRule` |
+
+!!! example "Scenario pratique"
+
+    **Contexte** : Marc, administrateur systeme, recoit un appel : le serveur `SRV-01` (10.0.0.20) semble lent. Il doit diagnostiquer rapidement le probleme depuis `SRV-DC01`.
+
+    **Etape 1** : Verifier la connectivite reseau vers `SRV-01`
+
+    ```powershell
+    Test-Connection -ComputerName 10.0.0.20 -Count 2
+    ```
+
+    ```text
+    Ping Source           Address          Latency Status
+    ---- ------           -------          ------- ------
+       1 SRV-DC01         10.0.0.20              1 Success
+       2 SRV-DC01         10.0.0.20              1 Success
+    ```
+
+    **Etape 2** : Verifier le temps de fonctionnement (uptime) du serveur
+
+    ```powershell
+    (Get-Date) - (Get-CimInstance Win32_OperatingSystem -ComputerName 10.0.0.20).LastBootUpTime
+    ```
+
+    ```text
+    Days              : 47
+    Hours             : 12
+    Minutes           : 33
+    ```
+
+    Le serveur n'a pas redemarre depuis 47 jours.
+
+    **Etape 3** : Identifier les processus consommant le plus de memoire
+
+    ```powershell
+    Get-Process -ComputerName 10.0.0.20 | Sort-Object WorkingSet64 -Descending |
+        Select-Object -First 5 Name, @{N="MemoryMB"; E={[math]::Round($_.WorkingSet64/1MB,2)}}
+    ```
+
+    ```text
+    Name             MemoryMB
+    ----             --------
+    sqlservr          2048.45
+    w3wp               512.33
+    svchost            256.12
+    dns                128.67
+    lsass               95.44
+    ```
+
+    **Etape 4** : Verifier les erreurs recentes dans les journaux
+
+    ```powershell
+    Get-EventLog -LogName Application -ComputerName 10.0.0.20 -EntryType Error -Newest 5
+    ```
+
+    Marc identifie que le processus `sqlservr` consomme plus de 2 Go de memoire. Il recommande un redemarrage planifie du service SQL et une augmentation de la RAM du serveur.
+
+!!! danger "Erreurs courantes"
+
+    1. **Oublier `-ErrorAction SilentlyContinue`** : lors d'un parcours recursif avec `Get-ChildItem -Recurse`, les dossiers sans permission generent des erreurs rouges en cascade. Ajoutez `-ErrorAction SilentlyContinue` pour les ignorer proprement.
+
+    2. **Confondre `Get-EventLog` et `Get-WinEvent`** : `Get-EventLog` ne fonctionne qu'avec les journaux classiques (System, Application, Security). Pour les journaux ETW modernes, utilisez `Get-WinEvent`.
+
+    3. **Arreter un service sans verifier ses dependances** : `Stop-Service -Name "LanmanServer"` arrete le service Serveur, ce qui coupe tous les partages de fichiers. Verifiez les dependances avec `Get-Service -Name "LanmanServer" -DependentServices`.
+
+    4. **Utiliser `Remove-Item` sans `-Confirm` sur des dossiers importants** : `Remove-Item -Recurse` supprime tout sans confirmation. Ajoutez `-WhatIf` pour tester ou `-Confirm` pour valider chaque suppression.
+
+    5. **Ne pas specifier `-NoTypeInformation` avec `Export-Csv`** : sans ce parametre, la premiere ligne du CSV contient `#TYPE System.ServiceProcess.ServiceController`, ce qui pollue le fichier.
 
 ## Points cles a retenir
 

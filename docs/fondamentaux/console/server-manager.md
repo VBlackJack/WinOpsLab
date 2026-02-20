@@ -13,6 +13,13 @@ tags:
 
 ## Presentation
 
+!!! example "Analogie"
+
+    Server Manager est le tableau de bord de votre voiture. D'un coup d'oeil, vous voyez la vitesse
+    (performances), le niveau d'essence (espace disque), les voyants d'alerte (evenements) et vous
+    pouvez acceder a tous les reglages du vehicule. Comme un tableau de bord, il centralise les
+    informations essentielles en un seul endroit.
+
 Server Manager est la console d'administration centrale de Windows Server Desktop Experience. Il se lance automatiquement a l'ouverture de session et permet de :
 
 - Visualiser l'etat de sante du serveur
@@ -114,6 +121,28 @@ Install-WindowsFeature -Name AD-Domain-Services, DNS, DHCP -IncludeManagementToo
 Uninstall-WindowsFeature -Name DHCP -Remove
 ```
 
+Resultat de `Get-WindowsFeature | Where-Object Installed` (extrait) :
+
+```text
+Display Name                                    Name                Install State
+------------                                    ----                -------------
+[X] Active Directory Domain Services            AD-Domain-Services  Installed
+[X] DNS Server                                  DNS                 Installed
+[X] DHCP Server                                 DHCP                Installed
+[X] File and Storage Services                   FileAndStorage-Se.. Installed
+    [X] Storage Services                        Storage-Services    Installed
+[X] Remote Server Administration Tools          RSAT                Installed
+    [X] Role Administration Tools               RSAT-Role-Tools     Installed
+```
+
+Resultat de `Install-WindowsFeature -Name DNS -IncludeManagementTools` :
+
+```text
+Success Restart Needed Exit Code      Feature Result
+------- -------------- ---------      --------------
+True    No             Success        {DNS Server, DNS Server Tools}
+```
+
 !!! warning "Flag -IncludeManagementTools"
 
     N'oubliez pas `-IncludeManagementTools` pour installer les consoles de gestion
@@ -141,6 +170,15 @@ Configure-SMRemoting.exe -Enable
 
 # Verify WinRM connectivity from the management server
 Test-WSMan -ComputerName SRV-REMOTE-01
+```
+
+Resultat de `Test-WSMan -ComputerName SRV-01` :
+
+```text
+wsmid           : http://schemas.dmtf.org/wbem/wsman/identity/1/wsmanidentity.xsd
+ProtocolVersion : http://schemas.dmtf.org/wbem/wsman/1/wsman.xsd
+ProductVendor   : Microsoft Corporation
+ProductVersion  : OS: 10.0.20348 SP: 0.0 Stack: 3.0
 ```
 
 ### Groupes de serveurs
@@ -184,6 +222,19 @@ Si vous preferez que Server Manager ne se lance pas a l'ouverture de session :
         -Path "HKCU:\Software\Microsoft\ServerManager" `
         -Name "DoNotOpenServerManagerAtLogon" `
         -Value 1
+
+    # Verify the setting
+    Get-ItemProperty -Path "HKCU:\Software\Microsoft\ServerManager" -Name "DoNotOpenServerManagerAtLogon"
+    ```
+
+    Resultat :
+
+    ```text
+    DoNotOpenServerManagerAtLogon : 1
+    PSPath                       : Microsoft.PowerShell.Core\Registry::HKEY_CURRENT_USER\Software\Microsoft\ServerManager
+    PSParentPath                 : Microsoft.PowerShell.Core\Registry::HKEY_CURRENT_USER\Software\Microsoft
+    PSChildName                  : ServerManager
+    PSProvider                   : Microsoft.PowerShell.Core\Registry
     ```
 
 ## Limites de Server Manager
@@ -192,6 +243,88 @@ Si vous preferez que Server Manager ne se lance pas a l'ouverture de session :
 - Interface parfois lente sur des serveurs charges
 - Non disponible sur Server Core
 - Progressivement remplace par **Windows Admin Center** pour la gestion moderne
+
+## Scenario pratique
+
+!!! example "Scenario pratique"
+
+    **Contexte** : Lucas, administrateur reseau, vient d'installer le role DNS sur le serveur DC-01.
+    Apres l'installation, il remarque un drapeau jaune dans Server Manager mais l'ignore. Le lendemain,
+    les utilisateurs signalent des problemes de resolution de noms.
+
+    **Probleme** : Le role DNS est installe mais la configuration post-installation n'a pas ete
+    finalisee.
+
+    **Diagnostic** :
+
+    ```powershell
+    # Check if the DNS service is running
+    Get-Service -Name DNS -ComputerName DC-01
+
+    # Check DNS Server configuration
+    Get-DnsServer -ComputerName DC-01
+
+    # Verify installed features and their configuration status
+    Get-WindowsFeature -Name DNS
+    ```
+
+    ```text
+    Status   Name    DisplayName
+    ------   ----    -----------
+    Running  DNS     DNS Server
+
+    Display Name                Name    Install State
+    ------------                ----    -------------
+    [X] DNS Server              DNS     Installed
+    ```
+
+    **Solution** :
+
+    1. Ouvrir Server Manager et cliquer sur le drapeau de notification jaune
+    2. Suivre le lien **Post-deployment Configuration** pour le role DNS
+    3. Creer les zones de recherche directe et inversee :
+
+    ```powershell
+    # Create a primary forward lookup zone
+    Add-DnsServerPrimaryZone -Name "lab.local" -ZoneFile "lab.local.dns" -ComputerName DC-01
+
+    # Create a reverse lookup zone
+    Add-DnsServerPrimaryZone -NetworkId "10.0.0.0/24" -ZoneFile "0.0.10.in-addr.arpa.dns" -ComputerName DC-01
+    ```
+
+    ```text
+    # Verification
+    ZoneName      ZoneType   IsAutoCreated  IsDsIntegrated  IsReverseLookupZone
+    --------      --------   -------------  --------------  -------------------
+    lab.local     Primary    False          False           False
+    0.0.10.in-addr.arpa  Primary  False    False           True
+    ```
+
+    **Resultat** : Le drapeau passe au vert et la resolution DNS fonctionne correctement.
+
+## Erreurs courantes
+
+!!! danger "Erreurs courantes"
+
+    1. **Ignorer les notifications (drapeaux jaunes/rouges)** : Les drapeaux dans Server Manager
+       signalent des actions requises. Un drapeau jaune apres l'installation d'un role indique
+       souvent qu'une configuration post-installation est necessaire. Ne les ignorez jamais.
+
+    2. **Oublier `-IncludeManagementTools` dans `Install-WindowsFeature`** : Sans ce flag, le role
+       est installe mais les consoles de gestion (snap-ins MMC) ne le sont pas. Vous ne pourrez pas
+       administrer le role localement.
+
+    3. **Ne pas activer WinRM sur les serveurs distants** : Server Manager ne peut pas gerer un
+       serveur distant si WinRM n'est pas active et configure. Pensez a executer `Enable-PSRemoting`
+       et `Configure-SMRemoting.exe -Enable` sur chaque serveur cible.
+
+    4. **Gerer trop de serveurs sans groupes logiques** : Avec 10+ serveurs, le tableau de bord
+       devient illisible. Creez des groupes de serveurs (Controleurs de domaine, Serveurs Web, etc.)
+       pour organiser la vue.
+
+    5. **Utiliser Server Manager pour tout** : Certaines taches avancees (GPO complexes, configuration
+       DNS fine, audit de securite) necessitent les consoles MMC dediees ou PowerShell. Server Manager
+       est un point d'entree, pas un outil universel.
 
 ## Points cles a retenir
 

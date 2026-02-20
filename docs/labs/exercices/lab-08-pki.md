@@ -42,6 +42,15 @@ graph TD
 
 ## Instructions
 
+!!! example "Analogie"
+
+    Une PKI d'entreprise fonctionne comme une prefecture qui delivre des cartes d'identite :
+    la CA racine est le ministere de l'interieur (autorite ultime, rarement sollicitee directement),
+    les modeles de certificats sont les formulaires standardises, et les certificats emis sont
+    les cartes delivrees aux individus (serveurs). Quand un navigateur visite un site HTTPS
+    interne, il verifie la carte d'identite du serveur aupres du ministere de confiance —
+    si la CA n'est pas dans son registre de confiance, il affiche une alerte de securite.
+
 ### Partie 1 : Installer AD CS
 
 ??? success "Solution"
@@ -86,6 +95,24 @@ graph TD
 
     # On CLI-W11: verify the root CA is trusted
     certutil -store -enterprise Root
+    ```
+
+    Resultat attendu de `certutil -ca` apres installation :
+
+    ```text
+    Entry 0: (Local)
+      Name:                         "WinOpsLab-Root-CA"
+      Organizational Unit:          ""
+      Organization:                 ""
+      Locality:                     ""
+      State:                        ""
+      Country:                      ""
+      Config:                       "SRV-DC01.winopslab.local\WinOpsLab-Root-CA"
+      ExchangeCertificate:          ""
+      SignatureCertificate:         "SRV-DC01.winopslab.local_WinOpsLab-Root-CA.crt"
+      Description:                  ""
+      Active server:                "SRV-DC01.winopslab.local"
+      Authority Type:               Root
     ```
 
 ### Partie 3 : Creer un modele de certificat personnalise
@@ -194,6 +221,31 @@ graph TD
     4. Via `certsrv.msc` : Certificats emis > clic droit sur le certificat > Revoquer.
        Ou en PowerShell : `Revoke-Certificate -SerialNumber "<serial>"`.
        Publier ensuite la CRL : `certutil -CRL`.
+
+!!! warning "Pieges frequents dans ce lab"
+
+    1. **CA installee sur un serveur sans IP statique** : la CA publie son URL de distribution
+       de CRL dans chaque certificat emis. Si l'adresse IP du serveur change (DHCP), les clients
+       ne peuvent plus verifier la validite des certificats. Toujours installer AD CS sur un
+       serveur avec une IP statique configuree.
+
+    2. **Modele de certificat publie mais non visible** : apres avoir duplique le modele dans
+       `certtmpl.msc`, ne pas oublier de le publier dans `certsrv.msc` (Modeles de certificats
+       > Nouveau > Modele de certificat a emettre). Sans cette etape, `Get-Certificate` avec
+       `-Template "WinOpsLabWebServer"` echoue avec "The requested template is not supported".
+
+    3. **Permissions insuffisantes sur le modele** : si "Domain Computers" ou "SRV-WEB01" n'a
+       pas l'autorisation "Enroll" sur le modele personnalise, la demande de certificat echoue
+       avec "Access Denied". Verifier l'onglet Securite du modele dans `certtmpl.msc`.
+
+    4. **CA d'entreprise installee sans jonction au domaine** : une CA de type `EnterpriseRootCA`
+       necessite que le serveur soit membre du domaine Active Directory. Une installation sur un
+       serveur standalone produit une erreur "The Active Directory is unavailable".
+
+    5. **Oublier la GPO d'auto-inscription** : les certificats ne se distribuent pas
+       automatiquement aux clients sans la GPO `GPO_PKI_AutoEnrollment` avec `AEPolicy = 7`.
+       Verifier que la GPO est liee et appliquee avant de conclure que l'auto-inscription
+       ne fonctionne pas.
 
 ## Nettoyage
 

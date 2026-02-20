@@ -24,6 +24,10 @@ graph LR
     D -->|301 Redirect| A
 ```
 
+!!! example "Analogie"
+
+    Le certificat TLS sur un site web, c'est comme le sceau officiel sur une lettre notariale : il prouve que la lettre vient bien du notaire (authentification), et l'enveloppe cachetee garantit que personne n'a pu lire le contenu en chemin (chiffrement). Un certificat auto-signe, c'est comme fabriquer soi-meme son propre sceau : il a la meme forme, mais personne ne le reconnait officiellement.
+
 ## Types de certificats
 
 | Type | Delivre par | Usage |
@@ -141,6 +145,16 @@ $binding.AddSslCertificate($thumbprint, "My")
 
 # Verify the binding
 Get-WebBinding -Name "intranet" | Select-Object protocol, bindingInformation
+```
+
+Resultat :
+
+```text
+# Get-WebBinding -Name "intranet"
+protocol  bindingInformation
+--------  ------------------
+http      *:80:intranet.winopslab.local
+https     *:443:intranet.winopslab.local
 ```
 
 ## Forcer la redirection HTTP vers HTTPS
@@ -262,6 +276,88 @@ Test-NetConnection -ComputerName intranet.winopslab.local -Port 443
 # Check IIS site bindings
 Get-WebBinding | Select-Object protocol, bindingInformation, sslFlags
 ```
+
+Resultat :
+
+```text
+# Get-ChildItem Cert:\LocalMachine\My (extrait)
+Subject                             NotAfter             DaysRemaining Thumbprint
+-------                             --------             ------------- ----------
+CN=intranet.winopslab.local         2027-02-20 10:22:14  365           A3F2B891C4D5E6F70812345678901234ABCDEF01
+CN=api.winopslab.local              2027-01-15 09:11:02  329           B4E3C902D5E6F81923456789012345BCDEF012
+CN=wac.winopslab.local              2026-04-01 14:00:00  40            C5D4EA13E6F7A92034567890123456CDEF0123
+
+# Test-NetConnection intranet.winopslab.local -Port 443
+ComputerName     : intranet.winopslab.local
+RemoteAddress    : 10.0.0.20
+RemotePort       : 443
+TcpTestSucceeded : True
+```
+
+!!! example "Scenario pratique"
+
+    **Context :** Karim, administrateur systeme, doit securiser en HTTPS le site intranet de SRV-WEB01 (`intranet.lab.local`). L'entreprise dispose d'une CA interne Active Directory Certificate Services. Le site est actuellement accessible uniquement en HTTP.
+
+    **Etape 1 : Demander un certificat a la CA d'entreprise**
+
+    ```powershell
+    $certRequest = Get-Certificate `
+        -Template "WebServer" `
+        -DnsName "intranet.lab.local" `
+        -SubjectName "CN=intranet.lab.local" `
+        -CertStoreLocation "Cert:\LocalMachine\My"
+
+    $thumbprint = $certRequest.Certificate.Thumbprint
+    Write-Output "Thumbprint: $thumbprint"
+    ```
+
+    **Etape 2 : Ajouter le binding HTTPS avec SNI**
+
+    ```powershell
+    Import-Module WebAdministration
+    New-WebBinding -Name "intranet" -Protocol "https" -Port 443 `
+        -HostHeader "intranet.lab.local" -SslFlags 1
+
+    $binding = Get-WebBinding -Name "intranet" -Protocol "https"
+    $binding.AddSslCertificate($thumbprint, "My")
+    ```
+
+    **Etape 3 : Configurer la redirection HTTP vers HTTPS**
+
+    Karim installe le module URL Rewrite et ajoute dans `D:\WebSites\intranet\web.config` la regle de redirection permanente (301) de HTTP vers HTTPS.
+
+    **Etape 4 : Activer HSTS**
+
+    ```powershell
+    Set-IISHstsSetting -Location "intranet" -MaxAge 31536000 -IncludeSubDomains
+    ```
+
+    **Etape 5 : Verifier depuis un poste client**
+
+    Karim ouvre `http://intranet.lab.local` dans Edge : il est automatiquement redirige vers `https://intranet.lab.local` sans avertissement de securite (le certificat est emis par la CA interne, approuvee par tous les postes du domaine).
+
+    **Etape 6 : Surveiller l'expiration**
+
+    ```powershell
+    Get-ChildItem Cert:\LocalMachine\My | Where-Object { $_.HasPrivateKey } |
+        Select-Object Subject, NotAfter,
+        @{N='DaysRemaining';E={($_.NotAfter - (Get-Date)).Days}} |
+        Where-Object { $_.DaysRemaining -lt 60 }
+    ```
+
+    Karim planifie cette commande en tache planifiee hebdomadaire avec envoi par email si un certificat expire dans moins de 60 jours.
+
+!!! danger "Erreurs courantes"
+
+    **Utiliser un certificat auto-signe en production.** Les navigateurs modernes bloquent les certificats auto-signes (ou affichent un avertissement intrusif). Les utilisateurs apprennent a ignorer les alertes de securite, ce qui les rend vulnerables aux vraies attaques. En entreprise, toujours utiliser la CA interne pour l'intranet.
+
+    **Oublier de surveiller l'expiration des certificats.** Un certificat expire rend le site HTTPS inaccessible (erreur de connexion dans tous les navigateurs). Mettre en place une surveillance proactive (script PowerShell, monitoring) et agir avant J-30.
+
+    **Associer le certificat sans SNI sur une IP partagee.** Sans SNI (`-SslFlags 0`), IIS ne peut associer qu'un seul certificat SSL par combinaison IP:port. Tous les sites HTTPS sur la meme IP recevront le meme certificat, ce qui provoque des erreurs de nom pour les autres sites. Toujours utiliser `-SslFlags 1` (SNI).
+
+    **Ne pas desactiver TLS 1.0 et TLS 1.1.** Ces protocoles ont des vulnerabilites connues (POODLE, BEAST). Windows Server 2022 les desactive par defaut, mais des configurations heritees peuvent les reactiver. Verifier avec `Get-ItemProperty HKLM:\SYSTEM\CurrentControlSet\Control\SecurityProviders\SCHANNEL\Protocols\*`.
+
+    **Confondre certificat "exporte" et cle privee.** Exporter un certificat sans sa cle privee (format `.cer`) ne permet pas de le lier a un binding IIS. Pour migrer un certificat vers un autre serveur, toujours exporter en format `.pfx` qui inclut la cle privee.
 
 ## Points cles a retenir
 

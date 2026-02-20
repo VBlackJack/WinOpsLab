@@ -13,6 +13,13 @@ tags:
 
 ## Introduction
 
+!!! example "Analogie"
+
+    Installer Windows Server, c'est comme emmenager dans un nouveau bureau. Vous choisissez d'abord
+    le type de local (Server Core = open space minimaliste, Desktop Experience = bureau amenage avec
+    tout le mobilier). Ensuite vous branchez l'electricite (IP), posez la plaque sur la porte (nom du serveur)
+    et installez la serrure (mot de passe administrateur).
+
 L'installation de Windows Server 2022 est la premiere etape pour mettre en place une infrastructure serveur. Cette page couvre les differentes methodes d'installation et les choix a effectuer.
 
 ## Prerequis
@@ -102,6 +109,84 @@ Get-NetIPConfiguration
 # Verify hostname
 hostname
 ```
+
+Resultat :
+
+```text
+WindowsProductName                 OsVersion   OsBuildNumber
+------------------                 ---------   -------------
+Windows Server 2022 Datacenter     10.0.20348  20348
+
+
+InterfaceAlias       : Ethernet
+InterfaceIndex       : 3
+InterfaceDescription : Microsoft Hyper-V Network Adapter
+NetProfile.Name      : lab.local
+IPv4Address          : 10.0.0.20
+IPv4DefaultGateway   : 10.0.0.1
+DNSServer            : 10.0.0.10
+
+WIN-A1B2C3D4E5F6
+```
+
+## Scenario pratique
+
+!!! example "Scenario pratique"
+
+    **Contexte** : Marc, technicien junior, doit installer un nouveau serveur Windows Server 2022 dans
+    un lab Hyper-V pour heberger un controleur de domaine de test.
+
+    **Probleme** : Apres le premier demarrage, il ne parvient pas a demarrer depuis l'ISO. La VM demarre
+    sur un ecran noir avec le message "No operating system found".
+
+    **Diagnostic** :
+
+    1. Verifier que l'ISO est bien montee dans les parametres de la VM Hyper-V
+    2. Verifier l'ordre de demarrage dans le firmware de la VM
+    3. S'assurer que la generation de VM est compatible (Generation 2 recommandee pour UEFI)
+
+    **Solution** :
+
+    ```powershell
+    # Check VM generation
+    Get-VM -Name "DC-01" | Select-Object Name, Generation
+
+    # Set boot order to DVD first on a Generation 2 VM
+    $vm = Get-VM -Name "DC-01"
+    $dvd = Get-VMDvdDrive -VM $vm
+    Set-VMFirmware -VM $vm -FirstBootDevice $dvd
+    ```
+
+    ```text
+    Name    Generation
+    ----    ----------
+    DC-01            2
+    ```
+
+    **Resultat** : Apres avoir reconfigure l'ordre de demarrage, la VM demarre correctement sur l'ISO
+    et l'assistant d'installation se lance.
+
+## Erreurs courantes
+
+!!! danger "Erreurs courantes"
+
+    1. **Choisir Desktop Experience par reflexe** : En production, Server Core est recommande. Desktop
+       Experience consomme plus de ressources et augmente la surface d'attaque. Reservez-le au lab
+       ou aux serveurs d'administration.
+
+    2. **Ne pas definir un mot de passe administrateur fort** : Le mot de passe par defaut doit respecter
+       la complexite Windows (majuscules, minuscules, chiffres, caracteres speciaux, 8 caracteres minimum).
+       Un mot de passe faible compromet toute l'infrastructure.
+
+    3. **Oublier de retirer l'ISO apres installation** : Si l'ISO reste montee, le serveur peut
+       redemarrer sur l'installateur au lieu du systeme installe. Pensez a ejecter le media.
+
+    4. **Installer sans verifier les prerequis materiels** : Un disque trop petit (< 32 Go) ou une
+       RAM insuffisante (< 512 Mo) provoque des echecs d'installation silencieux ou des performances
+       desastreuses.
+
+    5. **Ne pas noter la cle produit ou le type d'edition** : Apres installation, il est difficile de
+       changer d'edition. Verifiez votre choix avant de lancer l'installation.
 
 ## Points cles a retenir
 

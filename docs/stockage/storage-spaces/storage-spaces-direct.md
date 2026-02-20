@@ -55,6 +55,10 @@ graph TB
 
 ## Concepts cles
 
+!!! example "Analogie"
+
+    Imaginez trois **bibliotheques municipales** dans des villes differentes. Avec Storage Spaces Direct, ces trois bibliotheques mettent en commun leurs catalogues et leurs livres via un reseau de transport rapide. Un lecteur peut demander n'importe quel livre depuis n'importe quelle bibliotheque : le systeme sait ou il se trouve et le livre est toujours disponible, meme si une bibliotheque ferme pour travaux (panne d'un noeud).
+
 ### Software-Defined Storage (SDS)
 
 S2D est une solution de **stockage defini par logiciel** :
@@ -263,6 +267,15 @@ Install-WindowsFeature -Name Failover-Clustering, Hyper-V,
     Hyper-V-PowerShell, FS-FileServer -IncludeManagementTools -Restart
 ```
 
+Resultat :
+
+```text
+Success Restart Needed Exit Code      Feature Result
+------- -------------- ---------      --------------
+True    Yes            SuccessRest... {Failover Clustering, Hyper-V, ...}
+WARNING: You must restart this server to finish the installation process.
+```
+
 ### 2. Valider et creer le cluster
 
 ```powershell
@@ -280,6 +293,17 @@ New-Cluster -Name "S2D-Cluster" -Node "Node1", "Node2", "Node3" `
 ```powershell
 # Enable S2D on the cluster
 Enable-ClusterStorageSpacesDirect -Confirm:$false
+```
+
+Resultat :
+
+```text
+VERBOSE: Scanning disks on node Node1...
+VERBOSE: Scanning disks on node Node2...
+VERBOSE: Scanning disks on node Node3...
+VERBOSE: Configuring cache...
+VERBOSE: Creating storage pool 'S2D on S2D-Cluster'...
+VERBOSE: Storage Spaces Direct is now enabled.
 ```
 
 Cette commande :
@@ -345,6 +369,31 @@ Get-PhysicalDisk | Select-Object FriendlyName, HealthStatus,
     Sort-Object Usage | Format-Table -AutoSize
 ```
 
+Resultat :
+
+```text
+FriendlyName          HealthStatus SizeTB FreeTB
+------------          ------------ ------ ------
+S2D on S2D-Cluster    Healthy       12.00   8.50
+
+FriendlyName HealthStatus OperationalStatus ResiliencySettingName
+------------ ------------ ----------------- --------------------
+VMs          Healthy      OK                Mirror
+Archives     Healthy      OK                Parity
+
+FriendlyName   HealthStatus OperationalStatus Usage       MediaType SizeGB
+------------   ------------ ----------------- -----       --------- ------
+Node1-Disk1    Healthy      OK                Journal     SSD       400.00
+Node1-Disk2    Healthy      OK                Auto-Select HDD      2048.00
+Node1-Disk3    Healthy      OK                Auto-Select HDD      2048.00
+Node2-Disk1    Healthy      OK                Journal     SSD       400.00
+Node2-Disk2    Healthy      OK                Auto-Select HDD      2048.00
+Node2-Disk3    Healthy      OK                Auto-Select HDD      2048.00
+Node3-Disk1    Healthy      OK                Journal     SSD       400.00
+Node3-Disk2    Healthy      OK                Auto-Select HDD      2048.00
+Node3-Disk3    Healthy      OK                Auto-Select HDD      2048.00
+```
+
 ## Points cles a retenir
 
 - **S2D** cree un stockage partage a partir des disques locaux de chaque noeud, sans SAN externe
@@ -356,6 +405,62 @@ Get-PhysicalDisk | Select-Object FriendlyName, HealthStatus,
 - Le **miroir tridirectionnel** est le mode de resilience recommande en production
 - **ReFS** (CSVFS_ReFS) est le systeme de fichiers recommande pour les volumes S2D
 - 2 a 16 noeuds par cluster, avec une configuration symetrique de disques
+
+!!! example "Scenario pratique"
+
+    **Contexte :** Audrey, architecte infrastructure, doit concevoir une solution de stockage hyper-convergee pour heberger 50 machines virtuelles dans une PME. Le budget est limite et la salle serveur ne peut accueillir que 3 noeuds. Les VM incluent un serveur SQL critique.
+
+    **Analyse du dimensionnement :**
+
+    - Besoin total : environ 8 To de stockage utile
+    - Resilience requise : miroir tridirectionnel (2 pannes tolerees) pour SQL, miroir bidirectionnel pour les autres VM
+    - Performances : SSD pour le cache, HDD pour la capacite
+
+    **Configuration retenue pour chaque noeud :**
+
+    - 1 x SSD NVMe 400 Go (cache)
+    - 4 x HDD 2 To (capacite)
+    - 2 x NIC 10 GbE (reseau de stockage avec RDMA iWARP)
+
+    **Deploiement :**
+
+    ```powershell
+    # On each node: install roles
+    Install-WindowsFeature -Name Failover-Clustering, Hyper-V,
+        Hyper-V-PowerShell, FS-FileServer -IncludeManagementTools -Restart
+
+    # Validate and create cluster
+    Test-Cluster -Node "SRV-HCI01", "SRV-HCI02", "SRV-HCI03" `
+        -Include "Storage Spaces Direct", "Inventory", "Network"
+    New-Cluster -Name "HCI-Cluster" -Node "SRV-HCI01", "SRV-HCI02", "SRV-HCI03" `
+        -StaticAddress 10.0.0.100 -NoStorage
+
+    # Enable S2D
+    Enable-ClusterStorageSpacesDirect -Confirm:$false
+
+    # Create volumes
+    New-Volume -FriendlyName "SQL-VMs" -FileSystem CSVFS_ReFS `
+        -StoragePoolFriendlyName "S2D on HCI-Cluster" `
+        -Size 2TB -ResiliencySettingName Mirror -NumberOfDataCopies 3
+
+    New-Volume -FriendlyName "App-VMs" -FileSystem CSVFS_ReFS `
+        -StoragePoolFriendlyName "S2D on HCI-Cluster" `
+        -Size 6TB -ResiliencySettingName Mirror
+    ```
+
+    Le cluster S2D est operationnel avec un stockage partage hautement disponible, sans aucun SAN externe.
+
+!!! danger "Erreurs courantes"
+
+    1. **Utiliser l'edition Standard au lieu de Datacenter** : Storage Spaces Direct est exclusivement disponible sur Windows Server Datacenter. L'edition Standard ne prend pas en charge cette fonctionnalite, meme si le role Failover Clustering est present.
+
+    2. **Laisser le RAID materiel active sur les controleurs** : S2D necessite un acces direct aux disques (mode HBA/passthrough). Un controleur RAID materiel masque les disques individuels et empeche S2D de fonctionner correctement.
+
+    3. **Utiliser un reseau inferieur a 10 GbE** : le trafic de stockage inter-noeuds est tres volumineux. Un reseau 1 GbE creera un goulot d'etranglement severe et des problemes de performances, voire des deconnexions de noeuds.
+
+    4. **Deployer des noeuds asymetriques** : des noeuds avec des configurations de disques differentes (nombre, taille, type) provoquent un desequilibre dans la distribution des donnees et reduisent l'efficacite du pool.
+
+    5. **Oublier de configurer un temoin de cluster (witness)** : sans temoin, un cluster de 2 noeuds perd le quorum des qu'un noeud tombe. Configurez un temoin de partage de fichiers ou un temoin cloud Azure.
 
 ## Pour aller plus loin
 

@@ -32,6 +32,14 @@ Le responsable securite demande de mettre en place des politiques de mot de pass
 
 ## Instructions
 
+!!! example "Analogie"
+
+    Les GPO ressemblent au reglement interieur d'une entreprise : une note de service collee
+    a l'entree du batiment (domaine) s'applique a tout le monde, celle affichee dans la salle
+    de reunion comptabilite (OU) ne concerne que les comptables. Le filtrage de securite,
+    c'est la mention "ne s'applique pas au personnel IT" au bas du document — certains sont
+    expressement exemptes du reglement general.
+
 ### Partie 1 : Preparer la structure OU et les utilisateurs
 
 ??? success "Solution"
@@ -190,6 +198,22 @@ Le responsable securite demande de mettre en place des politiques de mot de pass
     # Verify: Control Panel should be accessible
     ```
 
+    Resultat attendu de `gpresult /r` pour marie.martin :
+
+    ```text
+    USER SETTINGS
+    -------------
+        CN=Marie Martin,OU=Comptabilite,OU=Utilisateurs,DC=winopslab,DC=local
+        Last time Group Policy was applied: ...
+        Group Policy was applied from:      SRV-DC01.winopslab.local
+
+        Applied Group Policy Objects
+        ----------------------------
+        GPO_Users_DesktopRestrictions
+        GPO_Domain_PasswordPolicy
+        Default Domain Policy
+    ```
+
 ## Verification
 
 !!! question "Questions de validation"
@@ -211,6 +235,31 @@ Le responsable securite demande de mettre en place des politiques de mot de pass
        des groupes specifiques.
     4. `gpresult /r /scope:user /user:WINOPSLAB\marie.martin` pour simuler, ou utiliser
        l'outil **Group Policy Modeling** dans la GPMC.
+
+!!! warning "Pieges frequents dans ce lab"
+
+    1. **Politique de mot de passe liee a une OU** : c'est le piege classique. Une GPO
+       `GPO_Domain_PasswordPolicy` liee a `OU=Utilisateurs` n'a aucun effet sur les mots de
+       passe des comptes du domaine. La politique de compte doit imperativement etre liee
+       a la racine du domaine (`DC=winopslab,DC=local`).
+
+    2. **GPO pas encore appliquee sur le client** : apres la creation et la liaison d'une GPO,
+       attendre le cycle de rafraichissement (90 min par defaut) ou forcer avec `gpupdate /force`
+       sur le client. Se connecter immediatement apres la creation sans forcer le rafraichissement
+       donne l'impression que la GPO ne fonctionne pas.
+
+    3. **Filtrage de securite casse** : retirer "Authenticated Users" sans ajouter "Domain Users"
+       rend la GPO inapplicable a tous. La sequence correcte est : retirer "Authenticated Users",
+       puis ajouter "Domain Users" avec permission "Apply", PUIS refuser "GG_Informatique".
+
+    4. **Tester avec un compte administrateur** : les administrateurs du domaine sont souvent
+       immunises contre certaines restrictions de bureau. Toujours tester avec un compte
+       utilisateur standard (marie.martin) et non avec Administrateur ou un membre de
+       Domain Admins.
+
+    5. **Oublier de creer les OU avant de creer les utilisateurs** : `New-ADUser` avec un
+       `-Path` vers une OU inexistante echoue avec une erreur "The specified path is not valid".
+       Creer toujours la structure OU en premier.
 
 ## Nettoyage
 

@@ -20,6 +20,10 @@ L'objectif principal est d'assurer qu'une application ou un service reste access
 
 ## Architecture d'un cluster
 
+!!! example "Analogie"
+
+    Imaginez un hopital avec plusieurs medecins de garde. Si l'un d'eux tombe malade, un collegue prend immediatement le relais aupres des patients. Les patients (clients) ne changent pas de numero de telephone (IP virtuelle) : ils appellent toujours le meme standard, qui redirige vers le medecin disponible. C'est exactement le principe du clustering avec basculement.
+
 ![](../../diagrams/cluster-architecture.drawio)
 
 ### Les noeuds
@@ -35,6 +39,16 @@ Chaque noeud :
 ```powershell
 # List all nodes in an existing cluster
 Get-ClusterNode -Cluster "YOURCLUSTER"
+```
+
+Resultat :
+
+```text
+Name       State  Type
+----       -----  ----
+SRV-01     Up     Node
+SRV-02     Up     Node
+DC-01      Up     Node
 ```
 
 ### Le heartbeat
@@ -100,6 +114,15 @@ Le **failback** est le retour d'un role vers son noeud d'origine une fois que ce
 Get-ClusterGroup -Name "YOURGROUP" | Format-List Name, AutoFailbackType, FailbackWindowStart, FailbackWindowEnd
 ```
 
+Resultat :
+
+```text
+Name             : FS-CLUSTER01
+AutoFailbackType : 0
+FailbackWindowStart : -1
+FailbackWindowEnd   : -1
+```
+
 Options de configuration du failback :
 
 - **Pas de failback automatique** : le role reste sur le noeud de basculement (recommande dans la plupart des cas)
@@ -113,6 +136,10 @@ Options de configuration du failback :
 ## Modes de fonctionnement
 
 ### Actif-passif
+
+!!! example "Analogie"
+
+    Le mode actif-passif fonctionne comme un pilote et un copilote dans un avion. Le copilote ne touche pas aux commandes en temps normal, mais il est pret a prendre les commandes instantanement si le pilote est indisponible.
 
 Dans le mode **actif-passif**, un seul noeud execute la charge de travail a un instant donne. Le ou les autres noeuds sont en attente (standby).
 
@@ -184,6 +211,79 @@ graph LR
 # Display cluster-related objects in Active Directory
 Get-ADComputer -Filter 'ServicePrincipalNames -like "*MSClusterVirtualServer*"'
 ```
+
+Resultat :
+
+```text
+DistinguishedName : CN=CLUSTER01,OU=Clusters,DC=lab,DC=local
+DNSHostName       : CLUSTER01.lab.local
+Enabled           : True
+Name              : CLUSTER01
+ObjectClass       : computer
+SamAccountName    : CLUSTER01$
+
+DistinguishedName : CN=FS-CLUSTER01,OU=Clusters,DC=lab,DC=local
+DNSHostName       : FS-CLUSTER01.lab.local
+Enabled           : True
+Name              : FS-CLUSTER01
+ObjectClass       : computer
+SamAccountName    : FS-CLUSTER01$
+```
+
+!!! example "Scenario pratique"
+
+    **Contexte :** Sophie, administratrice systeme dans une PME, constate que le serveur de fichiers tombe en panne regulierement. La direction lui demande de garantir la continuite de service.
+
+    **Probleme :** Le serveur de fichiers actuel est un point de defaillance unique (SPOF). Chaque panne entraine plusieurs heures d'interruption pour les 80 collaborateurs.
+
+    **Diagnostic et solution :**
+
+    1. Sophie identifie le besoin d'un cluster actif-passif a 2 noeuds :
+
+        ```powershell
+        # Verify current server configuration
+        Get-ComputerInfo | Select-Object CsName, OsName, OsVersion
+        ```
+
+        Resultat :
+
+        ```text
+        CsName : SRV-01
+        OsName : Microsoft Windows Server 2022 Datacenter
+        OsVersion : 10.0.20348
+        ```
+
+    2. Elle installe la fonctionnalite Failover Clustering sur les deux noeuds :
+
+        ```powershell
+        Install-WindowsFeature -Name Failover-Clustering -IncludeManagementTools -ComputerName SRV-01
+        Install-WindowsFeature -Name Failover-Clustering -IncludeManagementTools -ComputerName SRV-02
+        ```
+
+    3. Apres creation du cluster, elle verifie les noeuds :
+
+        ```powershell
+        Get-ClusterNode -Cluster "CLUSTER01"
+        ```
+
+        Resultat :
+
+        ```text
+        Name       State  Type
+        ----       -----  ----
+        SRV-01     Up     Node
+        SRV-02     Up     Node
+        ```
+
+    **Resultat :** Le serveur de fichiers bascule automatiquement en moins de 30 secondes en cas de panne. Les utilisateurs ne perdent que la connexion active, sans perte de donnees.
+
+!!! danger "Erreurs courantes"
+
+    - **Pas de reseau dedie pour le heartbeat** : utiliser le meme reseau pour le trafic client et le heartbeat peut provoquer de faux basculements en cas de congestion. Prevoyez toujours un VLAN ou une interface physique separee.
+    - **Confondre haute disponibilite et repartition de charge** : un cluster actif-passif ne double pas les performances ; il garantit la continuite de service. Pour la repartition de charge, utilisez le mode actif-actif ou NLB.
+    - **Oublier le dimensionnement du noeud survivant** : en cas de basculement, un seul noeud doit supporter 100% de la charge. Si chaque noeud est dimensionne a 90% de capacite en fonctionnement normal, le basculement entrainera une saturation.
+    - **Activer le failback automatique sans fenetre de maintenance** : un noeud instable qui redemarre en boucle provoquera un effet ping-pong des roles entre les noeuds, aggravant l'indisponibilite.
+    - **Ne pas tester le basculement apres la creation** : un cluster non teste est un faux sentiment de securite. Simulez une panne (arret d'un noeud) pour valider le basculement.
 
 ## Points cles a retenir
 

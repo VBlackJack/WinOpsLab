@@ -21,6 +21,10 @@ tags:
 
 ---
 
+!!! example "Analogie"
+
+    Always On VPN fonctionne comme un **badge d'acces automatique pour un parking souterrain**. Des que votre voiture (le poste de travail) quitte le perimetre de l'entreprise, le badge active automatiquement l'ouverture du tunnel securise pour revenir au parking (le reseau interne), sans que le conducteur (l'utilisateur) n'ait a appuyer sur un bouton. Le tunnel machine, c'est la barriere qui s'ouvre des que la voiture est detectee. Le tunnel utilisateur, c'est la porte du bureau qui s'ouvre quand l'employe presente son badge personnel.
+
 ## Comparaison avec DirectAccess
 
 | Critere                    | DirectAccess              | Always On VPN              |
@@ -181,8 +185,8 @@ Always On VPN utilise le **VPNv2 CSP** (Configuration Service Provider) pour con
 
 ```powershell
 # Create an Always On VPN user tunnel connection
-Add-VpnConnection -Name "Contoso Always On VPN" `
-    -ServerAddress "vpn.contoso.com" `
+Add-VpnConnection -Name "VPN Lab Always On" `
+    -ServerAddress "vpn.lab.local" `
     -TunnelType Ikev2 `
     -AuthenticationMethod Eap `
     -EncryptionLevel Maximum `
@@ -191,22 +195,31 @@ Add-VpnConnection -Name "Contoso Always On VPN" `
     -RememberCredential $true
 
 # Add routes for internal subnets
-Add-VpnConnectionRoute -ConnectionName "Contoso Always On VPN" `
+Add-VpnConnectionRoute -ConnectionName "VPN Lab Always On" `
     -DestinationPrefix "10.0.0.0/8"
 
 # Configure DNS suffix
-Set-VpnConnectionDnsConfiguration -ConnectionName "Contoso Always On VPN" `
-    -DnsSuffix "contoso.local" `
-    -DnsServers "10.0.1.1", "10.0.1.2"
+Set-VpnConnectionDnsConfiguration -ConnectionName "VPN Lab Always On" `
+    -DnsSuffix "lab.local" `
+    -DnsServers "10.0.0.10", "10.0.0.11"
 
 # Enable Always On
-Set-VpnConnection -Name "Contoso Always On VPN" `
+Set-VpnConnection -Name "VPN Lab Always On" `
     -AllUserConnection $false
 
 # Configure the VPN to auto-trigger on DNS name resolution
-Add-VpnConnectionTriggerDnsConfiguration -Name "Contoso Always On VPN" `
-    -DnsSuffix "contoso.local" `
-    -DnsIPAddress "10.0.1.1"
+Add-VpnConnectionTriggerDnsConfiguration -Name "VPN Lab Always On" `
+    -DnsSuffix "lab.local" `
+    -DnsIPAddress "10.0.0.10"
+```
+
+Resultat :
+
+```text
+# (Le profil VPN "VPN Lab Always On" est cree avec succes)
+# (Route 10.0.0.0/8 ajoutee au profil)
+# (Suffixe DNS lab.local configure)
+# (Declenchement automatique configure pour le suffixe lab.local)
 ```
 
 ---
@@ -313,7 +326,7 @@ New-NetFirewallRule -DisplayName "Allow RADIUS" `
 Get-VpnConnection | Select-Object Name, ServerAddress, TunnelType, ConnectionStatus
 
 # Display detailed VPN configuration
-Get-VpnConnection -Name "Contoso Always On VPN" | Format-List *
+Get-VpnConnection -Name "VPN Lab Always On" | Format-List *
 
 # Check RRAS service on the server
 Get-Service RemoteAccess
@@ -325,7 +338,29 @@ Get-RemoteAccessConnectionStatistics
 Get-WinEvent -LogName Security -FilterXPath "*[System[EventID=6272 or EventID=6273]]" -MaxEvents 10
 
 # Test VPN connectivity from the client
-Test-NetConnection -ComputerName "vpn.contoso.com" -Port 443
+Test-NetConnection -ComputerName "vpn.lab.local" -Port 443
+```
+
+Resultat :
+
+```text
+Name                ServerAddress   TunnelType ConnectionStatus
+----                -------------   ---------- ----------------
+VPN Lab Always On   vpn.lab.local   Ikev2      Connected
+
+Name          Status
+----          ------
+RemoteAccess  Running
+
+ClientIPAddress  UserName         ConnectionType  ConnectionDuration
+---------------  --------         --------------  ------------------
+10.0.100.2       LAB\jdupont      Ikev2           02:15:30
+10.0.100.5       LAB\adurand      Ikev2           00:32:18
+
+ComputerName     : vpn.lab.local
+RemoteAddress    : 10.0.0.50
+RemotePort       : 443
+TcpTestSucceeded : True
 ```
 
 ---
@@ -343,6 +378,68 @@ Test-NetConnection -ComputerName "vpn.contoso.com" -Port 443
 | Infrastructure       | RRAS + NPS + PKI + DNS                                        |
 
 ---
+
+!!! example "Scenario pratique"
+
+    **Contexte** : Amelie, responsable infrastructure, migre 50 postes commerciaux de DirectAccess vers Always On VPN dans le domaine `lab.local`. Les postes sont en Windows 10 Pro, ce qui rendait DirectAccess inutilisable (Enterprise requis). Elle doit deployer le profil VPN via GPO.
+
+    **Solution** :
+
+    ```powershell
+    # Step 1: Verify RRAS and NPS are configured on SRV-VPN01
+    Invoke-Command -ComputerName SRV-VPN01 -ScriptBlock {
+        Get-RemoteAccess | Select-Object VpnStatus
+        Get-Service RemoteAccess, IAS | Select-Object Name, Status
+    }
+    ```
+
+    ```text
+    VpnStatus : Installed
+
+    Name          Status
+    ----          ------
+    RemoteAccess  Running
+    IAS           Running
+    ```
+
+    ```powershell
+    # Step 2: Create a PowerShell deployment script for GPO
+    # This script is placed in the GPO User Logon script
+    $vpnName = "VPN Lab Always On"
+
+    # Remove old profile if it exists
+    Remove-VpnConnection -Name $vpnName -Force -ErrorAction SilentlyContinue
+
+    # Create the Always On VPN profile
+    Add-VpnConnection -Name $vpnName `
+        -ServerAddress "vpn.lab.local" `
+        -TunnelType Ikev2 `
+        -AuthenticationMethod Eap `
+        -EncryptionLevel Maximum `
+        -SplitTunneling $true
+
+    # Add internal routes
+    Add-VpnConnectionRoute -ConnectionName $vpnName -DestinationPrefix "10.0.0.0/16"
+
+    # Step 3: Verify on a client
+    Get-VpnConnection -Name $vpnName | Select-Object Name, TunnelType, ConnectionStatus
+    ```
+
+    ```text
+    Name                TunnelType ConnectionStatus
+    ----                ---------- ----------------
+    VPN Lab Always On   Ikev2      Connected
+    ```
+
+    Les 50 postes Pro recoivent automatiquement le profil VPN via GPO a l'ouverture de session.
+
+!!! danger "Erreurs courantes"
+
+    - **Oublier la PKI** : Always On VPN avec IKEv2 necessite des certificats machine et/ou utilisateur. Sans infrastructure PKI (AD CS), l'authentification EAP-TLS echouera.
+    - **Confondre Device Tunnel et User Tunnel** : le Device Tunnel necessite Windows Enterprise/Education et fonctionne uniquement avec IKEv2. Tenter de le deployer sur Windows Pro echouera silencieusement.
+    - **Ne pas configurer le split tunneling** : sans split tunneling, tout le trafic Internet des utilisateurs transite par le VPN, saturant la bande passante du serveur.
+    - **Ignorer les routes VPN** : sans route explicite (`Add-VpnConnectionRoute`), le client ne saura pas quels reseaux internes joindre via le tunnel.
+    - **Ne pas tester le basculement IKEv2/SSTP** : si les ports UDP 500/4500 sont bloques, le client doit basculer automatiquement sur SSTP (TCP 443). Verifier que ce mecanisme fonctionne.
 
 ## Pour aller plus loin
 

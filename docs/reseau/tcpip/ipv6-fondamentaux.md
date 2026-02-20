@@ -22,6 +22,10 @@ IPv6 (Internet Protocol version 6) est le successeur d'IPv4, concu pour repondre
 
 ## Format d'une adresse IPv6
 
+!!! example "Analogie"
+
+    Si IPv4 est un annuaire telephonique a 10 chiffres qui arrive a saturation, IPv6 est un annuaire a 39 chiffres. C'est comme passer d'un systeme de numerotation de ville (suffisant pour un pays) a un systeme de numerotation galactique (suffisant pour attribuer une adresse a chaque grain de sable sur Terre). La notation hexadecimale permet de condenser cette immense adresse en un format lisible.
+
 Une adresse IPv6 est composee de **128 bits**, representee en **notation hexadecimale** sous forme de 8 groupes de 4 caracteres hexadecimaux, separes par des deux-points :
 
 ```
@@ -106,6 +110,15 @@ Get-NetIPAddress -AddressFamily IPv6 | Where-Object {
 } | Select-Object InterfaceAlias, IPAddress
 ```
 
+Resultat :
+
+```text
+InterfaceAlias  IPAddress
+--------------  ---------
+Ethernet0       fe80::20c:29ff:fe4a:8b12%4
+Loopback        fe80::1%1
+```
+
 !!! info "Identifiant de zone"
 
     Sous Windows, les adresses link-local sont suivies d'un identifiant de zone (ex : `fe80::1%12`). Le `%12` represente l'index de l'interface et permet au systeme de savoir par quelle interface envoyer le paquet.
@@ -128,6 +141,10 @@ Une adresse **anycast** est attribuee a plusieurs interfaces. Un paquet envoye a
 ---
 
 ## Mecanisme d'auto-configuration (SLAAC)
+
+!!! example "Analogie"
+
+    SLAAC fonctionne comme un quartier ou chaque nouveau resident choisit lui-meme son numero de maison. Le maire (routeur) annonce simplement le nom de la rue (prefixe reseau), et le resident genere son propre numero unique (identifiant d'interface). Pas besoin de bureau d'attribution centralisee (serveur DHCP).
 
 IPv6 permet l'auto-configuration d'adresse sans serveur DHCP grace au mecanisme **SLAAC** (Stateless Address Autoconfiguration) :
 
@@ -171,6 +188,27 @@ Get-NetRoute -AddressFamily IPv6
 Test-Connection -ComputerName "::1" -Count 4
 ```
 
+Resultat :
+
+```text
+IPAddress         : fe80::20c:29ff:fe4a:8b12%4
+InterfaceIndex    : 4
+InterfaceAlias    : Ethernet0
+AddressFamily     : IPv6
+Type              : Unicast
+PrefixLength      : 64
+PrefixOrigin      : WellKnown
+SuffixOrigin      : Link
+AddressState      : Preferred
+
+IPAddress         : ::1
+InterfaceIndex    : 1
+InterfaceAlias    : Loopback Pseudo-Interface 1
+AddressFamily     : IPv6
+Type              : Unicast
+PrefixLength      : 128
+```
+
 ### Configurer une adresse IPv6 statique
 
 ```powershell
@@ -196,6 +234,14 @@ Enable-NetAdapterBinding -Name "Ethernet0" -ComponentID "ms_tcpip6"
 
 # Check IPv6 binding status
 Get-NetAdapterBinding -Name "Ethernet0" -ComponentID "ms_tcpip6"
+```
+
+Resultat :
+
+```text
+Name       DisplayName                        ComponentID   Enabled
+----       -----------                        -----------   -------
+Ethernet0  Internet Protocol Version 6 (TCP/  ms_tcpip6     False
 ```
 
 !!! danger "Desactiver IPv6 peut causer des problemes"
@@ -225,6 +271,17 @@ Get-NetPrefixPolicy
 
 # Verify dual-stack configuration
 Get-NetIPAddress | Select-Object InterfaceAlias, AddressFamily, IPAddress | Sort-Object InterfaceAlias
+```
+
+Resultat :
+
+```text
+InterfaceAlias  AddressFamily IPAddress
+--------------  ------------- ---------
+Ethernet0       IPv4          10.0.0.10
+Ethernet0       IPv6          fe80::20c:29ff:fe4a:8b12%4
+Loopback...     IPv4          127.0.0.1
+Loopback...     IPv6          ::1
 ```
 
 ---
@@ -259,6 +316,75 @@ Plusieurs mecanismes facilitent la coexistence et la migration d'IPv4 vers IPv6 
 | IPsec                | Optionnel             | Integre nativement          |
 | Fragmentation        | Routeur et hote       | Hote uniquement             |
 | En-tete              | Variable (20-60 octets)| Fixe (40 octets)           |
+
+---
+
+## Scenario pratique
+
+!!! example "Scenario pratique"
+
+    **Contexte** : Lucas, administrateur systeme, deploie un cluster de basculement (Failover Cluster) sur deux serveurs Windows Server 2022. Apres l'installation, le cluster refuse de se valider avec l'erreur "Network communication failure". Les serveurs communiquent pourtant parfaitement en IPv4.
+
+    **Diagnostic** :
+
+    1. Lucas verifie la configuration IPv6 sur SRV-01 :
+
+        ```powershell
+        Get-NetAdapterBinding -Name "Ethernet0" -ComponentID "ms_tcpip6"
+        ```
+
+        Resultat :
+
+        ```text
+        Name       DisplayName                        ComponentID   Enabled
+        ----       -----------                        -----------   -------
+        Ethernet0  Internet Protocol Version 6 (TCP/  ms_tcpip6     False
+        ```
+
+    2. IPv6 est desactive. Or, le clustering de basculement Windows requiert IPv6 pour certaines communications internes.
+
+    3. Lucas reactive IPv6 sur les deux serveurs :
+
+        ```powershell
+        Enable-NetAdapterBinding -Name "Ethernet0" -ComponentID "ms_tcpip6"
+        ```
+
+    4. Il verifie que les adresses link-local sont generees :
+
+        ```powershell
+        Get-NetIPAddress -InterfaceAlias "Ethernet0" -AddressFamily IPv6 |
+            Where-Object { $_.IPAddress -like "fe80::*" }
+        ```
+
+        Resultat :
+
+        ```text
+        IPAddress         : fe80::20c:29ff:fe4a:8b12%4
+        InterfaceAlias    : Ethernet0
+        AddressFamily     : IPv6
+        PrefixLength      : 64
+        AddressState      : Preferred
+        ```
+
+    5. Apres reactivation d'IPv6 sur les deux noeuds, la validation du cluster passe avec succes.
+
+    **Resolution** : desactiver IPv6 est deconseille par Microsoft car certains composants (clustering, DirectAccess, WinRM) en dependent. Si IPv6 n'est pas utilise sur le reseau, il suffit de laisser les adresses link-local s'auto-configurer sans attribuer d'adresses globales.
+
+---
+
+## Erreurs courantes
+
+!!! danger "Erreurs courantes"
+
+    1. **Desactiver IPv6 systematiquement** : c'est un reflexe frequent mais dangereux. Microsoft deconseille la desactivation d'IPv6. Certains services (clustering, DirectAccess) en ont besoin. Laissez IPv6 actif meme si vous ne l'utilisez pas.
+
+    2. **Utiliser `::` deux fois dans une adresse** : la notation `::` ne peut apparaitre qu'une seule fois. `2001::db8::1` est invalide car le systeme ne peut pas determiner combien de groupes chaque `::` remplace.
+
+    3. **Oublier l'identifiant de zone** : sous Windows, les adresses link-local necessitent un identifiant de zone (`%4`) pour preciser l'interface. Un ping vers `fe80::1` sans `%4` echouera si plusieurs interfaces sont presentes.
+
+    4. **Confondre ULA et GUA** : les adresses ULA (`fc00::/7`) sont l'equivalent des adresses privees et ne sont pas routables sur Internet. Les GUA (`2000::/3`) sont les adresses publiques routables. Deployer des ULA en pensant avoir une connectivite Internet ne fonctionnera pas.
+
+    5. **Ignorer SLAAC et configurer tout manuellement** : SLAAC est un mecanisme puissant qui simplifie la gestion. Attribuer des adresses IPv6 statiques a chaque poste est rarement necessaire (sauf pour les serveurs et equipements d'infrastructure).
 
 ---
 

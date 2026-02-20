@@ -15,6 +15,13 @@ tags:
 
 Un ecran bleu (BSOD - Blue Screen of Death) se produit lorsque Windows detecte une erreur critique dont il ne peut pas se remettre. Le systeme genere un fichier de vidage memoire (memory dump) avant de redemarrer, ce qui permet une analyse post-mortem.
 
+!!! example "Analogie"
+
+    Un ecran bleu est comparable a un **fusible qui saute** dans un tableau electrique. Le
+    systeme detecte une anomalie si grave qu'il prefere tout couper plutot que de risquer des
+    degats supplementaires (corruption de donnees). Le fichier dump est le **rapport du
+    disjoncteur** : il enregistre exactement ce qui se passait au moment de la coupure.
+
 ## Arbre de decision : diagnostic d'un BSOD
 
 ```mermaid
@@ -104,6 +111,18 @@ Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\CrashControl" `
 # Overwrite existing dump file
 Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\CrashControl" `
     -Name "Overwrite" -Value 1
+```
+
+Resultat :
+
+```text
+# Get-ItemProperty CrashControl
+CrashDumpEnabled  : 7
+AutoReboot        : 1
+DumpFile          : %SystemRoot%\MEMORY.DMP
+LogEvent          : 1
+MinidumpDir       : %SystemRoot%\Minidump
+Overwrite         : 1
 ```
 
 | Valeur CrashDumpEnabled | Type |
@@ -229,6 +248,25 @@ Get-ChildItem "$env:SystemRoot\Minidump" -ErrorAction SilentlyContinue |
     Sort-Object LastWriteTime -Descending
 ```
 
+Resultat :
+
+```text
+# BSOD-related events
+TimeCreated           Message
+-----------           -------
+2026-02-18 03:22:15   The computer has rebooted from a bugcheck. The bugcheck was:
+                      0x000000d1 (0x0000000000000038, 0x0000000000000002,
+                      0x0000000000000000, 0xfffff80b1234abcd). A dump was saved in:
+                      C:\Windows\MEMORY.DMP.
+
+# Minidump files
+Name                    Length LastWriteTime
+----                    ------ -------------
+021826-15234-01.dmp     262144 2026-02-18 03:22:18
+021526-12456-01.dmp     262144 2026-02-15 11:45:33
+020826-09872-01.dmp     262144 2026-02-08 22:10:47
+```
+
 ## Causes courantes et solutions
 
 ### Pilotes defectueux
@@ -302,6 +340,59 @@ wusa /uninstall /kb:5012345 /quiet /norestart
 - Le champ **IMAGE_NAME** dans le resultat pointe vers le module (pilote) fautif
 - Les causes les plus frequentes sont : pilotes defectueux, RAM defaillante, corruption disque
 - Toujours verifier que le pagefile est suffisamment dimensionne pour permettre la generation du dump
+
+!!! example "Scenario pratique"
+
+    **Contexte :** Romain, administrateur systeme, decouvre que le serveur SRV-01 a redemarrage
+    3 fois en une semaine avec un ecran bleu `DRIVER_IRQL_NOT_LESS_OR_EQUAL (0x000000D1)`.
+    Chaque crash survient pendant les heures de bureau.
+
+    **Diagnostic :**
+
+    1. Romain verifie d'abord que les dumps sont bien generes :
+
+    ```powershell
+    Get-ChildItem "$env:SystemRoot\Minidump" | Sort-Object LastWriteTime -Descending
+    ```
+    3 fichiers minidump confirment les 3 crashes.
+
+    2. Il ouvre le dernier dump dans WinDbg et execute `!analyze -v`
+    3. Le resultat indique :
+
+    ```text
+    BUGCHECK_CODE: d1
+    IMAGE_NAME: nvlddmkm.sys
+    MODULE_NAME: nvlddmkm
+    FAULTING_MODULE: fffff80b12340000 nvlddmkm
+    DEFAULT_BUCKET_ID: GRAPHICS_DRIVER_TDR_FAULT
+    ```
+
+    4. `nvlddmkm.sys` est le pilote graphique NVIDIA. Romain verifie la version :
+
+    ```powershell
+    Get-CimInstance Win32_PnPSignedDriver |
+        Where-Object { $_.DeviceName -like "*NVIDIA*" } |
+        Select-Object DeviceName, DriverVersion, DriverDate
+    ```
+    Le pilote date de 2024 et n'est pas a jour.
+
+    **Resolution :** Romain telecharge le dernier pilote NVIDIA depuis le site du fabricant du serveur (pas du site NVIDIA grand public), l'installe et surveille pendant une semaine. Plus aucun BSOD ne se produit.
+
+!!! danger "Erreurs courantes"
+
+    - **Ne pas configurer le memory dump** : sans fichier dump, aucune analyse post-mortem
+      n'est possible. Verifiez que le type est au moins "Kernel Memory Dump" et que le
+      pagefile est suffisamment dimensionne
+    - **Telecharger les pilotes depuis le site grand public** : pour un serveur, toujours
+      utiliser les pilotes certifies du fabricant du serveur (Dell, HPE, Lenovo), pas ceux
+      du site du fabricant de la puce
+    - **Ignorer les BSOD intermittents** : un BSOD qui ne se produit qu'une fois par semaine
+      peut indiquer un probleme materiel (RAM, disque) en debut de defaillance. Agissez avant
+      que la frequence n'augmente
+    - **Reinstaller Windows au lieu d'analyser** : le dump contient la reponse. Prendre 30
+      minutes pour l'analyser avec WinDbg est toujours plus rapide qu'une reinstallation complete
+    - **Oublier de tester la RAM** : les erreurs memoire provoquent des BSOD aux codes varies.
+      En cas de doute, lancez `mdsched.exe` pour un test complet de la memoire physique
 
 ## Pour aller plus loin
 

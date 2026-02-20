@@ -35,6 +35,10 @@ flowchart TD
 
 ## Prerequis
 
+!!! example "Analogie"
+
+    Installer le premier controleur de domaine, c'est comme **fonder la mairie d'une nouvelle ville**. Avant que les habitants (utilisateurs) puissent s'installer, il faut construire le batiment (installer le role), ouvrir les registres d'etat civil (creer la base NTDS.dit), et mettre en place le bureau de poste (DNS) pour que tout le monde puisse se trouver.
+
 Avant de promouvoir un serveur en controleur de domaine :
 
 - [x] Serveur renomme (ex: `DC-01`)
@@ -56,6 +60,14 @@ Avant de promouvoir un serveur en controleur de domaine :
 ```powershell
 # Install AD DS role with management tools
 Install-WindowsFeature -Name AD-Domain-Services -IncludeManagementTools
+```
+
+Resultat :
+
+```text
+Success Restart Needed Exit Code      Feature Result
+------- -------------- ---------      --------------
+True    No             Success        {Active Directory Domain Services, Group P...
 ```
 
 !!! note "Le role DNS sera installe automatiquement"
@@ -142,6 +154,61 @@ Resolve-DnsName -Name "lab.local" -Type SOA
 Resolve-DnsName -Name "_ldap._tcp.dc._msdcs.lab.local" -Type SRV
 ```
 
+Resultat :
+
+```text
+Name Status
+---- ------
+NTDS Running
+
+Name Status
+---- ------
+DNS  Running
+
+DNSRoot    NetBIOSName DomainMode        PDCEmulator
+-------    ----------- ----------        -----------
+lab.local  LAB         Windows2016Domain DC-01.lab.local
+
+Name      ForestMode        SchemaMaster    DomainNamingMaster
+----      ----------        ------------    ------------------
+lab.local Windows2016Forest DC-01.lab.local DC-01.lab.local
+
+Name  IPv4Address IsGlobalCatalog
+----  ----------- ---------------
+DC-01 10.0.0.10              True
+
+Schema master               DC-01.lab.local
+Domain naming master        DC-01.lab.local
+PDC                         DC-01.lab.local
+RID pool manager            DC-01.lab.local
+Infrastructure master       DC-01.lab.local
+The command completed successfully.
+
+ZoneName                            ZoneType   IsAutoCreated  IsDsIntegrated
+--------                            --------   -------------  --------------
+lab.local                           Primary    False          True
+_msdcs.lab.local                    Primary    False          True
+0.0.10.in-addr.arpa                 Primary    False          True
+
+Name    ScopeName Path                              Description
+----    --------- ----                              -----------
+SYSVOL  *         C:\Windows\SYSVOL\sysvol          Logon server share
+NETLOGON *        C:\Windows\SYSVOL\sysvol\lab.local\SCRIPTS Logon server share
+
+Name     : lab.local
+Type     : SOA
+TTL      : 3600
+Section  : Answer
+PrimaryServer : DC-01.lab.local
+
+Name     : _ldap._tcp.dc._msdcs.lab.local
+Type     : SRV
+Target   : DC-01.lab.local
+Port     : 389
+Priority : 0
+Weight   : 100
+```
+
 !!! tip "Test DNS SRV"
 
     La resolution de `_ldap._tcp.dc._msdcs.lab.local` en enregistrement SRV
@@ -193,6 +260,64 @@ Les ports suivants doivent etre ouverts entre les DC et les clients :
 - Le mot de passe DSRM est critique et doit etre conserve en securite
 - Toujours deployer au moins 2 DC pour la redondance
 - Verifier les enregistrements DNS SRV apres la promotion
+
+!!! example "Scenario pratique"
+
+    **Contexte :** Marc, technicien reseau, vient d'installer le role AD DS sur `DC-01` (10.0.0.10) et lance la promotion avec `Install-ADDSForest`. Apres le redemarrage, il constate que les postes clients ne parviennent pas a joindre le domaine `lab.local`. Le message d'erreur indique « The specified domain either does not exist or could not be contacted ».
+
+    **Diagnostic :**
+
+    ```powershell
+    # On a client workstation, check DNS configuration
+    Get-DnsClientServerAddress -InterfaceAlias "Ethernet" | Select-Object ServerAddresses
+
+    # Try to resolve the domain
+    Resolve-DnsName -Name "lab.local" -Type SOA
+    ```
+
+    Resultat :
+
+    ```text
+    ServerAddresses
+    ---------------
+    {10.0.0.1}
+
+    Resolve-DnsName : DNS name does not exist
+    ```
+
+    Le probleme : les postes clients pointent vers le routeur (`10.0.0.1`) au lieu du DC (`10.0.0.10`) pour le DNS.
+
+    **Solution :**
+
+    ```powershell
+    # On each client, set DNS to point to the DC
+    Set-DnsClientServerAddress -InterfaceAlias "Ethernet" -ServerAddresses "10.0.0.10"
+
+    # Verify DNS resolution works now
+    Resolve-DnsName -Name "lab.local" -Type SOA
+    ```
+
+    Resultat :
+
+    ```text
+    Name       Type TTL  Section PrimaryServer
+    ----       ---- ---  ------- -------------
+    lab.local  SOA  3600 Answer  DC-01.lab.local
+    ```
+
+    Idealement, configurez le DHCP pour distribuer `10.0.0.10` comme serveur DNS primaire a tous les postes du reseau.
+
+!!! danger "Erreurs courantes"
+
+    1. **Oublier de configurer l'IP statique** : un DC avec une adresse DHCP risque de changer d'IP, rendant le DNS et l'authentification inaccessibles pour tous les clients.
+
+    2. **DNS du serveur ne pointe pas vers lui-meme** : avant la promotion, le DNS du futur DC doit pointer vers `127.0.0.1` ou sa propre IP statique. Sinon, les enregistrements SRV ne seront pas enregistres correctement.
+
+    3. **Perdre le mot de passe DSRM** : le mot de passe SafeModeAdministratorPassword est le seul moyen d'acceder au DC en mode restauration. Sans lui, la recuperation apres un sinistre devient extremement complexe.
+
+    4. **Ne pas verifier les enregistrements DNS SRV** : apres la promotion, verifiez toujours que `_ldap._tcp.dc._msdcs.lab.local` est resolu. Sans ces enregistrements, les clients ne trouvent pas le DC.
+
+    5. **Utiliser un nom de domaine en `.local` en production** : le suffixe `.local` entre en conflit avec le protocole mDNS/Bonjour. Preferez `ad.monentreprise.com` ou `corp.monentreprise.com` pour la production.
 
 ## Pour aller plus loin
 

@@ -32,6 +32,13 @@ graph TD
     H --> K[Abonnements]
 ```
 
+!!! example "Analogie"
+
+    Imaginez l'Observateur d'evenements comme le **journal de bord d'un navire**. Chaque evenement
+    significatif est consigne avec la date, l'heure, le responsable et la description. En cas de
+    probleme, le capitaine (l'administrateur) consulte ce journal pour retracer ce qui s'est passe
+    et comprendre la cause de l'incident.
+
 ## Lancer l'Observateur d'evenements
 
 ```powershell
@@ -41,6 +48,12 @@ eventvwr.msc
 # Open Event Viewer for a remote server
 eventvwr.msc /s:SRV-DC01
 ```
+
+!!! example "Analogie"
+
+    Les differents journaux (System, Application, Security) fonctionnent comme les **tiroirs
+    d'un classeur** : chacun contient un type de document different. On ne melange pas les
+    factures (Application) avec les rapports de securite (Security) ni les notes techniques (System).
 
 ## Types de journaux
 
@@ -148,6 +161,17 @@ Get-WinEvent -FilterHashtable @{
 }
 ```
 
+Resultat :
+
+```text
+TimeCreated           Id LevelDisplayName ProviderName                   Message
+-----------           -- --------------- ------------                   -------
+2026-02-20 14:32:10 7034 Error           Service Control Manager        The DNS Client service terminated unexpectedly...
+2026-02-20 11:15:42 1014 Error           Microsoft-Windows-DNS-Client   Name resolution for the name dc-01.lab.local timed out...
+2026-02-20 09:08:33  129 Error           Microsoft-Windows-Time-Service NtpClient was unable to set a domain peer...
+2026-02-20 02:45:18 1008 Error           Microsoft-Windows-Perflib      The Open procedure for service "BITS" has failed...
+```
+
 **Connexions echouees :**
 
 ```powershell
@@ -160,6 +184,17 @@ Get-WinEvent -FilterHashtable @{
     @{N='TargetUser';E={$_.Properties[5].Value}},
     @{N='SourceIP';E={$_.Properties[19].Value}},
     @{N='FailureReason';E={$_.Properties[8].Value}}
+```
+
+Resultat :
+
+```text
+TimeCreated           TargetUser    SourceIP      FailureReason
+-----------           ----------    --------      -------------
+2026-02-20 14:22:05   j.bombled     10.0.0.50     %%2313
+2026-02-20 13:58:31   admin.test    10.0.0.102    %%2313
+2026-02-20 12:10:47   Administrateur 10.0.0.1     %%2308
+2026-02-20 11:45:12   svc_backup    10.0.0.30     %%2313
 ```
 
 ## Filtrage avance avec XML (XPath)
@@ -245,6 +280,23 @@ Get-WinEvent -FilterHashtable @{
     Export-Csv -Path "C:\Logs\app-events-7days.csv" -NoTypeInformation -Encoding UTF8
 ```
 
+Resultat :
+
+```text
+# Query with XPath filter
+TimeCreated           Id LevelDisplayName ProviderName    Message
+-----------           -- --------------- ------------    -------
+2026-02-20 09:15:33 4625 Information     Microsoft-Win.. An account failed to log on...
+
+# Remote query
+TimeCreated           Id LevelDisplayName ProviderName                 Message
+-----------           -- --------------- ------------                 -------
+2026-02-20 14:02:11 7034 Error           Service Control Manager      The W3SVC service terminated unexpectedly...
+2026-02-20 10:28:45   41 Critical        Microsoft-Windows-Kernel-Power The system has rebooted without cleanly shutting down...
+
+# CSV export: file created at C:\Logs\app-events-7days.csv (342 events exported)
+```
+
 ## Abonnements (Event Subscriptions)
 
 Les abonnements permettent de collecter automatiquement des evenements depuis des serveurs distants vers un serveur collecteur.
@@ -302,6 +354,14 @@ wevtutil cl System /bu:"C:\LogBackups\System-$(Get-Date -Format 'yyyyMMdd').evtx
 wevtutil epl Security "C:\LogBackups\Security-export.evtx"
 ```
 
+Resultat :
+
+```text
+LogName MaximumSizeInBytes  FileSize RecordCount LogMode
+------- ------------------  -------- ----------- -------
+System            20971520  18743296       12847 Circular
+```
+
 | Strategie | Valeur `/rt` | Comportement |
 |-----------|-------------|--------------|
 | **Remplacer si necessaire** | `false` | Les evenements anciens sont ecrases (defaut) |
@@ -323,6 +383,46 @@ wevtutil epl Security "C:\LogBackups\Security-export.evtx"
 - `Get-WinEvent` avec `-FilterHashtable` est la methode PowerShell la plus performante
 - Les abonnements (WEF) permettent de centraliser les journaux de plusieurs serveurs
 - La taille et la politique de retention des journaux doivent etre configurees selon les besoins
+
+!!! example "Scenario pratique"
+
+    **Contexte :** Sophie, administratrice systeme, recoit un appel un lundi matin : plusieurs
+    utilisateurs ne parviennent plus a se connecter a leur session depuis 8h00.
+
+    **Diagnostic :**
+
+    1. Sophie se connecte au controleur de domaine DC-01 et ouvre l'Observateur d'evenements
+    2. Elle filtre le journal Security sur l'Event ID 4625 (echecs de connexion) des 2 dernieres heures :
+
+    ```powershell
+    Get-WinEvent -ComputerName DC-01 -FilterHashtable @{
+        LogName = 'Security'
+        Id = 4625
+        StartTime = (Get-Date).AddHours(-2)
+    } | Select-Object TimeCreated,
+        @{N='TargetUser';E={$_.Properties[5].Value}},
+        @{N='FailureReason';E={$_.Properties[8].Value}} |
+        Group-Object TargetUser | Sort-Object Count -Descending
+    ```
+
+    3. Elle decouvre que 45 echecs concernent des comptes differents, tous avec le code `%%2313` (compte verrouille)
+    4. En remontant dans le journal, elle identifie un Event ID 4740 (verrouillage de compte) massif a 7h55
+    5. L'adresse source commune est `10.0.0.102` : un poste de travail avec un ancien mot de passe enregistre dans un service
+
+    **Resolution :** Sophie desactive le service fautif sur le poste 10.0.0.102, deverrouille les comptes via `Unlock-ADAccount` et met a jour le mot de passe du service.
+
+!!! danger "Erreurs courantes"
+
+    - **Ignorer les Event IDs** : chaque Event ID a une signification precise. Rechercher
+      le numero sur le site Microsoft ou eventvwr.com pour comprendre sa signification
+    - **Ne pas filtrer les journaux** : un journal Security peut contenir des millions
+      d'evenements. Sans filtre (par ID, par date, par source), la recherche est impossible
+    - **Confondre FilterHashtable et Where-Object** : `Where-Object` filtre apres avoir lu
+      tous les evenements (lent), `FilterHashtable` filtre a la source (performant)
+    - **Oublier de dimensionner les journaux** : le journal Security par defaut fait 20 Mo,
+      ce qui est insuffisant en production. Un serveur actif peut le remplir en quelques heures
+    - **Ne pas exporter avant de purger** : toujours sauvegarder un journal en `.evtx` avant
+      de le vider, surtout pour des raisons de conformite
 
 ## Pour aller plus loin
 

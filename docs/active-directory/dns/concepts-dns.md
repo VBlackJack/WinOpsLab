@@ -13,6 +13,10 @@ tags:
 
 ## Qu'est-ce que le DNS ?
 
+!!! example "Analogie"
+
+    Imaginez un annuaire telephonique geant : vous cherchez le nom d'une personne (ex : "Martin Dupont") et l'annuaire vous donne son numero de telephone. Le DNS fonctionne exactement pareil, mais pour les ordinateurs : vous donnez un nom (`srv-dc01.lab.local`) et il vous renvoie l'adresse IP correspondante.
+
 Le **Domain Name System** (DNS) est un systeme de resolution de noms distribue. Il traduit les noms de domaine lisibles par l'homme (ex: `srv-dc01.lab.local`) en adresses IP exploitables par les machines (ex: `192.168.1.10`).
 
 DNS fonctionne comme un annuaire telephonique mondial : plutot que de retenir des adresses IP, on utilise des noms.
@@ -120,6 +124,18 @@ Resolve-DnsName -Name "srv-dc01.lab.local" -Type A
 Resolve-DnsName -Name "192.168.1.10" -Type PTR
 ```
 
+Resultat :
+
+```text
+Name                           Type   TTL   Section    IPAddress
+----                           ----   ---   -------    ---------
+srv-dc01.lab.local             A      3600  Answer     10.0.0.10
+
+Name                           Type   TTL   Section    NameHost
+----                           ----   ---   -------    --------
+10.0.0.10.in-addr.arpa         PTR    3600  Answer     srv-dc01.lab.local
+```
+
 ## Cache DNS
 
 Pour eviter de repeter les memes requetes, chaque element de la chaine DNS utilise un cache :
@@ -140,6 +156,17 @@ Show-DnsServerCache -ComputerName "SRV-DC01"
 
 # Clear the DNS server cache
 Clear-DnsServerCache -ComputerName "SRV-DC01"
+```
+
+Resultat :
+
+```text
+Entry                     RecordName                Record  Status    Section  TimeTo  Data
+                                                    Type                       Live
+-----                     ----------                ------  ------    -------  ------  ----
+srv-dc01.lab.local        srv-dc01.lab.local        A       Success   Answer   2845    10.0.0.10
+srv-01.lab.local          srv-01.lab.local           A       Success   Answer   1230    10.0.0.20
+www.microsoft.com         www.microsoft.com          CNAME   Success   Answer   120     www.microsoft...
 ```
 
 ## Pourquoi DNS est critique pour Active Directory
@@ -173,6 +200,17 @@ Resolve-DnsName -Name "_ldap._tcp.lab.local" -Type SRV
 Resolve-DnsName -Name "_gc._tcp.lab.local" -Type SRV
 ```
 
+Resultat :
+
+```text
+Name                                    Type   TTL   Section    NameTarget                 Priority Weight Port
+----                                    ----   ---   -------    ----------                 -------- ------ ----
+_ldap._tcp.lab.local                    SRV    600   Answer     DC-01.lab.local            0        100    389
+_ldap._tcp.lab.local                    SRV    600   Answer     SRV-DC01.lab.local         0        100    389
+
+_gc._tcp.lab.local                      SRV    600   Answer     DC-01.lab.local            0        100    3268
+```
+
 !!! danger "Pas de DNS = pas d'Active Directory"
 
     Si le DNS est en panne, les consequences sont immediates :
@@ -204,6 +242,18 @@ Dans la majorite des environnements, le role DNS est installe sur chaque control
 
     # Verify the role is installed
     Get-WindowsFeature -Name DNS
+    ```
+
+    Resultat :
+
+    ```text
+    Success Restart Needed Exit Code      Feature Result
+    ------- -------------- ---------      --------------
+    True    No             Success        {DNS Server, DNS Server Tools}
+
+    Display Name                                            Name       Install State
+    ------------                                            ----       -------------
+    [X] DNS Server                                          DNS        Installed
     ```
 
 === "GUI"
@@ -251,6 +301,60 @@ Get-DnsClientServerAddress -InterfaceAlias "Ethernet" | Select-Object ServerAddr
 # Test full DNS resolution path
 Resolve-DnsName -Name "srv-fs01.lab.local" -Type A -DnsOnly
 ```
+
+Resultat :
+
+```text
+ServerAddresses
+---------------
+{10.0.0.10, 10.0.0.11}
+
+Name                           Type   TTL   Section    IPAddress
+----                           ----   ---   -------    ---------
+srv-fs01.lab.local             A      3600  Answer     10.0.0.20
+```
+
+!!! example "Scenario pratique"
+
+    **Situation** : Sophie, administratrice systeme, vient de deployer un nouveau serveur de fichiers `SRV-FS02` sur le reseau `10.0.0.0/24`. Les utilisateurs se plaignent de ne pas pouvoir acceder au partage `\\SRV-FS02\Projets`.
+
+    **Diagnostic** :
+
+    ```powershell
+    # Etape 1 : Verifier si le nom se resout
+    Resolve-DnsName -Name "SRV-FS02.lab.local" -Type A -DnsOnly
+    ```
+
+    Le resultat montre que l'enregistrement n'existe pas. Le serveur a une IP statique et n'a pas ete enregistre dans le DNS.
+
+    ```powershell
+    # Etape 2 : Verifier le serveur DNS configure sur SRV-FS02
+    Get-DnsClientServerAddress -InterfaceAlias "Ethernet"
+    ```
+
+    Le serveur DNS pointe vers `8.8.8.8` au lieu du DC local. Le serveur n'est donc pas enregistre dans la zone `lab.local`.
+
+    **Solution** :
+
+    ```powershell
+    # Corriger le serveur DNS sur SRV-FS02
+    Set-DnsClientServerAddress -InterfaceAlias "Ethernet" -ServerAddresses "10.0.0.10","10.0.0.11"
+
+    # Forcer l'enregistrement DNS
+    Register-DnsClient
+
+    # Verifier que l'enregistrement est maintenant present
+    Resolve-DnsName -Name "SRV-FS02.lab.local" -Type A -DnsOnly
+    ```
+
+    Les utilisateurs peuvent desormais acceder au partage `\\SRV-FS02\Projets`.
+
+!!! danger "Erreurs courantes"
+
+    - **Utiliser un DNS public (8.8.8.8) comme DNS principal sur les postes du domaine** : les postes ne trouvent plus les controleurs de domaine car les enregistrements SRV de `lab.local` ne sont pas dans les DNS publics. Utilisez toujours les DC comme serveurs DNS principaux.
+    - **Oublier le suffixe DNS** : taper `ping srv-dc01` au lieu de `ping srv-dc01.lab.local` peut echouer si le suffixe DNS n'est pas configure sur le client. Verifiez la configuration du suffixe via DHCP ou GPO.
+    - **Confondre FQDN et nom NetBIOS** : le DNS resout les FQDN (`srv-dc01.lab.local`), pas les noms NetBIOS (`SRV-DC01`). La resolution NetBIOS passe par WINS ou les broadcasts, mecanismes moins fiables.
+    - **Ne pas creer la zone de recherche inverse** : sans zone inverse, les commandes `nslookup` affichent des avertissements et certains outils de securite ne fonctionnent pas correctement.
 
 ## Points cles a retenir
 

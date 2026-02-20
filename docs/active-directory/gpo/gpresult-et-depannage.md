@@ -16,6 +16,10 @@ tags:
 
 ## gpresult : l'outil de diagnostic principal
 
+!!! example "Analogie"
+
+    Imaginez que vous recevez du courrier de plusieurs expediteurs (domaine, OU parente, OU enfant), et que certains messages se contredisent. `gpresult` est comme un recapitulatif postal qui vous montre exactement quels courriers ont ete livres, quels courriers ont ete bloques, et lequel fait foi pour chaque sujet. C'est votre outil de tracabilite.
+
 La commande `gpresult` affiche le **jeu de strategies resultant** (Resultant
 Set of Policy - RSoP) pour un utilisateur et/ou un ordinateur. C'est l'outil
 de premiere intention pour verifier quelles GPO sont effectivement appliquees.
@@ -95,6 +99,26 @@ $computerGPOs | Format-Table -AutoSize
 
 Write-Output "=== User GPOs ==="
 $userGPOs | Format-Table -AutoSize
+```
+
+Resultat :
+
+```text
+=== Computer GPOs ===
+
+Name                              Enabled
+----                              -------
+SEC - Security Baseline           True
+Default Domain Policy             True
+CFG - Windows Update Settings     True
+
+=== User GPOs ===
+
+Name                              Enabled
+----                              -------
+CFG - Desktop Settings            True
+CFG - Mapped Drives               True
+Default Domain Policy             True
 ```
 
 ---
@@ -253,6 +277,18 @@ problemes de traitement des GPO.
     # Log file: %SYSTEMROOT%\debug\usermode\gpsvc.log
     ```
 
+    Resultat :
+
+    ```text
+    TimeCreated           Id LevelDisplayName Message
+    -----------           -- ---------------- -------
+    20/02/2026 08:15:32 5016 Information      Completed user Group Policy processing...
+    20/02/2026 08:15:30 4016 Information      Completed computer Group Policy processing...
+    20/02/2026 08:15:28 7016 Information      Completed Registry Extension Processing...
+    20/02/2026 08:15:25 7320 Error            The GPO "CFG - Branch Settings" could not...
+    20/02/2026 08:12:10 4016 Information      Completed computer Group Policy processing...
+    ```
+
 === "GUI (eventvwr.msc)"
 
     1. Ouvrir **Event Viewer** (`eventvwr.msc`)
@@ -305,6 +341,24 @@ Get-GPInheritance -Target "OU=Comptabilite,OU=Siege,DC=lab,DC=local" |
     Select-Object ContainerName, GpoInheritanceBlocked
 ```
 
+Resultat :
+
+```text
+DisplayName              GpoStatus
+-----------              ---------
+CFG - Desktop Restrictions AllSettingsEnabled
+
+Trustee                  Permission                   Inherited
+-------                  ----------                   ---------
+Authenticated Users      GpoApply                     False
+Domain Admins            GpoEditDeleteModifySecurity   False
+ENTERPRISE DOMAIN CTRL   GpoRead                      False
+
+ContainerName            GpoInheritanceBlocked
+-------------            ---------------------
+Comptabilite             False
+```
+
 ### Probleme 2 : Conflit entre GPO
 
 ```powershell
@@ -340,6 +394,13 @@ Write-Output "User version  : $($gpo.User.DSVersion) (AD) / $($gpo.User.SysvolVe
 Write-Output "Computer version: $($gpo.Computer.DSVersion) (AD) / $($gpo.Computer.SysvolVersion) (SYSVOL)"
 
 # If AD version != SYSVOL version, replication is out of sync
+```
+
+Resultat :
+
+```text
+User version  : 12 (AD) / 12 (SYSVOL)
+Computer version: 8 (AD) / 7 (SYSVOL)    <-- INCOHERENCE
 ```
 
 !!! danger "Incoherence de version"
@@ -413,6 +474,85 @@ Utilisez cette liste pour diagnostiquer systematiquement un probleme GPO :
 - [ ] La **replication SYSVOL** est-elle saine ? (versions AD = SYSVOL)
 - [ ] Le poste a-t-il une **connectivite** reseau vers un DC ?
 - [ ] Les **journaux d'evenements** GroupPolicy signalent-ils des erreurs ?
+
+---
+
+## Scenario pratique
+
+!!! example "Scenario pratique"
+
+    **Contexte** : Julien, technicien de support niveau 2, recoit un ticket de Paul, comptable, qui signale que son lecteur reseau `S:` n'apparait plus depuis ce matin. D'autres comptables n'ont pas le probleme.
+
+    **Diagnostic** :
+
+    1. Julien se connecte a distance sur le poste de Paul et genere un rapport :
+
+        ```powershell
+        gpresult /s PC-COMPTA-03 /user:lab\paul.martin /h "C:\Temp\paul-gpo.html" /f
+        ```
+
+    2. Dans le rapport HTML, il constate que la GPO `CFG - Mapped Drives` apparait dans la section **User Settings** > **Applied GPOs**. Le parametre est donc bien recu.
+
+    3. Il verifie si le lecteur est presente :
+
+        ```powershell
+        Invoke-Command -ComputerName PC-COMPTA-03 -ScriptBlock {
+            Get-PSDrive -PSProvider FileSystem | Where-Object Name -eq "S"
+        }
+        ```
+
+        Resultat :
+
+        ```text
+        (aucun resultat)
+        ```
+
+    4. Le lecteur n'existe pas malgre la GPO appliquee. Julien teste l'acces au partage :
+
+        ```powershell
+        Invoke-Command -ComputerName PC-COMPTA-03 -ScriptBlock {
+            Test-Path "\\SRV-FILE\Partage"
+        }
+        ```
+
+        Resultat :
+
+        ```text
+        False
+        ```
+
+    5. Le partage `\\SRV-FILE\Partage` est inaccessible depuis le poste de Paul. Julien teste depuis un autre poste : le partage fonctionne. Il verifie la connectivite reseau de PC-COMPTA-03 vers SRV-FILE :
+
+        ```powershell
+        Test-NetConnection -ComputerName SRV-FILE -Port 445
+        ```
+
+        Resultat :
+
+        ```text
+        ComputerName     : SRV-FILE
+        RemoteAddress    : 10.0.0.20
+        RemotePort       : 445
+        TcpTestSucceeded : False
+        ```
+
+    **Resolution** : le port SMB (445) est bloque. Apres verification, une regle de pare-feu locale avait ete modifiee manuellement sur le poste de Paul. La restauration de la regle par defaut et un `gpupdate /force` resolvent le probleme. La GPO n'etait pas en cause, mais c'est le diagnostic GPO qui a permis d'identifier que le probleme etait reseau et non strategique.
+
+---
+
+## Erreurs courantes
+
+!!! danger "Erreurs courantes"
+
+    1. **Oublier d'executer gpresult en tant qu'administrateur** : sans privileges d'administration, `gpresult /r` ne montre que les parametres utilisateur et omet les parametres ordinateur. Toujours lancer depuis une invite elevee.
+
+    2. **Confondre Group Policy Results et Group Policy Modeling** : Results montre ce qui est **deja applique** sur un poste reel. Modeling **simule** ce qui serait applique. Utiliser Modeling pour diagnostiquer un probleme actuel ne sert a rien.
+
+    3. **Ne pas verifier les journaux d'evenements** : `gpresult` montre les GPO filtrees mais n'explique pas toujours pourquoi. Les journaux **GroupPolicy/Operational** (Event ID 7320, 1058, 1030) donnent les details precis de l'echec.
+
+    4. **Ignorer les versions AD/SYSVOL** : une incoherence de version entre AD et SYSVOL indique un probleme de replication. Les parametres peuvent differer selon le DC contacte par le poste, rendant le depannage confus si on ne verifie pas ce point.
+
+    5. **Forcer gpupdate /force systematiquement** : `gpupdate /force` reapplique tout, ce qui est lourd et peut masquer un probleme intermittent. Utilisez d'abord `gpupdate` sans `/force` pour identifier si le probleme se reproduit.
 
 ---
 

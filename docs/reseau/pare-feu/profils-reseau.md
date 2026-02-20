@@ -20,6 +20,10 @@ Le Pare-feu Windows avec securite avancee (WFAS) utilise des **profils reseau** 
 
 ---
 
+!!! example "Analogie"
+
+    Les profils reseau fonctionnent comme les **niveaux de securite d'un telephone portable**. Quand vous etes chez vous (profil Prive), vous laissez la porte d'entree deverrouillee. Au bureau (profil Domaine), vous passez un badge mais vous etes en terrain connu. Dans un lieu public comme un cafe (profil Public), vous verrouillez tout et restez vigilant. Le pare-feu applique la meme logique : il adapte automatiquement son niveau de restriction selon l'environnement reseau detecte.
+
 ## Les trois profils
 
 ### Profil Domaine
@@ -84,6 +88,19 @@ Get-NetConnectionProfile | Select-Object InterfaceAlias, NetworkCategory, IPv4Co
 Get-Service NlaSvc | Select-Object Name, Status, StartType
 ```
 
+Resultat :
+
+```text
+InterfaceAlias NetworkCategory IPv4Connectivity
+-------------- --------------- ----------------
+Ethernet0      DomainAuthenticated       Internet
+Ethernet1      Public                    Internet
+
+Name    Status  StartType
+----    ------  ---------
+NlaSvc  Running Automatic
+```
+
 !!! warning "Problemes courants de detection"
 
     Si un serveur joint au domaine ne detecte pas le profil Domaine, verifiez :
@@ -107,6 +124,12 @@ Set-NetConnectionProfile -InterfaceAlias "Ethernet0" -NetworkCategory Private
 Set-NetConnectionProfile -InterfaceAlias "Ethernet0" -NetworkCategory Public
 ```
 
+Resultat :
+
+```text
+# (Le profil de l'interface Ethernet0 est modifie. Verifiez avec Get-NetConnectionProfile)
+```
+
 !!! info "Limitation"
 
     Le profil **Domaine** ne peut pas etre attribue manuellement. Il est automatiquement detecte par le service NLA lorsqu'un controleur de domaine est accessible. Si le profil Domaine n'est pas detecte alors qu'il devrait l'etre, c'est un probleme de connectivite ou de DNS a investiguer.
@@ -128,6 +151,15 @@ Get-ChildItem "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\NetworkList\Pr
             Category    = switch ($props.Category) { 0 {"Public"} 1 {"Private"} 2 {"Domain"} }
         }
     }
+```
+
+Resultat :
+
+```text
+ProfileName             Category
+-----------             --------
+lab.local               Domain
+Reseau non identifie    Public
 ```
 
 ---
@@ -155,6 +187,16 @@ Get-NetFirewallProfile | Format-Table Name, Enabled, DefaultInboundAction, Defau
 
 # Display detailed configuration for a specific profile
 Get-NetFirewallProfile -Profile Domain | Format-List *
+```
+
+Resultat :
+
+```text
+Name    Enabled DefaultInboundAction DefaultOutboundAction LogAllowed LogBlocked
+----    ------- -------------------- --------------------- ---------- ----------
+Domain     True                Block                 Allow      False       True
+Private    True                Block                 Allow      False      False
+Public     True                Block                 Allow      False      False
 ```
 
 ### Configurer un profil specifique
@@ -251,6 +293,16 @@ Get-NetConnectionProfile | Select-Object InterfaceAlias, Name, NetworkCategory |
     Format-Table -AutoSize
 ```
 
+Resultat :
+
+```text
+InterfaceAlias Name                    NetworkCategory
+-------------- ----                    ---------------
+Ethernet0      lab.local               DomainAuthenticated
+Ethernet1      Reseau non identifie    Public
+Ethernet2      Reseau de gestion       Private
+```
+
 !!! tip "Strategie multi-interfaces"
 
     Pour un serveur multi-reseau (ex : serveur en DMZ avec une patte interne et une patte externe), configurez des regles differentes par profil. Le trafic entrant depuis la DMZ (profil Public) sera soumis a des regles plus restrictives que le trafic provenant du LAN interne (profil Domaine).
@@ -266,19 +318,45 @@ Get-NetConnectionProfile | Select-Object InterfaceAlias, Name, NetworkCategory |
 Get-Service NlaSvc
 
 # Step 2: Verify DNS resolution of the domain
-Resolve-DnsName "contoso.local"
+Resolve-DnsName "lab.local"
 
 # Step 3: Test connectivity to a domain controller
-Test-Connection -ComputerName "DC01" -Count 2
+Test-Connection -ComputerName "DC-01" -Count 2
 
 # Step 4: Verify LDAP connectivity
-Test-NetConnection -ComputerName "DC01" -Port 389
+Test-NetConnection -ComputerName "DC-01" -Port 389
 
 # Step 5: Restart the NLA service (may trigger re-detection)
 Restart-Service NlaSvc
 
 # Step 6: Check the detected profile after restart
 Get-NetConnectionProfile
+```
+
+Resultat :
+
+```text
+Status   Name    DisplayName
+------   ----    -----------
+Running  NlaSvc  Network Location Awareness
+
+Name     : lab.local
+Type     : A
+TTL      : 600
+IPAddress: 10.0.0.10
+
+Source      Destination    Bytes  Time(ms)
+------      -----------    -----  --------
+SRV-01      DC-01          32     1
+SRV-01      DC-01          32     1
+
+ComputerName     : DC-01
+RemotePort       : 389
+TcpTestSucceeded : True
+
+InterfaceAlias  NetworkCategory
+--------------  ---------------
+Ethernet0       DomainAuthenticated
 ```
 
 ### Forcer la re-evaluation du profil
@@ -307,6 +385,62 @@ Enable-NetAdapter -Name "Ethernet0"
 | Profil Domaine           | Attribue automatiquement, ne peut pas etre force manuellement|
 
 ---
+
+!!! example "Scenario pratique"
+
+    **Contexte** : Thomas, technicien reseau, constate que le serveur `SRV-01` (10.0.0.15) joint au domaine `lab.local` est passe en profil Public apres une maintenance reseau. Les regles de pare-feu du profil Domaine ne s'appliquent plus et plusieurs services sont inaccessibles.
+
+    **Diagnostic** :
+
+    ```powershell
+    # Step 1: Check current profile
+    Get-NetConnectionProfile
+    ```
+
+    ```text
+    InterfaceAlias  : Ethernet0
+    NetworkCategory : Public
+    Name            : Reseau non identifie
+    ```
+
+    ```powershell
+    # Step 2: Verify DNS resolution of the domain
+    Resolve-DnsName "lab.local"
+    ```
+
+    ```text
+    Resolve-DnsName : lab.local : Nom DNS inexistant
+    ```
+
+    Le serveur DNS est mal configure suite a la maintenance.
+
+    **Solution** :
+
+    ```powershell
+    # Step 3: Fix DNS configuration
+    Set-DnsClientServerAddress -InterfaceAlias "Ethernet0" -ServerAddresses "10.0.0.10"
+
+    # Step 4: Restart NLA to trigger re-detection
+    Restart-Service NlaSvc -Force
+
+    # Step 5: Verify profile is now Domain
+    Get-NetConnectionProfile
+    ```
+
+    ```text
+    InterfaceAlias  : Ethernet0
+    NetworkCategory : DomainAuthenticated
+    Name            : lab.local
+    ```
+
+    Le profil Domaine est detecte a nouveau. Les regles de pare-feu associees s'appliquent correctement.
+
+!!! danger "Erreurs courantes"
+
+    - **Ignorer le profil actif apres un redemarrage** : un probleme temporaire de DNS ou de connectivite au DC peut faire basculer l'interface en profil Public, appliquant des regles bien plus restrictives.
+    - **Tenter de forcer manuellement le profil Domaine** : le profil Domaine ne peut pas etre attribue via `Set-NetConnectionProfile`. Il est detecte automatiquement par NLA. Corriger la cause (DNS, connectivite DC) est la seule solution.
+    - **Creer toutes les regles sur le profil "Any"** : appliquer les regles a tous les profils supprime l'interet de la differenciation par profil. Ciblez les profils pertinents pour chaque regle.
+    - **Oublier le service NLA** : si le service NlaSvc est arrete ou desactive, la detection automatique du profil ne fonctionne plus et toutes les interfaces basculent en Public.
 
 ## Pour aller plus loin
 

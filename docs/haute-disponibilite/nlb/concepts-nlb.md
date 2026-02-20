@@ -20,6 +20,10 @@ Le **Network Load Balancing** (NLB) est une fonctionnalite integree a Windows Se
 
     NLB reste disponible dans Windows Server 2022 mais est de plus en plus remplace par des solutions plus modernes : Azure Load Balancer, HAProxy, ou le role Windows Server Software Load Balancer (SLB). NLB reste pertinent pour les environnements on-premise sans infrastructure supplementaire.
 
+!!! example "Analogie"
+
+    NLB fonctionne comme les caisses d'un supermarche. Quand un client (requete) arrive, il est dirige vers la caisse (serveur) la moins occupee. Si une caisse ferme (panne d'un noeud), les clients sont rediriges vers les caisses restantes. L'affinite, c'est comme un client fidele qui revient toujours a la meme caisse car la caissiere connait deja ses preferences (session).
+
 ## Architecture NLB
 
 ```mermaid
@@ -77,6 +81,15 @@ Variante du mode multicast qui utilise **IGMP** (Internet Group Management Proto
 Set-NlbCluster -ClusterName "YOURNLB" -OperationMode Multicast
 ```
 
+Resultat :
+
+```text
+IPAddress        : 10.0.0.200
+SubnetMask       : 255.255.255.0
+ClusterName      : NLB-WEB.lab.local
+OperationMode    : Multicast
+```
+
 ### Comparaison des modes
 
 | Critere | Unicast | Multicast | IGMP Multicast |
@@ -103,6 +116,14 @@ L'**affinite** determine comment les connexions clientes sont distribuees entre 
 Set-NlbClusterPortRule -ClusterName "YOURNLB" `
     -Port 80 `
     -Affinity Single
+```
+
+Resultat :
+
+```text
+IPAddress  StartPort EndPort Protocol Mode     Affinity Timeout
+---------  --------- ------- -------- ----     -------- -------
+10.0.0.200 80        80      TCP      Multiple Single   0
 ```
 
 !!! tip "Sessions et affinite"
@@ -174,6 +195,19 @@ Stop-NlbClusterNode -HostName "NODE1"
 Start-NlbClusterNode -HostName "NODE1"
 ```
 
+Resultat :
+
+```text
+Name      : SRV-01
+HostState : Suspended
+
+Name      : SRV-01
+HostState : Stopped
+
+Name      : SRV-01
+HostState : Started
+```
+
 ```mermaid
 sequenceDiagram
     participant Admin
@@ -214,6 +248,69 @@ sequenceDiagram
 | Flooding en unicast | Impact reseau potentiel |
 | 32 noeuds maximum | Suffisant pour la plupart des cas |
 | Pas de support UDP fiable | Certaines applications UDP posent probleme |
+
+!!! example "Scenario pratique"
+
+    **Contexte :** Thomas, administrateur web dans un cabinet comptable, gere deux serveurs IIS (SRV-01 et SRV-02) qui hebergent l'application web interne de comptabilite. Les utilisateurs se plaignent que l'application est lente aux heures de pointe et qu'elle est inaccessible lors des maintenances.
+
+    **Probleme :** Tout le trafic passe par un seul serveur (SRV-01). Quand il est en maintenance, l'application est indisponible.
+
+    **Diagnostic et solution :**
+
+    1. Thomas decide de deployer NLB pour repartir la charge et assurer la disponibilite :
+
+        ```powershell
+        # Install NLB on both servers
+        Install-WindowsFeature -Name NLB -IncludeManagementTools -ComputerName SRV-01
+        Install-WindowsFeature -Name NLB -IncludeManagementTools -ComputerName SRV-02
+        ```
+
+    2. Il choisit le mode Multicast avec affinite Single (sessions en memoire) :
+
+        ```powershell
+        New-NlbCluster -HostName "SRV-01" -ClusterName "NLB-WEB" `
+            -InterfaceName "Ethernet" -ClusterPrimaryIP "10.0.0.200" `
+            -SubnetMask "255.255.255.0" -OperationMode Multicast
+        ```
+
+    3. Il verifie le fonctionnement en envoyant des requetes :
+
+        ```powershell
+        1..10 | ForEach-Object {
+            (Invoke-WebRequest -Uri "http://10.0.0.200" -UseBasicParsing).StatusCode
+        }
+        ```
+
+        Resultat :
+
+        ```text
+        200
+        200
+        200
+        200
+        200
+        200
+        200
+        200
+        200
+        200
+        ```
+
+    4. Pour la maintenance de SRV-01, il utilise le drain stop :
+
+        ```powershell
+        Stop-NlbClusterNode -HostName "SRV-01" -Drain
+        ```
+
+    **Resultat :** L'application est deux fois plus reactive aux heures de pointe et les maintenances se font sans interruption grace au drain stop.
+
+!!! danger "Erreurs courantes"
+
+    - **Utiliser NLB pour des services avec etat (stateful) sans affinite** : sans affinite Single, un utilisateur peut etre dirige vers un serveur different a chaque requete et perdre sa session. Activez l'affinite ou stockez les sessions dans un cache distribue.
+    - **Choisir le mode Unicast sans deuxieme carte reseau** : en mode Unicast, l'adresse MAC physique est remplacee. Sans deuxieme NIC, les noeuds ne peuvent plus communiquer entre eux pour la gestion.
+    - **Ne pas supprimer la regle de port par defaut** : la regle par defaut couvre tous les ports (0-65535), ce qui repartit aussi le trafic RDP, ICMP et autre. Supprimez-la et creez des regles specifiques pour les ports applicatifs.
+    - **Confondre NLB et failover clustering** : NLB repartit la charge entre des serveurs identiques pour les services stateless. Le failover clustering offre la haute disponibilite pour les services avec etat (SQL, fichiers). Ce ne sont pas interchangeables.
+    - **Ignorer l'absence de health check applicatif** : NLB ne detecte pas si IIS a plante, seulement si le noeud est injoignable. Combinez NLB avec une surveillance externe (monitoring) pour detecter les pannes applicatives.
 
 ## Points cles a retenir
 

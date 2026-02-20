@@ -19,6 +19,10 @@ Les checkpoints (anciennement appeles snapshots) capturent l'etat d'une machine 
 
 ## Standard vs Production
 
+!!! example "Analogie"
+
+    Un checkpoint est comme une **photo instantanee** d'un document de travail avant d'y apporter des modifications. Si les modifications ne conviennent pas, vous pouvez revenir a la photo et repartir de cet etat. Le checkpoint **Standard** photographie tout, y compris ce qui est affiche a l'ecran (la memoire). Le checkpoint **Production** est plus malin : il demande au document de se sauvegarder proprement (via VSS) avant la photo, comme si vous faisiez "Fichier > Enregistrer" avant de tenter des modifications.
+
 Hyper-V propose deux types de checkpoints :
 
 | Critere | Standard | Production |
@@ -64,6 +68,16 @@ Set-VM -Name "SRV-SQL01" -CheckpointType Disabled
 Get-VM -Name "SRV-APP01" | Select-Object Name, CheckpointType
 ```
 
+Resultat :
+
+```text
+Name      CheckpointType
+----      --------------
+SRV-APP01 Production
+SRV-TEST01 Standard
+SRV-SQL01 Disabled
+```
+
 ---
 
 ## Creer un checkpoint
@@ -77,6 +91,17 @@ $vms = @("SRV-APP01", "SRV-APP02", "SRV-WEB01")
 foreach ($vm in $vms) {
     Checkpoint-VM -Name $vm -SnapshotName "Pre-patch $(Get-Date -Format 'yyyy-MM-dd')"
 }
+```
+
+Resultat :
+
+```text
+VMName    Name                                   CreationTime
+------    ----                                   ------------
+SRV-APP01 Avant mise a jour KB5034567             2026-02-15 09:30:00
+SRV-APP01 Pre-patch 2026-02-20                    2026-02-20 08:00:00
+SRV-APP02 Pre-patch 2026-02-20                    2026-02-20 08:00:05
+SRV-WEB01 Pre-patch 2026-02-20                    2026-02-20 08:00:10
 ```
 
 ### Ce qui est cree sur le disque
@@ -94,6 +119,15 @@ Get-ChildItem "D:\Hyper-V\Virtual Hard Disks" -Filter "*.avhdx" |
     Select-Object Name, Length, LastWriteTime
 ```
 
+Resultat :
+
+```text
+Name                                              Length     LastWriteTime
+----                                              ------     -------------
+SRV-APP01_7A2B3C4D-5E6F-7890-AB12-CD34EF56GH78.avhdx 2147483648 2026-02-20 10:15:32
+SRV-APP02_1B2C3D4E-5F6A-7890-BC23-DE45FG67HI89.avhdx  536870912 2026-02-20 08:05:10
+```
+
 ---
 
 ## Appliquer (restaurer) un checkpoint
@@ -103,7 +137,18 @@ Get-ChildItem "D:\Hyper-V\Virtual Hard Disks" -Filter "*.avhdx" |
 Get-VMCheckpoint -VMName "SRV-APP01" |
     Select-Object Name, CreationTime, ParentCheckpointName |
     Format-Table -AutoSize
+```
 
+Resultat :
+
+```text
+Name                          CreationTime         ParentCheckpointName
+----                          ------------         --------------------
+Avant mise a jour KB5034567   2026-02-15 09:30:00
+Pre-patch 2026-02-20          2026-02-20 08:00:00  Avant mise a jour KB5034567
+```
+
+```powershell
 # Apply (restore) a specific checkpoint
 $checkpoint = Get-VMCheckpoint -VMName "SRV-APP01" -Name "Avant mise a jour KB5034567"
 Restore-VMCheckpoint -VMCheckpoint $checkpoint -Confirm:$false
@@ -133,6 +178,14 @@ Get-VMCheckpoint -VMName "SRV-APP01" | Remove-VMCheckpoint
 # Monitor the merge with:
 Get-VM -Name "SRV-APP01" | Select-Object Name, Status
 # Status will show "Merging Disks" during the operation
+```
+
+Resultat :
+
+```text
+Name      Status
+----      ------
+SRV-APP01 Merging Disks
 ```
 
 !!! warning "Impact de la fusion"
@@ -213,6 +266,16 @@ Get-VM | ForEach-Object {
     Format-Table -AutoSize
 ```
 
+Resultat :
+
+```text
+VMName    Name                          CreationTime         Age (days)
+------    ----                          ------------         ----------
+SRV-APP01 Avant mise a jour KB5034567   2026-02-05 09:30:00         15
+SRV-WEB01 Test config IIS               2026-01-28 14:22:00         23
+SRV-TEST  Installation .NET             2026-01-10 11:00:00         41
+```
+
 - **Nommez** les checkpoints de maniere descriptive (pas "Checkpoint 1")
 - **Supprimez** les checkpoints des que la modification est validee
 - **Limitez** le nombre de checkpoints a 2-3 maximum par VM
@@ -229,6 +292,66 @@ Get-VM | ForEach-Object {
 - Chaque checkpoint cree un fichier **AVHDX** qui degrade les performances I/O proportionnellement au nombre de checkpoints
 - **Ne jamais** utiliser de checkpoints Standard sur des controleurs de domaine
 - Supprimer un checkpoint declenche une **fusion** des fichiers AVHDX (planifier en heures creuses)
+
+---
+
+!!! example "Scenario pratique"
+
+    **Contexte :** Thomas, administrateur systeme dans une societe de distribution, doit appliquer un correctif critique (KB5034567) sur le serveur applicatif `SRV-APP01`. L'application metier est critique et ne doit pas subir d'interruption prolongee.
+
+    **Probleme :** Apres l'installation du correctif, l'application metier ne demarre plus. Thomas doit revenir en arriere rapidement.
+
+    **Diagnostic et solution :**
+
+    ```powershell
+    # Before the patch, Thomas had created a Production checkpoint
+    Checkpoint-VM -Name "SRV-APP01" -SnapshotName "Avant KB5034567"
+
+    # After the patch failed, he lists available checkpoints
+    Get-VMCheckpoint -VMName "SRV-APP01" |
+        Select-Object Name, CreationTime
+    ```
+
+    ```text
+    Name                  CreationTime
+    ----                  ------------
+    Avant KB5034567       2026-02-20 08:45:00
+    ```
+
+    ```powershell
+    # Restore the checkpoint
+    $cp = Get-VMCheckpoint -VMName "SRV-APP01" -Name "Avant KB5034567"
+    Restore-VMCheckpoint -VMCheckpoint $cp -Confirm:$false
+
+    # Restart the VM
+    Start-VM -Name "SRV-APP01"
+    ```
+
+    ```text
+    Name      State   Status
+    ----      -----   ------
+    SRV-APP01 Running Operating normally
+    ```
+
+    La VM a redemarre dans l'etat d'avant le correctif. L'application metier fonctionnait a nouveau. Thomas a ensuite ouvert un ticket aupres de l'editeur pour obtenir un correctif compatible avant de retenter l'operation.
+
+    **Bonne pratique appliquee :** Thomas a supprime le checkpoint une semaine plus tard, apres avoir confirme que le nouveau correctif fonctionnait.
+
+    ```powershell
+    Remove-VMCheckpoint -VMName "SRV-APP01" -Name "Avant KB5034567"
+    ```
+
+!!! danger "Erreurs courantes"
+
+    1. **Utiliser les checkpoints comme solution de sauvegarde** : Les checkpoints sont stockes sur le meme volume que la VM. Si le disque tombe en panne, vous perdez la VM ET ses checkpoints. Utilisez une solution de backup dediee (Windows Server Backup, Veeam, etc.).
+
+    2. **Appliquer un checkpoint Standard sur un controleur de domaine** : La restauration d'un etat memoire anterieur provoque un USN rollback, corrompant la replication Active Directory de maniere potentiellement irreversible.
+
+    3. **Accumuler des checkpoints sans les supprimer** : Chaque checkpoint cree un fichier AVHDX. Une chaine de 5 checkpoints signifie que chaque lecture doit traverser 5 fichiers, degradant significativement les performances I/O.
+
+    4. **Supprimer un checkpoint pendant les heures de pointe** : La fusion AVHDX genere des I/O intensives sur le stockage. Planifiez la suppression en heures creuses pour eviter d'impacter les autres VMs sur le meme volume.
+
+    5. **Creer un checkpoint sur une VM avec des disques pass-through** : Les disques pass-through ne supportent pas les checkpoints. L'operation echoue et la VM peut se retrouver dans un etat incoherent.
 
 ---
 

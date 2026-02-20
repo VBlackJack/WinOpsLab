@@ -27,6 +27,10 @@ graph TD
     D --> I[Azure Automation]
 ```
 
+!!! example "Analogie"
+
+    Azure Arc, c'est comme attacher une etiquette de suivi GPS a vos colis physiques qui restent dans votre entrepot. Les colis ne bougent pas, mais vous pouvez les voir, les suivre et les gerer depuis le tableau de bord central de la compagnie de livraison, comme si c'etaient des colis geres par eux.
+
 ## Concepts fondamentaux
 
 | Concept | Description |
@@ -139,6 +143,27 @@ New-AzRoleAssignment -ObjectId $sp.Id `
 Get-Content "$env:ProgramData\AzureConnectedMachineAgent\Log\himds.log" -Tail 50
 ```
 
+Resultat :
+
+```text
+# azcmagent show
+Agent Status              : Connected
+Last Heartbeat            : 2026-02-20T08:31:02Z
+Agent Version             : 1.38.02849.1604
+Resource Name             : SRV-DC01
+Resource Group Name       : RG-Arc-Servers
+Resource Group Location   : westeurope
+Subscription ID           : xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+Tenant ID                 : yyyyyyyy-yyyy-yyyy-yyyy-yyyyyyyyyyyy
+
+# azcmagent check
+INFO    Starting connectivity check
+INFO    Checking endpoint management.azure.com:443 ... OK
+INFO    Checking endpoint login.microsoftonline.com:443 ... OK
+INFO    Checking endpoint *.his.arc.azure.com:443 ... OK
+INFO    All connectivity checks passed.
+```
+
 ## Azure Policy pour serveurs Arc
 
 Azure Policy permet d'evaluer et d'appliquer des configurations de conformite sur les serveurs Arc.
@@ -185,6 +210,21 @@ az connectedmachine extension create `
     --location "westeurope"
 ```
 
+Resultat :
+
+```text
+{
+  "id": "/subscriptions/.../resourceGroups/RG-Arc-Servers/providers/Microsoft.HybridCompute/machines/SRV-DC01/extensions/AzureMonitorWindowsAgent",
+  "name": "AzureMonitorWindowsAgent",
+  "properties": {
+    "provisioningState": "Succeeded",
+    "publisher": "Microsoft.Azure.Monitor",
+    "type": "AzureMonitorWindowsAgent",
+    "typeHandlerVersion": "1.22.0"
+  }
+}
+```
+
 ## Desinscription
 
 ```powershell
@@ -194,6 +234,55 @@ az connectedmachine extension create `
 # Uninstall the agent
 msiexec /x "{00000000-0000-0000-0000-000000000000}" /qn
 ```
+
+!!! example "Scenario pratique"
+
+    **Context :** Nicolas, ingenieur infrastructure, doit inscrire 4 serveurs Windows on-premises (SRV-DC01, SRV-01, SRV-WEB01, SRV-FS01) dans Azure Arc pour pouvoir appliquer des Azure Policies et demarrer la supervision avec Azure Monitor.
+
+    **Etape 1 : Preparer Azure**
+
+    Nicolas cree un Resource Group `RG-Arc-Servers` dans la region West Europe et enregistre les resource providers requis :
+
+    ```powershell
+    Register-AzResourceProvider -ProviderNamespace "Microsoft.HybridCompute"
+    Register-AzResourceProvider -ProviderNamespace "Microsoft.GuestConfiguration"
+    ```
+
+    **Etape 2 : Creer un Service Principal pour l'onboarding en masse**
+
+    ```powershell
+    $sp = New-AzADServicePrincipal -DisplayName "Arc-Onboarding-lab"
+    New-AzRoleAssignment -ObjectId $sp.Id `
+        -RoleDefinitionName "Azure Connected Machine Onboarding" `
+        -ResourceGroupName "RG-Arc-Servers"
+    ```
+
+    **Etape 3 : Generer et deployer le script d'onboarding**
+
+    Nicolas genere le script depuis le portail Azure Arc > Ajouter des serveurs > Script de deploiement. Il l'execute sur chaque serveur via PSRemoting :
+
+    ```powershell
+    $servers = @("SRV-DC01", "SRV-01", "SRV-WEB01", "SRV-FS01")
+    foreach ($srv in $servers) {
+        Invoke-Command -ComputerName $srv -FilePath "C:\Temp\OnboardingScript.ps1"
+    }
+    ```
+
+    **Etape 4 : Verifier dans le portail**
+
+    5 minutes plus tard, les 4 serveurs apparaissent dans Azure Portal > Azure Arc > Serveurs avec le statut "Connected". Nicolas applique immediatement une Azure Policy pour auditer la presence de Windows Defender et assigne Azure Monitor Agent a tous via une seule operation depuis le portail.
+
+!!! danger "Erreurs courantes"
+
+    **Bloquer les endpoints Azure requis au niveau du pare-feu.** L'agent Arc doit atteindre plusieurs endpoints HTTPS (management.azure.com, login.microsoftonline.com, *.his.arc.azure.com). Un seul endpoint bloque empeche l'enregistrement ou maintient l'agent en etat "Disconnected". Verifier avec `azcmagent check` avant le deploiement.
+
+    **Donner le role "Contributor" au lieu de "Azure Connected Machine Onboarding".** Le role Contributor accorde des droits bien trop larges. Le role minimal "Azure Connected Machine Onboarding" suffit pour l'inscription des serveurs et respecte le principe du moindre privilege.
+
+    **Negliger la securite du Service Principal d'onboarding.** Le Service Principal et son secret permettent d'inscrire autant de serveurs que souhaite dans votre abonnement Azure. Restreindre son scope au Resource Group Arc, definir une date d'expiration courte, et supprimer le SP une fois le deploiement termine.
+
+    **Ignorer la consommation Azure apres inscription.** L'inscription Arc est gratuite, mais les extensions (Azure Monitor, Defender) et les donnees envoyees dans Log Analytics generent des couts. Estimer la consommation avant d'activer les extensions sur un grand nombre de serveurs.
+
+    **Ne pas surveiller l'etat de connexion des agents.** Un agent Arc peut passer en "Disconnected" sans alerte visible (expiration du certificat agent, probleme reseau). Configurer une Azure Policy ou une alerte Azure Monitor sur le statut de connexion des machines Arc.
 
 ## Points cles a retenir
 

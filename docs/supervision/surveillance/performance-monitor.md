@@ -26,6 +26,12 @@ graph LR
     C --> H[Historique]
 ```
 
+!!! example "Analogie"
+
+    L'Analyseur de performances est comparable au **tableau de bord d'une voiture**. Les compteurs
+    (vitesse, temperature, niveau d'huile) vous informent en permanence de l'etat du vehicule.
+    Si un voyant passe au rouge (seuil depasse), vous savez qu'il faut intervenir avant la panne.
+
 ## Lancer l'Analyseur de performances
 
 Plusieurs methodes pour ouvrir l'outil :
@@ -75,6 +81,34 @@ Get-Counter "\Processor(_Total)\% Processor Time"
 
 # Continuous monitoring (5 samples, 2-second interval)
 Get-Counter "\Processor(_Total)\% Processor Time" -SampleInterval 2 -MaxSamples 5
+```
+
+Resultat :
+
+```text
+# Get-Counter -ListSet * (extrait)
+CounterSetName
+--------------
+Memory
+Network Interface
+PhysicalDisk
+Processor
+System
+TCPv4
+
+# Get-Counter "\Processor(_Total)\% Processor Time"
+Timestamp                 CounterSamples
+---------                 --------------
+2026-02-20 14:35:12       \\SRV-01\processor(_total)\% processor time : 23.4521
+
+# Continuous monitoring (5 samples)
+Timestamp                 CounterSamples
+---------                 --------------
+2026-02-20 14:35:14       \\SRV-01\processor(_total)\% processor time : 18.2301
+2026-02-20 14:35:16       \\SRV-01\processor(_total)\% processor time : 42.8754
+2026-02-20 14:35:18       \\SRV-01\processor(_total)\% processor time : 35.1092
+2026-02-20 14:35:20       \\SRV-01\processor(_total)\% processor time : 27.6438
+2026-02-20 14:35:22       \\SRV-01\processor(_total)\% processor time : 21.9876
 ```
 
 ### Compteurs essentiels par categorie
@@ -182,6 +216,22 @@ $servers = @("SRV-DC01", "SRV-FILE01", "SRV-WEB01")
 Get-Counter -ComputerName $servers "\Memory\Available MBytes" -SampleInterval 5 -MaxSamples 3
 ```
 
+Resultat :
+
+```text
+# Remote single server
+Timestamp                 CounterSamples
+---------                 --------------
+2026-02-20 14:40:05       \\SRV-DC01\processor(_total)\% processor time : 12.3456
+
+# Multiple servers
+Timestamp                 CounterSamples
+---------                 --------------
+2026-02-20 14:40:10       \\SRV-DC01\memory\available mbytes : 6234
+                          \\SRV-FILE01\memory\available mbytes : 3102
+                          \\SRV-WEB01\memory\available mbytes : 1847
+```
+
 !!! warning "Prerequis reseau"
 
     La surveillance a distance necessite :
@@ -217,6 +267,42 @@ Import-Counter -Path "C:\PerfLogs\baseline.blg" |
 - `Get-Counter` permet d'automatiser la collecte et l'export en PowerShell
 - Etablir une **baseline** (reference) en periode normale est indispensable pour detecter les anomalies
 - La surveillance a distance necessite le service Remote Registry et des regles de pare-feu
+
+!!! example "Scenario pratique"
+
+    **Contexte :** Marc, administrateur systeme, constate que le serveur SRV-WEB01 devient
+    tres lent tous les jours entre 14h et 15h. Les utilisateurs se plaignent de temps de
+    reponse degrades sur l'intranet.
+
+    **Diagnostic :**
+
+    1. Marc lance une collecte de compteurs cibles sur la periode suspecte :
+
+    ```powershell
+    Get-Counter -ComputerName SRV-WEB01 `
+        "\Processor(_Total)\% Processor Time",
+        "\Memory\Available MBytes",
+        "\PhysicalDisk(_Total)\Avg. Disk Queue Length",
+        "\System\Processor Queue Length" `
+        -SampleInterval 10 -MaxSamples 360 |
+        Export-Counter -Path "C:\PerfLogs\SRV-WEB01-debug.csv" -FileFormat CSV
+    ```
+
+    2. L'analyse du CSV revele que `% Processor Time` monte a 98% et `Processor Queue Length` atteint 12 (pour 4 coeurs)
+    3. Marc identifie un goulot d'etranglement CPU. En croisant avec le Gestionnaire des taches, il decouvre qu'une tache planifiee de compression de logs se declenche a 14h00
+
+    **Resolution :** Marc replanifie la tache de compression a 3h du matin, en dehors des heures de pointe. Le CPU reste sous 45% durant les heures de bureau.
+
+!!! danger "Erreurs courantes"
+
+    - **Ne pas etablir de baseline** : sans reference de fonctionnement normal, impossible de
+      savoir si une valeur est anormale. Collectez une baseline sur une semaine avant de diagnostiquer
+    - **Confondre un pic ponctuel avec un probleme** : un CPU a 100% pendant 2 secondes est normal.
+      C'est un CPU a 90%+ **soutenu** pendant plusieurs minutes qui indique un probleme
+    - **Oublier le Processor Queue Length** : un CPU a 85% avec une file d'attente a 1 est correct,
+      mais un CPU a 85% avec une file a 20 signifie que le serveur est sous-dimensionne
+    - **Surveiller uniquement le CPU** : les quatre piliers (CPU, memoire, disque, reseau) sont
+      interdependants. Un manque de RAM genere de la pagination qui surcharge le disque
 
 ## Pour aller plus loin
 

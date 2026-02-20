@@ -30,6 +30,10 @@ graph TD
     OUTILS --> EVT["Evenements<br/>et services"]
 ```
 
+!!! example "Analogie"
+
+    Gerer des serveurs via WAC, c'est comme passer d'une flotte de voitures ou vous devez monter dans chaque vehicule pour lire les compteurs, a un tableau de bord centralise dans votre bureau qui affiche en temps reel la vitesse, le niveau d'essence et l'etat de chaque vehicule de la flotte.
+
 ## Ajouter des connexions
 
 ### Types de connexions
@@ -63,6 +67,17 @@ WAC permet d'importer une liste de serveurs depuis un fichier texte :
 $servers = Get-ADComputer -Filter { OperatingSystem -like "*Server*" } |
     Select-Object -ExpandProperty DNSHostName
 $servers | Out-File -FilePath "C:\Temp\server-list.txt" -Encoding UTF8
+```
+
+Resultat :
+
+```text
+# Contenu du fichier server-list.txt genere :
+SRV-DC01.lab.local
+SRV-01.lab.local
+SRV-WEB01.lab.local
+SRV-FS01.lab.local
+SRV-PRINT01.lab.local
 ```
 
 ### Organiser les connexions par tags
@@ -219,6 +234,21 @@ Set-Item WSMan:\localhost\Client\TrustedHosts -Value "192.168.10.*" -Force
 Test-WSMan -ComputerName SRV-DC01
 ```
 
+Resultat :
+
+```text
+# Enable-PSRemoting -Force
+WinRM has been updated to receive requests.
+WinRM service type changed successfully.
+WinRM service started.
+
+# Test-WSMan -ComputerName SRV-DC01
+wsmid           : http://schemas.dmtf.org/wbem/wsman/identity/1/wsmanidentity.xsd
+ProtocolVersion : http://schemas.dmtf.org/wbem/wsman/1/wsman.xsd
+ProductVendor   : Microsoft Corporation
+ProductVersion  : OS: 0.0.0 SP: 0.0 Stack: 3.0
+```
+
 ### Ports requis
 
 | Port | Protocole | Direction | Usage |
@@ -227,6 +257,48 @@ Test-WSMan -ComputerName SRV-DC01
 | **5986** | TCP | WAC -> Serveur | WinRM HTTPS |
 | **443** | TCP | Client -> WAC | Interface web WAC |
 | **445** | TCP | WAC -> Serveur | SMB (fichiers, partages) |
+
+!!! example "Scenario pratique"
+
+    **Context :** Marc administre un parc de 8 serveurs Windows. Il recoit une alerte a 7h30 du matin : SRV-WEB01 repond lentement. Il dispose de WAC sur SRV-01.
+
+    **Etape 1 : Connexion rapide depuis le navigateur**
+
+    Marc ouvre `https://SRV-01.lab.local` depuis son poste, clique sur SRV-WEB01 dans la liste. Le tableau de bord s'affiche immediatement.
+
+    **Constat :** CPU a 97%, memoire disponible : 210 Mo, aucun evenement critique recent.
+
+    **Etape 2 : Identifier le processus responsable**
+
+    Marc navigue vers **Processus** dans WAC. Il trie par CPU decroissant et identifie `w3wp.exe` (le worker IIS) qui consomme 92% du CPU.
+
+    **Etape 3 : Consulter les evenements**
+
+    Il navigue vers **Evenements** > Security + Application, filtre les 2 dernieres heures. Il voit 3 erreurs Application ID 1000 indiquant un crash repetitif de l'application web.
+
+    **Etape 4 : Recycler le pool d'applications via PowerShell WAC**
+
+    Sans ouvrir de session RDP, Marc utilise la console PowerShell integree dans WAC :
+
+    ```powershell
+    Import-Module WebAdministration
+    Restart-WebAppPool -Name "IntranetPool"
+    Get-WebAppPool -Name "IntranetPool" | Select-Object Name, State
+    ```
+
+    Le CPU retombe a 12%, la memoire disponible remonte a 1,8 Go. Probleme resolu en 8 minutes sans jamais ouvrir une connexion RDP.
+
+!!! danger "Erreurs courantes"
+
+    **Ajouter les serveurs par adresse IP plutot que par nom FQDN.** Kerberos ne fonctionne pas avec des adresses IP. WAC ne pourra pas utiliser l'authentification integree et demandera des credentials a chaque action. Toujours utiliser le nom DNS complet (`SRV-DC01.lab.local`).
+
+    **Ne pas activer WinRM sur les serveurs Core.** Les serveurs sans interface graphique ont souvent WinRM desactive par defaut. Sans WinRM, WAC ne peut pas se connecter. Activer avec `Enable-PSRemoting -Force` ou via GPO avant d'ajouter le serveur dans WAC.
+
+    **Croire que WAC remplace toutes les consoles MMC.** Certaines fonctionnalites avancees (gestion ADCS, ADFS, outils specialises) ne sont pas disponibles nativement dans WAC. Pour ces cas, les MMC restent necessaires.
+
+    **Laisser WAC ouvert sans expiration de session.** Par defaut, les sessions WAC n'expirent pas apres inactivite sur certaines versions. Configurer une politique de timeout ou fermer le navigateur apres chaque session d'administration.
+
+    **Ne pas superviser l'etat du service ServerManagementGateway.** Si le service WAC s'arrete, toute l'administration centralisee est perdue. Ajouter une surveillance du service et une alerte dans votre outil de monitoring.
 
 ## Points cles a retenir
 

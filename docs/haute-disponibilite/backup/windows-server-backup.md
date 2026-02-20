@@ -18,6 +18,10 @@ tags:
 
 WSB utilise la technologie **VSS** (Volume Shadow Copy Service) pour creer des instantanes coherents, meme lorsque les fichiers sont en cours d'utilisation.
 
+!!! example "Analogie"
+
+    Windows Server Backup, c'est comme la boite a outils fournie avec une voiture : un cric, une roue de secours, un triangle de signalisation. C'est suffisant pour depanner en cas de crevaison sur le bord de la route. Mais si vous etes chauffeur professionnel avec 20 vehicules, vous aurez besoin d'un garage equipe (Veeam, Azure Backup...). WSB est l'outil de secours integre, fiable pour les situations courantes, mais pas un remplacement pour une solution d'entreprise.
+
 ## Installation
 
 WSB n'est pas installe par defaut. Il doit etre ajoute comme fonctionnalite.
@@ -28,6 +32,14 @@ Install-WindowsFeature -Name Windows-Server-Backup -IncludeManagementTools
 
 # Verify installation
 Get-WindowsFeature -Name Windows-Server-Backup
+```
+
+Resultat :
+
+```text
+Display Name                       Name                   Install State
+------------                       ----                   -------------
+[X] Windows Server Backup          Windows-Server-Backup  Installed
 ```
 
 Apres l'installation, l'outil est accessible via :
@@ -220,6 +232,28 @@ Get-WBJob -Previous 5
 Get-WinEvent -LogName "Microsoft-Windows-Backup" -MaxEvents 20 | Format-Table TimeCreated, Message -Wrap
 ```
 
+Resultat :
+
+```text
+LastSuccessfulBackupTime      : 20/02/2026 22:00:17
+LastBackupResultHR            : 0
+LastBackupResultDetailedHR    : 0
+
+Id  StartTime             EndTime               Result
+--  ---------             -------               ------
+ 5  20/02/2026 22:00:00   20/02/2026 22:47:13   Success
+ 4  19/02/2026 22:00:01   19/02/2026 22:51:42   Success
+ 3  18/02/2026 22:00:00   18/02/2026 22:48:55   Success
+ 2  17/02/2026 22:00:01   17/02/2026 23:12:08   Warning
+ 1  16/02/2026 22:00:00   16/02/2026 22:49:21   Success
+
+TimeCreated             Message
+-----------             -------
+20/02/2026 22:47:13     The backup operation completed successfully.
+20/02/2026 22:00:01     Backup started with destination backup disk 'BackupDisk'.
+19/02/2026 22:51:42     The backup operation completed successfully.
+```
+
 ## Limitations de WSB
 
 | Limitation | Alternative |
@@ -229,6 +263,80 @@ Get-WinEvent -LogName "Microsoft-Windows-Backup" -MaxEvents 20 | Format-Table Ti
 | Pas de deduplication native | Solutions tierces ou Azure Backup |
 | Pas de sauvegarde sur bande | Solutions d'entreprise (Veeam, etc.) |
 | Pas de chiffrement natif | BitLocker sur le volume de sauvegarde |
+
+!!! example "Scenario pratique"
+
+    **Contexte :** Pierre administre `DC-01`, le seul controleur de domaine d'une PME. Il doit mettre en place une sauvegarde quotidienne de l'etat systeme pour pouvoir restaurer Active Directory en cas de corruption ou de suppression accidentelle d'objets critiques.
+
+    **Probleme :** DC-01 n'a pas de disque de sauvegarde dedie. Pierre dispose d'un partage reseau sur `SRV-01` (`\\SRV-01\Backups`) et d'un disque externe USB branche le weekend par le responsable informatique.
+
+    **Solution :** Pierre configure une sauvegarde quotidienne de l'etat systeme vers le partage reseau :
+
+    ```powershell
+    # Step 1: Install WSB if not already present
+    Install-WindowsFeature -Name Windows-Server-Backup -IncludeManagementTools
+    ```
+
+    ```text
+    Success Restart Needed Exit Code Feature Result
+    ------- -------------- --------- --------------
+    True    No             Success   {Windows Server Backup}
+    ```
+
+    ```powershell
+    # Step 2: Configure the backup policy
+    $policy = New-WBPolicy
+    Add-WBSystemState -Policy $policy
+    Add-WBBareMetalRecovery -Policy $policy
+
+    $cred = Get-Credential -Message "Credentials for \\SRV-01\Backups"
+    $target = New-WBBackupTarget -NetworkPath "\\SRV-01\Backups" -Credential $cred
+    Add-WBBackupTarget -Policy $policy -Target $target
+
+    Set-WBSchedule -Policy $policy -Schedule 23:00
+    Set-WBPolicy -Policy $policy
+
+    # Step 3: Trigger a manual backup immediately to test
+    Start-WBBackup -Policy $policy
+    ```
+
+    ```text
+    Retrieving volume information...
+    Starting a backup of volumes: Windows (C:) ...
+    Backup of volume Windows (C:) completed successfully.
+    Summary of backup:
+      Backup of DC-01 completed successfully.
+      Backup time: 02/20/2026 23:15:42 - 02/20/2026 23:47:11
+      Backup destination: Network share
+      Status: Completed successfully
+    ```
+
+    ```powershell
+    # Step 4: Verify the backup
+    Get-WBSummary
+    ```
+
+    ```text
+    LastSuccessfulBackupTime : 20/02/2026 23:47:11
+    LastBackupResultHR       : 0
+    NextBackupTime           : 21/02/2026 23:00:00
+    NumberOfDisks            : 0
+    NumberOfNetworkPaths     : 1
+    ```
+
+    Pierre note dans son runbook que la sauvegarde reseau n'offre qu'une seule version. Chaque nuit, la sauvegarde precedente est ecrasee. Pour une retention de 7 jours, il devra passer a un disque local dedie ou a Azure Backup.
+
+!!! danger "Erreurs courantes"
+
+    **Sauvegarde reseau avec une seule version** — Lors de la sauvegarde vers un partage reseau (`\\serveur\partage`), WSB ecrase la version precedente a chaque execution. Il n'y a pas de retention automatique. Pour garder un historique, utilisez un disque local dedie ou une solution tierce.
+
+    **Oublier `Add-WBBareMetalRecovery`** — Sans BMR, la sauvegarde ne peut pas etre utilisee pour une restauration a partir de zero. Sur un controleur de domaine, incluez toujours `Add-WBBareMetalRecovery` et `Add-WBSystemState`.
+
+    **Sauvegarde systeme sur le meme volume** — Windows Server Backup ne permet pas de sauvegarder le volume systeme sur lui-meme. Le disque cible doit etre different du disque systeme.
+
+    **Ne pas verifier le resultat apres la premiere planification** — Apres avoir configure `Set-WBPolicy`, verifiez avec `Get-WBPolicy` et attendez la premiere execution planifiee pour confirmer le succes via `Get-WBSummary`.
+
+    **WSB pour des besoins d'entreprise** — WSB ne supporte pas la deduplication, le chiffrement natif, la sauvegarde sur bande, ni la granularite applicative (ex. elements Exchange). Pour ces besoins, evaluez Veeam Backup & Replication ou Azure Backup.
 
 ## Points cles a retenir
 

@@ -21,6 +21,10 @@ DSC propose deux modeles de distribution des configurations vers les noeuds cibl
 
 ### Principe
 
+!!! example "Analogie"
+
+    Le mode Push ressemble a un chef cuisinier qui livre lui-meme les menus du jour dans chaque salle. C'est rapide et direct, mais il doit faire le tour de toutes les tables a chaque changement. Le mode Pull, lui, c'est un tableau d'affichage central : chaque serveur consulte le tableau a intervalle regulier et prend sa nouvelle configuration tout seul.
+
 En mode Push, l'administrateur **envoie** la configuration directement au noeud cible. C'est le mode le plus simple et le point de depart pour la plupart des implementations DSC.
 
 ```mermaid
@@ -58,6 +62,19 @@ WebServer -OutputPath "C:\DSC\WebServer"
 Start-DscConfiguration -Path "C:\DSC\WebServer" -ComputerName "SRV01" -Wait -Verbose -Force
 ```
 
+Resultat :
+
+```text
+VERBOSE: Perform operation 'Invoke CimMethod' with following parameters, ...
+VERBOSE: An LCM method call arrived from computer SRV-01 with user sid S-1-5-21-...
+VERBOSE: [SRV-01]: LCM: [Start Set      ]
+VERBOSE: [SRV-01]: LCM: [Start Resource ]  [[WindowsFeature]IIS]
+VERBOSE: [SRV-01]:                         [[WindowsFeature]IIS] The operation 'Set' completed successfully.
+VERBOSE: [SRV-01]: LCM: [Start Resource ]  [[Service]W3SVC]
+VERBOSE: [SRV-01]:                         [[Service]W3SVC] The operation 'Set' completed successfully.
+VERBOSE: [SRV-01]: LCM: [End Set        ]
+```
+
 ### Configuration du LCM pour le mode Push
 
 ```powershell
@@ -75,6 +92,16 @@ Configuration PushModeLCM {
 
 PushModeLCM -OutputPath "C:\DSC\LCM"
 Set-DscLocalConfigurationManager -Path "C:\DSC\LCM" -ComputerName "SRV01" -Verbose
+```
+
+Resultat :
+
+```text
+VERBOSE: Performing the operation "Start-DscConfiguration: SendMetaConfigurationApply" on target "MSFT_DSCLocalConfigurationManager".
+VERBOSE: Perform operation 'Invoke CimMethod' with following parameters, ...
+VERBOSE: An LCM method call arrived from computer SRV-01 with user sid S-1-5-21-...
+VERBOSE: [SRV-01]: LCM: [Start Set      ]
+VERBOSE: [SRV-01]: LCM: [End Set        ]
 ```
 
 ### Avantages et limites du mode Push
@@ -312,6 +339,82 @@ Test-DscConfiguration -Detailed | Format-List *
 # Force a Pull refresh
 Update-DscConfiguration -ComputerName "SRV01" -Wait -Verbose
 ```
+
+Resultat :
+
+```text
+Status  StartDate             Type    Mode
+------  ---------             ----    ----
+Success 20/02/2026 02:00:13  Initial Pull
+Success 19/02/2026 02:00:08  Reboot  Pull
+
+InDesiredState     : True
+ResourcesInDesiredState :
+    ResourceId                : [WindowsFeature]IIS
+    ConfigurationName         : WebServer
+    SourceInfo                : C:\DSC\WebServer.ps1::10::9::WindowsFeature
+    DurationInSeconds         : 0.5
+    StartDate                 : 20/02/2026 02:00:14
+    InDesiredState            : True
+```
+
+!!! example "Scenario pratique"
+
+    **Contexte :** Sophie est administratrice systeme dans une entreprise de 150 personnes avec 30 serveurs Windows. Elle utilise DSC en mode Push pour les configurations ponctuelles, mais elle constate que certains serveurs "derivent" entre deux envois : des services sont arretes manuellement, des fonctionnalites ajoutees sans autorisation.
+
+    **Probleme :** En mode Push, DSC ne corrige les derives que lorsque Sophie renvoie explicitement la configuration. Entre deux envois, les serveurs peuvent rester non conformes pendant des jours.
+
+    **Solution :** Sophie migre les serveurs vers le mode Pull avec une frequence de verification de 30 minutes.
+
+    ```powershell
+    # Step 1: Configure each server's LCM for Pull mode
+    [DSCLocalConfigurationManager()]
+    Configuration PullModeLCM {
+        Node "SRV-01" {
+            Settings {
+                RefreshMode                    = "Pull"
+                ConfigurationMode              = "ApplyAndAutoCorrect"
+                ConfigurationModeFrequencyMins = 30
+                RefreshFrequencyMins           = 15
+                RebootNodeIfNeeded             = $false
+                ConfigurationID                = "a1b2c3d4-e5f6-7890-abcd-ef0123456789"
+            }
+
+            ConfigurationRepositoryWeb PullServer {
+                ServerURL          = "https://SRV-01.lab.local:8080/PSDSCPullServer.svc"
+                RegistrationKey    = "7d8e9f0a-1b2c-3d4e-5f6g-7h8i9j0k1l2m"
+                ConfigurationNames = @("WebBaseline")
+                AllowUnsecureConnection = $false
+            }
+        }
+    }
+
+    PullModeLCM -OutputPath "C:\DSC\LCM"
+    Set-DscLocalConfigurationManager -Path "C:\DSC\LCM" -ComputerName "SRV-01" -Verbose
+
+    # Step 2: Verify that the node pulled its configuration
+    Get-DscConfigurationStatus -CimSession (New-CimSession -ComputerName "SRV-01")
+    ```
+
+    ```text
+    Status  StartDate             Type    Mode
+    ------  ---------             ----    ----
+    Success 20/02/2026 14:30:02   Pull    Pull
+    ```
+
+    Maintenant, meme si un collegue arrete manuellement le service W3SVC sur SRV-01, DSC le redemarrera dans les 30 minutes suivantes sans intervention de Sophie.
+
+!!! danger "Erreurs courantes"
+
+    **Checksum manquant sur le Pull Server** — Chaque fichier `.mof` publie sur le Pull Server doit avoir un fichier `.mof.checksum` correspondant genere par `New-DscChecksum`. Sans checksum, le noeud refuse de telecharger la configuration.
+
+    **Certificat SSL non valide sur le Pull Server** — Si le certificat est auto-signe ou expire, les noeuds rejettent la connexion. En dev/test uniquement, utilisez `AllowUnsecureConnection = $true` ; en production, deployez un certificat valide.
+
+    **ConfigurationID en double** — Si deux noeuds partagent le meme ConfigurationID (GUID), ils tenteront tous deux de recuperer la meme configuration. Chaque noeud doit avoir un GUID unique.
+
+    **Modules DSC non publies sur le Pull Server** — Si une configuration utilise un module communautaire (ex. `NetworkingDsc`) qui n'est pas dans le dossier modules du Pull Server, le noeud ne pourra pas appliquer la configuration. Publiez les modules en meme temps que les configurations.
+
+    **Configurations partielles en conflit** — Si deux equipes configurent la meme ressource (ex. le meme service) dans des configurations partielles differentes, DSC echoue avec une erreur de conflit. Etablissez des conventions claires de responsabilite.
 
 ## Points cles a retenir
 

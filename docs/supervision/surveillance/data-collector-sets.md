@@ -27,6 +27,13 @@ graph LR
     E --> G[Comparaison avec la baseline]
 ```
 
+!!! example "Analogie"
+
+    Un ensemble de collecteurs de donnees fonctionne comme un **enregistreur de vol (boite noire)**
+    dans un avion. Il enregistre en permanence les parametres critiques (altitude, vitesse, cap)
+    pour pouvoir analyser un incident apres coup. La baseline, c'est le vol normal : si les
+    parametres s'en ecartent, on sait qu'il y a un probleme.
+
 ## Types de collecteurs
 
 | Type | Description | Format de sortie |
@@ -56,6 +63,23 @@ logman start "System Performance"
 
 # Stop a data collector set
 logman stop "System Performance"
+```
+
+Resultat :
+
+```text
+# logman query -s localhost
+Data Collector Set                Type            Status
+-------------------------------------------------------
+Active Directory Diagnostics      Trace           Stopped
+LAN Diagnostics                   Trace           Stopped
+System Diagnostics                Trace           Stopped
+System Performance                Trace           Stopped
+
+The command completed successfully.
+
+# logman start "System Performance"
+The command completed successfully.
 ```
 
 ## Creer un ensemble personnalise
@@ -91,6 +115,12 @@ logman create counter "Baseline-Server" `
     -f bincirc `
     -max 512 `
     -v mmddhhmm
+```
+
+Resultat :
+
+```text
+The command completed successfully.
 ```
 
 | Parametre | Description |
@@ -208,6 +238,12 @@ $stats = $cpuSamples | Measure-Object -Property CookedValue -Average -Maximum -M
 Write-Output "CPU - Min: $([math]::Round($stats.Minimum,2))% | Avg: $([math]::Round($stats.Average,2))% | Max: $([math]::Round($stats.Maximum,2))%"
 ```
 
+Resultat :
+
+```text
+CPU - Min: 2.34% | Avg: 28.67% | Max: 94.12%
+```
+
 ## Etablir une baseline
 
 Une baseline est une reference des performances normales du serveur. Elle sert a detecter les anomalies par comparaison.
@@ -293,6 +329,53 @@ logman query -s SRV-DC01
 - Etablir une **baseline** sur une semaine typique est essentiel pour detecter les anomalies
 - La planification via taches planifiees ou via l'interface permet une collecte reguliere sans intervention
 - Les collecteurs peuvent etre geres a distance avec le parametre `-s`
+
+!!! example "Scenario pratique"
+
+    **Contexte :** Thomas, ingenieur systeme, doit justifier l'ajout de RAM sur le serveur
+    SRV-01 aupres de sa direction. Les utilisateurs se plaignent de lenteurs intermittentes
+    mais Thomas n'a pas de preuves chiffrees.
+
+    **Diagnostic :**
+
+    1. Thomas cree un ensemble de collecteurs qui tourne pendant 5 jours ouvrables :
+
+    ```powershell
+    logman create counter "Evidence-RAM-SRV01" `
+        -c "\Memory\Available MBytes" `
+           "\Memory\Pages/sec" `
+           "\Memory\% Committed Bytes In Use" `
+           "\PhysicalDisk(_Total)\Avg. Disk Queue Length" `
+        -si 30 `
+        -o "C:\PerfLogs\Evidence-RAM" `
+        -f csv `
+        -s SRV-01
+    logman start "Evidence-RAM-SRV01" -s SRV-01
+    ```
+
+    2. Apres 5 jours, il analyse les resultats :
+
+    ```powershell
+    $data = Import-Csv "C:\PerfLogs\Evidence-RAM\Evidence-RAM-SRV01_000001.csv"
+    $data | Measure-Object "\\SRV-01\Memory\Available MBytes" -Average -Minimum -Maximum
+    ```
+
+    3. Les resultats montrent : RAM disponible minimale = 87 Mo, moyenne = 412 Mo sur 16 Go, Pages/sec moyen = 2300
+    4. Thomas produit un rapport avec ces chiffres et des graphiques, demontrant que le serveur passe 38% du temps en dessous du seuil critique
+
+    **Resolution :** La direction approuve l'ajout de 16 Go de RAM. Apres l'upgrade, Thomas cree une nouvelle baseline qui confirme la disparition des lenteurs.
+
+!!! danger "Erreurs courantes"
+
+    - **Intervalle d'echantillonnage trop court** : un intervalle de 1 seconde sur 24h genere
+      des fichiers enormes. Utilisez 15 a 30 secondes pour les baselines, 2 a 5 secondes
+      uniquement pour les diagnostics courts
+    - **Oublier de demarrer le collecteur** : apres `logman create`, le collecteur est cree
+      mais arrete. Il faut explicitement executer `logman start` pour lancer la collecte
+    - **Ne pas verifier l'espace disque** : un collecteur en format CSV avec 20 compteurs
+      a 15 secondes d'intervalle genere environ 200 Mo par jour. Prevoyez l'espace necessaire
+    - **Collecter trop de compteurs** : un collecteur avec 200 compteurs devient difficile a
+      analyser. Concentrez-vous sur les 10-15 compteurs essentiels (CPU, RAM, disque, reseau)
 
 ## Pour aller plus loin
 

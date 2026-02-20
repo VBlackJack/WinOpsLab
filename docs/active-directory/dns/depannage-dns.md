@@ -13,6 +13,10 @@ tags:
 
 ## Methodologie de diagnostic
 
+!!! example "Analogie"
+
+    Le depannage DNS ressemble a la recherche d'une panne dans un systeme de distribution du courrier. On commence par verifier si le facteur peut physiquement acceder a la boite aux lettres (connectivite reseau), puis si l'adresse est correcte sur l'enveloppe (configuration DNS du client), ensuite si le bureau de poste est ouvert (service DNS), et enfin si le destinataire est bien repertorie dans l'annuaire (enregistrement DNS).
+
 Face a un probleme de resolution DNS dans un environnement Active Directory, suivez cette approche methodique :
 
 ```mermaid
@@ -64,6 +68,30 @@ nslookup 192.168.1.10
 
 # Enable debug output for detailed response analysis
 nslookup -debug srv-dc01.lab.local
+```
+
+Resultat :
+
+```text
+PS> nslookup srv-dc01.lab.local
+Server:   DC-01.lab.local
+Address:  10.0.0.10
+
+Name:     srv-dc01.lab.local
+Address:  10.0.0.10
+
+PS> nslookup -type=NS lab.local
+Server:   DC-01.lab.local
+Address:  10.0.0.10
+
+lab.local
+        primary name server = dc-01.lab.local
+        responsible mail addr = hostmaster.lab.local
+        serial  = 285
+        refresh = 900 (15 mins)
+        retry   = 600 (10 mins)
+        expire  = 86400 (1 day)
+        default TTL = 3600 (1 hour)
 ```
 
 !!! tip "nslookup ignore le cache client"
@@ -125,6 +153,35 @@ dcdiag /test:dns /DnsRecordRegistration /s:SRV-DC01
 dcdiag /test:dns /v /e
 ```
 
+Resultat :
+
+```text
+Domain Controller Diagnosis
+
+Performing initial setup:
+   Trying to find home server...
+   Home Server = DC-01
+   * Identified AD Forest.
+   Done gathering initial info.
+
+Doing initial required tests
+   Testing server: Default-First-Site-Name\DC-01
+      Starting test: Connectivity
+         ......................... DC-01 passed test Connectivity
+
+Doing primary tests
+   Testing server: Default-First-Site-Name\DC-01
+      Starting test: DNS
+         DNS Tests are running and not hung. Please wait a few minutes...
+         ......................... DC-01 passed test DNS
+
+         Summary of DNS test results:
+                                          Auth Basc Forw Del  Dyn  RReg Ext
+         _________________________________________________________________
+         Domain: lab.local
+           DC-01                          PASS PASS PASS PASS PASS PASS n/a
+```
+
 Les sous-tests DNS de dcdiag :
 
 | Sous-test | Verification |
@@ -160,6 +217,31 @@ Get-WinEvent -LogName "DNS Server" -ComputerName "SRV-DC01" -MaxEvents 20
 
 # Check DNS server statistics
 Get-DnsServerStatistics -ComputerName "SRV-DC01"
+```
+
+Resultat :
+
+```text
+PS> Test-NetConnection -ComputerName "10.0.0.10" -Port 53
+
+ComputerName     : 10.0.0.10
+RemoteAddress    : 10.0.0.10
+RemotePort       : 53
+InterfaceAlias   : Ethernet
+TcpTestSucceeded : True
+
+PS> Get-Service -Name DNS -ComputerName "DC-01"
+
+Status   Name     DisplayName
+------   ----     -----------
+Running  DNS      DNS Server
+
+PS> Get-DnsClientServerAddress | Format-Table InterfaceAlias, ServerAddresses
+
+InterfaceAlias  ServerAddresses
+--------------  ---------------
+Ethernet        {10.0.0.10, 10.0.0.11}
+Loopback        {}
 ```
 
 ## Gestion du cache DNS
@@ -263,6 +345,20 @@ nltest /dsregdns
 
 # Verify the registration was successful
 Resolve-DnsName -Name "_ldap._tcp.lab.local" -Type SRV -DnsOnly
+```
+
+Resultat :
+
+```text
+PS> nltest /dsregdns
+The command completed successfully
+
+PS> Resolve-DnsName -Name "_ldap._tcp.lab.local" -Type SRV -DnsOnly
+
+Name                                    Type   TTL   Section    NameTarget              Priority Weight Port
+----                                    ----   ---   -------    ----------              -------- ------ ----
+_ldap._tcp.lab.local                    SRV    600   Answer     DC-01.lab.local         0        100    389
+_ldap._tcp.lab.local                    SRV    600   Answer     SRV-DC01.lab.local      0        100    389
 ```
 
 !!! danger "Enregistrements SRV manquants"
@@ -494,6 +590,63 @@ Write-Host "`n=== Check Complete ===" -ForegroundColor Green
 | Verifier le service DNS | `Get-Service DNS -ComputerName "DC"` |
 | Voir les evenements DNS | `Get-WinEvent -LogName "DNS Server"` |
 | Voir la config DNS du client | `Get-DnsClientServerAddress` |
+
+!!! example "Scenario pratique"
+
+    **Situation** : Lundi matin, Pierre, technicien de support, recoit de nombreux appels : les utilisateurs du site de Paris ne peuvent plus se connecter au domaine. Les sessions existantes fonctionnent encore, mais les nouvelles connexions echouent avec "Aucun serveur d'authentification disponible".
+
+    **Diagnostic** :
+
+    ```powershell
+    # Etape 1 : Depuis un poste client, verifier la config DNS
+    Get-DnsClientServerAddress -InterfaceAlias "Ethernet"
+    ```
+
+    Resultat : les postes pointent vers `10.0.0.10` (DC-01) et `10.0.0.11` (SRV-DC01).
+
+    ```powershell
+    # Etape 2 : Tester la resolution des SRV records
+    Resolve-DnsName -Name "_ldap._tcp.lab.local" -Type SRV -DnsOnly
+    ```
+
+    Resultat : erreur "DNS name does not exist". Les enregistrements SRV sont absents.
+
+    ```powershell
+    # Etape 3 : Verifier le service DNS sur les DC
+    Get-Service -Name DNS -ComputerName "DC-01"
+    Get-Service -Name DNS -ComputerName "SRV-DC01"
+    ```
+
+    Resultat : le service DNS est arrete sur les deux DC suite a une mise a jour Windows qui a echoue durant le week-end.
+
+    **Solution** :
+
+    ```powershell
+    # Redemarrer le service DNS sur les deux DC
+    Start-Service -Name DNS -ComputerName "DC-01"
+    Start-Service -Name DNS -ComputerName "SRV-DC01"
+
+    # Forcer le re-enregistrement des SRV
+    Invoke-Command -ComputerName "DC-01","SRV-DC01" -ScriptBlock {
+        Restart-Service -Name Netlogon
+    }
+
+    # Verifier que les SRV sont de nouveau presents
+    Resolve-DnsName -Name "_ldap._tcp.lab.local" -Type SRV -DnsOnly
+
+    # Valider avec dcdiag
+    dcdiag /test:dns /DnsRecordRegistration /s:DC-01
+    ```
+
+    Les utilisateurs peuvent a nouveau ouvrir de nouvelles sessions. Pierre programme une surveillance automatique du service DNS pour detecter ce type de panne plus rapidement.
+
+!!! danger "Erreurs courantes"
+
+    - **Oublier de vider le cache client apres une modification DNS** : un enregistrement modifie sur le serveur peut rester en cache sur le client pendant la duree du TTL. Utilisez `Clear-DnsClientCache` sur le poste pour forcer la mise a jour immediate.
+    - **Diagnostiquer avec ping au lieu de nslookup ou Resolve-DnsName** : `ping` utilise le cache DNS local et la resolution NetBIOS, ce qui peut fausser le diagnostic. Utilisez `Resolve-DnsName -DnsOnly` pour tester exclusivement la resolution DNS.
+    - **Configurer les postes du domaine avec des DNS publics en premier** : si le DNS principal d'un poste est `8.8.8.8`, il ne trouvera jamais les enregistrements SRV de `lab.local`. Le DNS primaire doit toujours etre un DC du domaine.
+    - **Ne pas verifier les deux sens de la resolution entre DC** : lors d'un probleme de replication, il faut verifier que chaque DC peut resoudre le nom de l'autre. Un seul sens fonctionnel ne suffit pas.
+    - **Ignorer les journaux d'evenements DNS** : les erreurs recurrentes dans le journal "DNS Server" sont souvent le premier signe d'un probleme sous-jacent (zone corrompue, replication en echec, espace disque insuffisant).
 
 ## Points cles a retenir
 

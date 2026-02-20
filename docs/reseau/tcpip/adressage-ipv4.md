@@ -22,6 +22,10 @@ L'adressage IPv4 (Internet Protocol version 4) constitue le socle fondamental de
 
 ## Structure d'une adresse IPv4
 
+!!! example "Analogie"
+
+    Une adresse IPv4 fonctionne exactement comme une adresse postale. La **partie reseau** correspond a la ville et la rue (identifie le quartier), tandis que la **partie hote** correspond au numero de maison (identifie le destinataire precis). Le **masque de sous-reseau** joue le role du code postal : il indique ou finit le nom de la ville et ou commence le numero de rue.
+
 Une adresse IPv4 est composee de **32 bits** (4 octets), representee en notation decimale pointee :
 
 ```
@@ -129,9 +133,33 @@ Get-NetIPAddress -AddressFamily IPv4
 Get-NetIPConfiguration -InterfaceAlias "Ethernet0"
 ```
 
+Resultat :
+
+```text
+IPAddress         : 10.0.0.10
+InterfaceIndex    : 4
+InterfaceAlias    : Ethernet0
+AddressFamily     : IPv4
+Type              : Unicast
+PrefixLength      : 24
+PrefixOrigin      : Manual
+SuffixOrigin      : Manual
+AddressState      : Preferred
+
+InterfaceAlias          : Ethernet0
+InterfaceIndex          : 4
+IPv4Address             : 10.0.0.10
+IPv4DefaultGateway      : 10.0.0.1
+DNSServer               : 10.0.0.1, 10.0.0.2
+```
+
 ---
 
 ## Notation CIDR
+
+!!! example "Analogie"
+
+    Le CIDR est comparable a un systeme de decoupage de terrain. Au lieu d'avoir uniquement des parcelles de taille fixe (petit jardin, terrain moyen, grand domaine), le CIDR permet de decouper un terrain a la taille exacte dont on a besoin. Le suffixe `/n` indique combien de metres de cloture delimitent la partie commune (reseau) par rapport a la partie privee (hotes).
 
 La notation **CIDR** (Classless Inter-Domain Routing), definie dans la RFC 4632, remplace le systeme de classes et permet un decoupage plus flexible de l'espace d'adressage.
 
@@ -200,6 +228,17 @@ $networkAddress = [System.Net.IPAddress]::new($networkBytes)
 Write-Output "Network address: $networkAddress"
 ```
 
+Resultat :
+
+```text
+InterfaceAlias IPAddress    PrefixLength
+-------------- ---------    ------------
+Ethernet0      10.0.0.10    24
+Loopback       127.0.0.1    8
+
+Network address: 192.168.1.0
+```
+
 ---
 
 ## APIPA (Automatic Private IP Addressing)
@@ -213,9 +252,92 @@ Get-NetIPAddress -AddressFamily IPv4 | Where-Object {
 } | Select-Object InterfaceAlias, IPAddress
 ```
 
+Resultat :
+
+```text
+InterfaceAlias  IPAddress
+--------------  ---------
+Ethernet0       169.254.15.201
+```
+
 !!! danger "Diagnostic"
 
     Une adresse APIPA sur un serveur indique un probleme de communication DHCP. Verifiez la connectivite physique, le VLAN et la disponibilite du serveur DHCP.
+
+---
+
+## Scenario pratique
+
+!!! example "Scenario pratique"
+
+    **Contexte** : Antoine, technicien reseau junior, deploie un nouveau serveur SRV-01 dans le lab. Il lui attribue l'adresse `10.0.0.50/24` mais le serveur ne communique pas avec le controleur de domaine DC-01 (`10.0.1.10/24`).
+
+    **Diagnostic** :
+
+    1. Antoine verifie la configuration IP du serveur :
+
+        ```powershell
+        Get-NetIPConfiguration -InterfaceAlias "Ethernet0"
+        ```
+
+        Resultat :
+
+        ```text
+        InterfaceAlias          : Ethernet0
+        IPv4Address             : 10.0.0.50
+        IPv4DefaultGateway      : 10.0.0.1
+        DNSServer               : 10.0.0.1
+        ```
+
+    2. Il tente un ping vers DC-01 :
+
+        ```powershell
+        Test-Connection -ComputerName 10.0.1.10 -Count 2
+        ```
+
+        Resultat :
+
+        ```text
+        Test-Connection : Testing connection to computer '10.0.1.10' failed:
+        Error due to lack of resources
+        ```
+
+    3. SRV-01 est en `10.0.0.0/24` et DC-01 en `10.0.1.0/24` : ce sont **deux sous-reseaux differents**. Pour communiquer, il faut passer par une passerelle (routeur).
+
+    4. Antoine verifie que la passerelle `10.0.0.1` route bien vers `10.0.1.0/24` :
+
+        ```powershell
+        Test-Connection -ComputerName 10.0.0.1 -Count 2
+        ```
+
+        Resultat :
+
+        ```text
+        Source        Destination    IPV4Address    Bytes    Time(ms)
+        ------        -----------    -----------    -----    --------
+        SRV-01        10.0.0.1       10.0.0.1       32       1
+        SRV-01        10.0.0.1       10.0.0.1       32       1
+        ```
+
+    5. La passerelle est joignable. Le probleme vient du routeur qui n'a pas de route vers `10.0.1.0/24`. Apres ajout de la route sur le routeur, la communication fonctionne.
+
+    **Resolution** : deux machines dans des sous-reseaux differents necessitent un routeur configure avec les routes appropriees. Verifiez toujours que les adresses IP et les masques placent les machines dans le meme sous-reseau ou qu'un routeur interconnecte les sous-reseaux.
+
+---
+
+## Erreurs courantes
+
+!!! danger "Erreurs courantes"
+
+    1. **Confondre masque et passerelle** : le masque de sous-reseau n'est pas une adresse de destination. Il sert uniquement a determiner la frontiere entre la partie reseau et la partie hote.
+
+    2. **Utiliser un masque incorrect** : attribuer un `/16` au lieu d'un `/24` place des centaines de machines dans le meme domaine de broadcast, degradant les performances reseau.
+
+    3. **Oublier les deux adresses reservees** : dans un sous-reseau, la premiere adresse (adresse reseau) et la derniere (broadcast) ne sont pas attribuables a des hotes. Un `/24` offre 254 adresses utilisables, pas 256.
+
+    4. **Ignorer les adresses APIPA** : une adresse en `169.254.x.x` sur un serveur indique un echec DHCP. Ce n'est pas une configuration valide, c'est un symptome a investiguer immediatement.
+
+    5. **Ne pas documenter le plan d'adressage** : sans plan d'adressage ecrit, les doublons d'adresses IP et les conflits de sous-reseaux deviennent inevitables quand l'infrastructure grandit.
 
 ---
 

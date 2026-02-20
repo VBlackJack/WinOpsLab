@@ -16,6 +16,10 @@ Active Directory Certificate Services (AD CS) est le role Windows Server qui imp
 
 ---
 
+!!! example "Analogie"
+
+    Installer une CA, c'est comme creer un bureau d'etat civil pour votre organisation. Le bureau central (CA Racine) est situe dans un coffre-fort accessible uniquement au directeur, et des antennes locales (CA Subordonnees) delivrent les documents d'identite aux employes au quotidien. Si une antenne est compromise, on la ferme et on en ouvre une autre. Mais le bureau central doit rester inviolable.
+
 ## Standalone vs Enterprise CA
 
 | Critere | Standalone CA | Enterprise CA |
@@ -51,6 +55,16 @@ Install-WindowsFeature AD-Certificate -IncludeManagementTools
 Get-WindowsFeature AD-Certificate
 ```
 
+Resultat :
+
+```text
+Display Name                            Name               Install State
+------------                            ----               -------------
+[X] Active Directory Certificate Serv.  AD-Certificate         Installed
+    [X] Certification Authority         ADCS-Cert-Authority    Installed
+[X] AD CS Management Tools             RSAT-ADCS              Installed
+```
+
 ### Etape 2 : configurer la CA Racine
 
 ```powershell
@@ -67,6 +81,18 @@ Install-AdcsCertificationAuthority `
 
 # The CA certificate validity is set to 20 years
 # Subordinate CA certificates will be signed for shorter periods
+```
+
+Resultat :
+
+```text
+Successfully installed the Certification Authority role.
+    CA Name:               Lab-ROOT-CA
+    CA Type:               Standalone Root CA
+    Key Length:            4096
+    Hash Algorithm:        SHA256
+    Validity Period:       20 Years
+    Certificate Expiration: 2045-02-20
 ```
 
 !!! warning "Longueur de cle et duree de validite"
@@ -107,6 +133,18 @@ Add-CAAuthorityInformationAccess `
 Restart-Service CertSvc
 ```
 
+Resultat :
+
+```text
+Removed CDP: 1 - ldap:///CN=...
+Removed CDP: 2 - http://...
+Removed CDP: 3 - file://...
+Added CDP: http://pki.lab.local/CertEnroll/<CaName><CRLNameSuffix><DeltaCRLAllowed>.crl
+
+Removed AIA: 1 - ldap:///CN=...
+Added AIA: http://pki.lab.local/CertEnroll/<ServerDNSName>_<CaName><CertificateName>.crt
+```
+
 ### Etape 4 : publier la CRL
 
 ```powershell
@@ -124,6 +162,18 @@ Restart-Service CertSvc
 
 # Publish the CRL again with new settings
 certutil -CRL
+```
+
+Resultat :
+
+```text
+CertUtil: -CRL command completed successfully.
+
+HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\CertSvc\Configuration\Lab-ROOT-CA:
+  CRLPeriod = Months
+  CRLPeriodUnits = 6
+  CRLOverlapPeriod = Weeks
+  CRLOverlapUnits = 2
 ```
 
 ### Etape 5 : exporter le certificat et la CRL
@@ -144,6 +194,14 @@ Copy-Item "C:\Windows\System32\CertSrv\CertEnroll\*.crt" "C:\CertExport\"
 ```
 
 ---
+
+Resultat :
+
+```text
+CertUtil: -ca.cert command completed successfully.
+    1 File(s) copied: Lab-ROOT-CA.crl
+    1 File(s) copied: YOURSERVER_Lab-ROOT-CA.crt
+```
 
 ## Installation de la CA Subordonnee (Enterprise)
 
@@ -167,11 +225,31 @@ Import-Certificate -FilePath "C:\CertExport\Lab-ROOT-CA.cer" `
     -CertStoreLocation Cert:\LocalMachine\Root
 ```
 
+Resultat :
+
+```text
+CertUtil: -dspublish command completed successfully.
+CertUtil: -dspublish command completed successfully.
+
+   PSParentPath: Microsoft.PowerShell.Security\Certificate::LocalMachine\Root
+Thumbprint                                Subject
+----------                                -------
+D4E5F6A7B8C9D0E1F2A3B4C5D6E7F8A9B0C1D2E3  CN=Lab-ROOT-CA
+```
+
 ### Etape 2 : installer le role AD CS
 
 ```powershell
 # Install AD CS with management tools and web enrollment
 Install-WindowsFeature AD-Certificate, ADCS-Web-Enrollment -IncludeManagementTools
+```
+
+Resultat :
+
+```text
+Success Restart Needed Exit Code      Feature Result
+------- -------------- ---------      --------------
+True    No             Success        {AD Certificate Services, ADCS Web Enrollment, RSAT...}
 ```
 
 ### Etape 3 : configurer la CA Subordonnee
@@ -216,6 +294,20 @@ Install-AdcsCertificationAuthority -CertFile "C:\CertExport\Lab-SUB-CA.cer" -For
 # Verify the CA is running
 Get-Service CertSvc
 certutil -ping
+```
+
+Resultat :
+
+```text
+Successfully installed the CA certificate.
+
+Status   Name     DisplayName
+------   ----     -----------
+Running  CertSvc  Active Directory Certificate Services
+
+Connecting to SRV-CA.lab.local\Lab-SUB-CA ...
+Server "Lab-SUB-CA" ICertRequest2 interface is alive
+CertUtil: -ping command completed successfully.
 ```
 
 ### Etape 6 : configurer les extensions CDP et AIA
@@ -269,6 +361,27 @@ certutil -ping
 certutil -CATemplates
 ```
 
+Resultat :
+
+```text
+CA Name:                  Lab-SUB-CA
+CA Type:                  Enterprise Subordinate CA
+CA Cert[0]:               Lab-SUB-CA
+  Cert Hash(sha1): E5F6A7B8 C9D0E1F2 A3B4C5D6 E7F8A9B0 C1D2E3F4
+  Valid From: 2025-02-20
+  Valid To:   2035-02-20
+
+Verified: Passes
+  Certificate chain verified successfully.
+
+CertUtil: -CATemplates command completed successfully.
+  DomainController -- Domain Controller
+  WebServer -- Web Server
+  Computer -- Computer
+  User -- User
+  SubCA -- Subordinate Certification Authority
+```
+
 ### Resume de l'architecture deployee
 
 ```mermaid
@@ -289,6 +402,65 @@ flowchart TB
     SUB -->|Emet| C1[Certificats serveur]
     SUB -->|Emet| C2[Certificats utilisateur]
 ```
+
+---
+
+## Scenario pratique
+
+!!! example "Scenario pratique"
+
+    **Contexte** : Emilie, ingenieure systeme, termine l'installation de la CA Subordonnee `Lab-SUB-CA` sur le serveur `SRV-CA` (10.0.0.15). Les utilisateurs signalent que les certificats ne sont pas approuves par les postes clients du domaine.
+
+    **Diagnostic** :
+
+    ```powershell
+    # Check if Root CA certificate is in AD
+    certutil -dspublish -?
+    certutil -viewstore -enterprise Root
+    ```
+
+    Resultat :
+
+    ```text
+    0 certificates in Root store.
+    CertUtil: -viewstore command completed successfully.
+    ```
+
+    Le certificat de la CA Racine n'a pas ete publie dans Active Directory.
+
+    **Resolution** :
+
+    ```powershell
+    # Publish the Root CA certificate to AD
+    certutil -dspublish -f "C:\CertExport\Lab-ROOT-CA.cer" RootCA
+
+    # Publish the CRL
+    certutil -dspublish -f "C:\CertExport\Lab-ROOT-CA.crl" "Lab-ROOT-CA"
+
+    # Force GPO update on a client to pick up the new Root CA
+    Invoke-GPUpdate -Computer "PC-01" -Force
+    ```
+
+    Resultat :
+
+    ```text
+    CertUtil: -dspublish command completed successfully.
+    Certificate "Lab-ROOT-CA" added to DS store.
+    ```
+
+    Apres le rafraichissement GPO, les clients du domaine recoivent automatiquement le certificat de la CA Racine dans leur magasin `Trusted Root Certification Authorities` et les avertissements disparaissent.
+
+---
+
+!!! danger "Erreurs courantes"
+
+    1. **Oublier de publier le certificat de la CA Racine dans AD** : sans cette publication, les clients du domaine ne font pas confiance aux certificats emis par la CA Subordonnee. C'est l'erreur la plus frequente lors d'un deploiement PKI.
+
+    2. **Configurer la CA Racine comme Enterprise CA jointe au domaine** : la CA Racine doit etre Standalone et hors ligne pour proteger sa cle privee. Une CA Racine Enterprise en ligne est une vulnerabilite critique.
+
+    3. **Ne pas configurer les extensions CDP/AIA avant l'emission des certificats** : les URL de CRL et AIA sont inscrites dans chaque certificat emis. Si elles sont incorrectes, les certificats seront invalides et la correction necessite de re-emettre tous les certificats.
+
+    4. **Utiliser une cle RSA 2048 bits pour la CA Racine** : pour une CA dont la duree de vie est de 15-20 ans, 2048 bits est insuffisant face a l'evolution des capacites de calcul. Utilisez 4096 bits minimum.
 
 ---
 

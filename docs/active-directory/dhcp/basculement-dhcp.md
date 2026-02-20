@@ -16,6 +16,10 @@ tags:
 
 ## Pourquoi le basculement DHCP ?
 
+!!! example "Analogie"
+
+    Le basculement DHCP fonctionne comme deux guichets de banque identiques. En mode **Hot Standby**, un seul guichet est ouvert (le primaire) et le second reste ferme mais pret a ouvrir immediatement si le premier tombe en panne. En mode **Load Balancing**, les deux guichets sont ouverts simultanement et les clients sont repartis entre eux. Dans les deux cas, chaque guichetier a une copie du registre des operations pour reprendre le travail de l'autre sans perdre d'information.
+
 Le serveur DHCP est un **service critique** : si les clients ne peuvent pas
 obtenir ou renouveler leur bail IP, ils perdent leur connectivite reseau.
 
@@ -160,6 +164,21 @@ flowchart LR
     Get-DhcpServerv4Failover -ComputerName "SRV-DHCP01"
     ```
 
+    Resultat :
+
+    ```text
+    Name                    : DHCP-Failover-HotStandby
+    Mode                    : HotStandby
+    State                   : Normal
+    PartnerServer           : SRV-DHCP02.lab.local
+    ServerRole              : Primary
+    ReservePercent          : 5
+    MaxClientLeadTime       : 01:00:00
+    StateSwitchInterval     : 01:00:00
+    AutoStateTransition     : True
+    ScopeId                 : {10.0.0.0}
+    ```
+
 === "GUI"
 
     1. Ouvrir la console **DHCP** sur le serveur primaire
@@ -238,6 +257,20 @@ d'option, etc.), il faut **repliquer** les changements vers le partenaire :
     Invoke-DhcpServerv4FailoverReplication -ComputerName "SRV-DHCP01"
     ```
 
+    Resultat :
+
+    ```text
+    PS> Invoke-DhcpServerv4FailoverReplication -ComputerName "SRV-DHCP01" -ScopeId 10.0.0.0
+
+    # No output on success. The scope data is synchronized to the partner server.
+    # Verify with:
+    PS> Get-DhcpServerv4Failover -ComputerName "SRV-DHCP01" | Select-Object Name, State
+
+    Name                          State
+    ----                          -----
+    DHCP-Failover-HotStandby      Normal
+    ```
+
 === "GUI"
 
     1. Clic droit sur l'etendue en basculement
@@ -312,6 +345,23 @@ flowchart TD
         Format-List Name, Mode, State, PartnerServer,
             MaxClientLeadTime, StateSwitchInterval,
             LoadBalancePercent, ReservePercent
+    ```
+
+    Resultat :
+
+    ```text
+    Name           Mode        State   PartnerServer          ScopeId
+    ----           ----        -----   -------------          -------
+    DHCP-Failover  HotStandby  Normal  SRV-DHCP02.lab.local   {10.0.0.0}
+
+    Name                : DHCP-Failover
+    Mode                : HotStandby
+    State               : Normal
+    PartnerServer       : SRV-DHCP02.lab.local
+    MaxClientLeadTime   : 01:00:00
+    StateSwitchInterval : 01:00:00
+    LoadBalancePercent  :
+    ReservePercent      : 5
     ```
 
 ### Etats possibles de la relation
@@ -419,7 +469,76 @@ New-NetFirewallRule -DisplayName "DHCP Failover (TCP-In)" `
     -Profile Domain
 ```
 
+Resultat :
+
+```text
+PS> Get-NetFirewallRule -DisplayName "*DHCP*Failover*" | Select-Object DisplayName, Enabled, Direction
+
+DisplayName                     Enabled  Direction
+-----------                     -------  ---------
+DHCP Server Failover (TCP-In)   True     Inbound
+DHCP Server Failover (TCP-Out)  True     Outbound
+```
+
 ---
+
+!!! example "Scenario pratique"
+
+    **Situation** : Emma, administratrice reseau, remarque que la relation de basculement DHCP affiche l'etat "Communication Interrupted" depuis plusieurs heures. Le serveur primaire `SRV-DHCP01` fonctionne normalement mais ne communique plus avec `SRV-DHCP02`.
+
+    **Diagnostic** :
+
+    ```powershell
+    # Etape 1 : Verifier l'etat du basculement
+    Get-DhcpServerv4Failover -ComputerName "SRV-DHCP01" |
+        Select-Object Name, State, PartnerServer
+    ```
+
+    Resultat : `State` affiche "Communication Interrupted".
+
+    ```powershell
+    # Etape 2 : Tester la connectivite vers le partenaire sur le port 647
+    Test-NetConnection -ComputerName "SRV-DHCP02" -Port 647
+    ```
+
+    Resultat : `TcpTestSucceeded` est a `False`. Le port 647 est bloque.
+
+    ```powershell
+    # Etape 3 : Verifier les regles de pare-feu sur le partenaire
+    Invoke-Command -ComputerName "SRV-DHCP02" -ScriptBlock {
+        Get-NetFirewallRule -DisplayName "*DHCP*Failover*" |
+            Select-Object DisplayName, Enabled
+    }
+    ```
+
+    Resultat : la regle de pare-feu pour le basculement DHCP est desactivee sur `SRV-DHCP02` suite a une mise a jour de la politique de securite.
+
+    **Solution** :
+
+    ```powershell
+    # Reactiver la regle de pare-feu sur le partenaire
+    Invoke-Command -ComputerName "SRV-DHCP02" -ScriptBlock {
+        Enable-NetFirewallRule -DisplayName "DHCP Server Failover (TCP-In)"
+        Enable-NetFirewallRule -DisplayName "DHCP Server Failover (TCP-Out)"
+    }
+
+    # Forcer la resynchronisation
+    Invoke-DhcpServerv4FailoverReplication -ComputerName "SRV-DHCP01"
+
+    # Verifier que l'etat revient a Normal
+    Get-DhcpServerv4Failover -ComputerName "SRV-DHCP01" |
+        Select-Object Name, State
+    ```
+
+    L'etat revient a "Normal" apres quelques secondes de resynchronisation.
+
+!!! danger "Erreurs courantes"
+
+    - **Oublier d'ouvrir le port TCP 647 sur le pare-feu des deux serveurs** : la communication de basculement DHCP utilise le port TCP 647. Si ce port est bloque sur l'un des deux serveurs, la relation tombe en etat "Communication Interrupted".
+    - **Ne pas synchroniser les horloges des deux serveurs** : un decalage horaire trop important entre les deux serveurs peut provoquer des erreurs d'authentification lors de la replication. Utilisez le meme serveur NTP pour les deux.
+    - **Modifier les reservations ou options sur le serveur secondaire sans repliquer** : les modifications faites sur le secondaire seront ecrasees lors de la prochaine replication depuis le primaire. Faites toujours les modifications sur le primaire puis repliquez.
+    - **Configurer le basculement avant d'autoriser les deux serveurs dans AD** : les deux serveurs DHCP doivent etre autorises dans Active Directory avant de configurer le basculement, sinon le serveur secondaire ne pourra pas distribuer d'adresses.
+    - **Utiliser un secret partage faible** : le secret partage authentifie la communication entre partenaires. Un mot de passe faible expose le basculement a des attaques de type man-in-the-middle.
 
 ## Points cles a retenir
 

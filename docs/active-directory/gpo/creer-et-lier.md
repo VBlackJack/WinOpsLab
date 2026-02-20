@@ -14,6 +14,10 @@ tags:
 
 ## Cycle de vie d'une GPO
 
+!!! example "Analogie"
+
+    Creer et lier une GPO est comparable a rediger un reglement interieur puis l'afficher dans un service precis de l'entreprise. Tant que le document reste dans le tiroir du directeur (non lie), personne ne le lit. Il faut l'afficher au bon etage (lier a la bonne OU) pour qu'il prenne effet.
+
 La gestion d'une GPO suit un cycle en quatre etapes :
 
 ```mermaid
@@ -48,6 +52,19 @@ flowchart LR
     # Create and immediately link to an OU
     New-GPO -Name "CFG - Mapped Drives" -Comment "Map network drives for all users" |
         New-GPLink -Target "OU=Utilisateurs,OU=Siege,DC=lab,DC=local"
+    ```
+
+    Resultat :
+
+    ```text
+    DisplayName          : SEC - Password Policy
+    DomainName           : lab.local
+    Owner                : LAB\Domain Admins
+    Id                   : d4e5f6a7-8b9c-0d1e-2f3a-4b5c6d7e8f9a
+    GpoStatus            : AllSettingsEnabled
+    Description          : Enforce strong password requirements
+    CreationTime         : 20/02/2026 10:15:30
+    ModificationTime     : 20/02/2026 10:15:30
     ```
 
 === "GUI (gpmc.msc)"
@@ -101,6 +118,17 @@ Les conteneurs valides sont : **Site**, **Domaine** ou **OU**.
         -Target "OU=Utilisateurs,OU=Siege,DC=lab,DC=local"
     ```
 
+    Resultat :
+
+    ```text
+    GpoId       : d4e5f6a7-8b9c-0d1e-2f3a-4b5c6d7e8f9a
+    DisplayName : SEC - Password Policy
+    Enabled     : True
+    Enforced    : False
+    Target      : OU=Utilisateurs,OU=Siege,DC=lab,DC=local
+    Order       : 1
+    ```
+
 === "GUI (gpmc.msc)"
 
     1. Dans **Group Policy Management**, cliquer droit sur l'OU cible
@@ -138,6 +166,16 @@ Les conteneurs valides sont : **Site**, **Domaine** ou **OU**.
     # Generate a report of all settings in a GPO
     Get-GPOReport -Name "SEC - Password Policy" -ReportType Html `
         -Path "$env:USERPROFILE\Desktop\GPO-Report.html"
+    ```
+
+    Resultat :
+
+    ```text
+    DisplayName     : CFG - Desktop Restrictions
+    Key             : HKLM\SOFTWARE\Policies\Microsoft\WindowsStore
+    ValueName       : RemoveWindowsStore
+    Value           : 1
+    Type            : DWord
     ```
 
 === "GUI (gpmc.msc)"
@@ -207,6 +245,22 @@ Set-GPRegistryValue -Name "CFG - Desktop Restrictions" `
     -Type DWord -Value 1
 ```
 
+Resultat :
+
+```text
+DisplayName     : CFG - Desktop Restrictions
+Key             : HKCU\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer
+ValueName       : NoControlPanel
+Value           : 1
+Type            : DWord
+
+DisplayName     : CFG - Desktop Restrictions
+Key             : HKCU\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer
+ValueName       : NoRun
+Value           : 1
+Type            : DWord
+```
+
 ### Lecteurs reseau mappes
 
 !!! info "Emplacement"
@@ -273,6 +327,16 @@ Lorsque plusieurs GPO sont liees au meme conteneur, leur **ordre de liaison**
         -Order 1
     ```
 
+    Resultat :
+
+    ```text
+    DisplayName              Order Enabled
+    -----------              ----- -------
+    SEC - Password Policy        1    True
+    CFG - Mapped Drives          2    True
+    CFG - Desktop Restrictions   3    True
+    ```
+
 === "GUI (gpmc.msc)"
 
     1. Selectionner l'OU dans GPMC
@@ -303,6 +367,18 @@ Lorsque plusieurs GPO sont liees au meme conteneur, leur **ordre de liaison**
         -CreateIfNeeded
     ```
 
+    Resultat :
+
+    ```text
+    DisplayName   : SEC - Password Policy
+    GpoId         : d4e5f6a7-8b9c-0d1e-2f3a-4b5c6d7e8f9a
+    Id            : e5f6a7b8-9c0d-1e2f-3a4b-5c6d7e8f9a0b
+    BackupDirectory : C:\GPO-Backups
+    CreationTime  : 20/02/2026 14:30:00
+    DomainName    : lab.local
+    Comment       : Before quarterly review
+    ```
+
 === "GUI (gpmc.msc)"
 
     1. Cliquer droit sur **Group Policy Objects** > **Manage Backups...**
@@ -314,6 +390,72 @@ Lorsque plusieurs GPO sont liees au meme conteneur, leur **ordre de liaison**
     Planifiez un script PowerShell de sauvegarde GPO via le
     **Planificateur de taches** pour maintenir un historique regulier.
     Voir [Taches planifiees](../../automatisation/taches-planifiees/task-scheduler.md).
+
+---
+
+## Scenario pratique
+
+!!! example "Scenario pratique"
+
+    **Contexte** : Marc, administrateur systeme, doit deployer une GPO pour desactiver l'acces au Panneau de configuration pour tous les utilisateurs de l'OU `Comptabilite`, sauf les membres du groupe `GRP_Admins_Compta`.
+
+    **Etapes** :
+
+    1. Marc cree la GPO sans la lier immediatement :
+
+        ```powershell
+        New-GPO -Name "CFG - No Control Panel Compta" `
+            -Comment "Disable Control Panel for Accounting users"
+        ```
+
+    2. Il configure le parametre souhaite :
+
+        ```powershell
+        Set-GPRegistryValue -Name "CFG - No Control Panel Compta" `
+            -Key "HKCU\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer" `
+            -ValueName "NoControlPanel" -Type DWord -Value 1
+        ```
+
+    3. Il lie la GPO a l'OU cible :
+
+        ```powershell
+        New-GPLink -Name "CFG - No Control Panel Compta" `
+            -Target "OU=Comptabilite,OU=Siege,DC=lab,DC=local"
+        ```
+
+    4. Il teste sur un poste de la comptabilite :
+
+        ```powershell
+        gpupdate /force
+        gpresult /r /scope:user
+        ```
+
+        Resultat :
+
+        ```text
+        Applied Group Policy Objects
+            CFG - No Control Panel Compta
+            CFG - Desktop Settings
+            Default Domain Policy
+        ```
+
+    5. Le Panneau de configuration est bien bloque. Marc pourra exclure `GRP_Admins_Compta` via le filtrage de securite (voir [Filtrage et heritage](filtrage-et-heritage.md)).
+
+---
+
+## Erreurs courantes
+
+!!! danger "Erreurs courantes"
+
+    1. **Lier la GPO avant de la configurer** : les postes recoivent une GPO vide ou partiellement configuree, ce qui peut causer des comportements inattendus. Toujours configurer d'abord, lier ensuite.
+
+    2. **Supprimer la GPO au lieu du lien** : supprimer une GPO depuis le conteneur Group Policy Objects supprime aussi tous ses liens. Pour retirer l'effet d'une GPO sur une OU specifique, supprimer uniquement le **lien**.
+
+    3. **Ignorer la convention de nommage** : sans prefixe ni logique de nommage, il devient tres difficile de retrouver une GPO parmi des dizaines. Adoptez une convention des le premier jour.
+
+    4. **Ne pas sauvegarder les GPO** : une modification malencontreuse peut casser l'environnement de centaines d'utilisateurs. Un backup regulier avec `Backup-GPO` permet de revenir en arriere rapidement.
+
+    5. **Confondre ordre de liaison et priorite** : l'ordre de liaison 1 signifie priorite **maximale**, pas minimale. Une GPO en position 1 l'emporte sur celle en position 2.
 
 ---
 

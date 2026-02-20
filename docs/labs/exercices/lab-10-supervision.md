@@ -32,6 +32,15 @@ Avant la mise en production de l'infrastructure, le responsable demande de mettr
 
 ## Instructions
 
+!!! example "Analogie"
+
+    Superviser un serveur, c'est comme le tableau de bord d'une voiture : les collecteurs
+    de donnees sont les capteurs (temperature, vitesse, pression) qui enregistrent en continu,
+    les alertes sont les voyants lumineux qui s'allument quand un seuil est depasse, et le
+    transfert d'evenements (WEF) est le boitier noir qui centralise les journaux de toute la
+    flotte dans un seul endroit. Sans tableau de bord, on ne decouvre les problemes qu'au moment
+    de la panne — toujours trop tard.
+
 ### Partie 1 : Creer un ensemble de collecteurs de donnees
 
 1. Creer un collecteur avec les compteurs CPU, memoire, disque et reseau
@@ -71,6 +80,14 @@ Avant la mise en production de l'infrastructure, le responsable demande de mettr
 
     # Verify the data file was created
     Get-ChildItem "C:\PerfLogs\Lab-Baseline"
+    ```
+
+    Resultat attendu de `Get-ChildItem "C:\PerfLogs\Lab-Baseline"` :
+
+    ```text
+    Mode         LastWriteTime      Length Name
+    ----         -------------      ------ ----
+    -a----  20/02/2026  08:15        92160 Lab-Baseline_02201515.blg
     ```
 
 ### Partie 2 : Analyser les donnees collectees
@@ -231,6 +248,16 @@ Avant la mise en production de l'infrastructure, le responsable demande de mettr
     $report | Export-Csv "C:\Reports\HealthReport-$(Get-Date -Format 'yyyyMMdd').csv" -NoTypeInformation
     ```
 
+    Resultat attendu de `$report | Format-Table -AutoSize` :
+
+    ```text
+    Server     CPU_Percent  FreeRAM_MB  Errors_24h  Status
+    ------     -----------  ----------  ----------  ------
+    SRV-DC01       3.2          1842           0   Online
+    SRV-FILE01     1.1          2014           0   Online
+    SRV-WEB01      0.8          1976           0   Online
+    ```
+
 ## Verification
 
 !!! question "Questions de validation"
@@ -250,6 +277,31 @@ Avant la mise en production de l'infrastructure, le responsable demande de mettr
        et les heures creuses, idealement un mois complet.
     4. `wecutil gr "NomAbonnement"` affiche l'etat de chaque source. Un etat "Active" avec
        un "Last Error" vide indique un fonctionnement correct.
+
+!!! warning "Pieges frequents dans ce lab"
+
+    1. **Service WEC non demarre sur le collecteur** : `wecutil qc /q` configure ET demarre
+       le service "Windows Event Collector". Si cette commande n'a pas ete executee sur SRV-DC01,
+       les abonnements sont crees mais aucun evenement n'arrive jamais. Verifier avec
+       `Get-Service wecsvc | Select-Object Status`.
+
+    2. **WinRM non configure sur les sources** : `winrm quickconfig /q` est requis sur chaque
+       serveur source (SRV-FILE01, SRV-WEB01). Sans cela, l'abonnement reste a l'etat "Connecting"
+       indefiniment. Verifier avec `wecutil gr "Lab-CriticalEvents"` que le statut est "Active".
+
+    3. **Fichier BLG non trouve lors de l'analyse** : `Import-Counter` necessite le chemin
+       complet du fichier `.blg`. Le nom du fichier inclut un horodatage (`_02201515.blg`).
+       Utiliser `Get-ChildItem "C:\PerfLogs\Lab-Baseline\*.blg"` pour trouver le bon nom
+       avant d'appeler `Import-Counter`.
+
+    4. **Collecteur de donnees deja existant** : si `logman create counter "Lab-Baseline"` est
+       execute deux fois, la deuxieme execution echoue avec "Data Collector Set already exists".
+       Supprimer d'abord l'existant avec `logman delete "Lab-Baseline"` avant de recreer.
+
+    5. **Compteurs de performance avec des noms localises** : sur un Windows Server en francais,
+       les noms des compteurs (ex: `\Processeur(_Total)\% Temps Processeur`) different des noms
+       anglais utilises dans les scripts. Utiliser les noms anglais ou verifier les noms locaux
+       avec `Get-Counter -ListSet *` pour eviter les erreurs "Counter path is not valid".
 
 ## Nettoyage
 

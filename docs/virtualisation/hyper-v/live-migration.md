@@ -18,6 +18,10 @@ La Live Migration permet de deplacer une machine virtuelle en cours d'execution 
 
 ## Principe de fonctionnement
 
+!!! example "Analogie"
+
+    La Live Migration est comparable au **transfert d'un appel telephonique** entre deux operateurs sans que l'interlocuteur ne s'en rende compte. Pendant que vous parlez (la VM fonctionne), le systeme copie progressivement votre conversation vers un second operateur (l'hote destination). A la fin, la bascule est si rapide (moins d'une seconde) que votre interlocuteur ne remarque rien.
+
 ```mermaid
 sequenceDiagram
     participant Source as Hote source

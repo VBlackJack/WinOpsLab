@@ -53,6 +53,10 @@ graph TD
     WS --> HW
 ```
 
+!!! example "Analogie"
+
+    Docker, c'est comme un systeme de livraison standardise avec des boites en carton identiques. Peu importe ce qu'il y a dedans (une application .NET, un serveur web, une API), la boite a toujours la meme forme et les memes etiquettes. Le transporteur (Docker Engine) sait comment manipuler n'importe quelle boite sans avoir besoin de savoir ce qu'elle contient. Chaque boite contient tout ce dont l'application a besoin pour fonctionner — si ca tourne dans la boite de test, ca tournera de la meme facon en production.
+
 ## Installation de Docker
 
 ### Etape 1 : installer la fonctionnalite Containers
@@ -89,6 +93,35 @@ docker version
 
 # Verify Docker info
 docker info
+```
+
+Resultat :
+
+```text
+Name   Status  StartType
+----   ------  ---------
+docker Running Automatic
+
+Client:
+ Version:           24.0.9
+ API version:       1.43
+ OS/Arch:           windows/amd64
+ Context:           default
+
+Server: Docker Engine - Community
+ Engine:
+  Version:          24.0.9
+  OS/Arch:          windows/amd64
+  Isolation:        process
+
+Server Version: 24.0.9
+OS: Windows Server 2022 Datacenter
+OSType: windows
+Containers: 3
+ Running: 2
+ Paused: 0
+ Stopped: 1
+Images: 4
 ```
 
 ### Methode alternative : installation manuelle
@@ -276,6 +309,24 @@ docker tag my-webapp:v1 myregistry.lab.local/my-webapp:v1
 docker push myregistry.lab.local/my-webapp:v1
 ```
 
+Resultat :
+
+```text
+[+] Building 124.3s (8/8) FINISHED
+ => [internal] load build definition from Dockerfile
+ => [1/4] FROM mcr.microsoft.com/windows/servercore/iis:windowsservercore-ltsc2022
+ => [2/4] RUN powershell -Command Remove-Item -Recurse C:\inetpub\wwwroot\*
+ => [3/4] COPY ./webapp/ C:/inetpub/wwwroot/
+ => exporting to image
+ => => writing image sha256:a1b2c3d4e5f6...
+ => => naming to docker.io/library/my-webapp:v1
+
+a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2
+
+The push refers to repository [myregistry.lab.local/my-webapp]
+v1: digest: sha256:a1b2c3d4e5f6... size: 4821
+```
+
 ---
 
 ## Bonnes pratiques Dockerfile
@@ -361,6 +412,21 @@ docker compose logs -f
 docker compose down
 ```
 
+Resultat :
+
+```text
+[+] Running 2/2
+ ✔ Container web  Started    0.8s
+ ✔ Container api  Started    1.2s
+
+NAME    IMAGE                                    COMMAND           SERVICE  CREATED         STATUS
+web     mcr.microsoft.com/windows/servercore...  "C:\\ServiceMoni..."  web      2 minutes ago   Up 2 minutes
+api     myregistry.lab.local/my-webapp:v1        "dotnet MyApp.dll"   api      2 minutes ago   Up 2 minutes
+
+web  | 2026-02-20T10:15:42.123Z [INFO] Application started.
+api  | 2026-02-20T10:15:43.456Z [INFO] Listening on http://+:5000
+```
+
 ---
 
 ## Nettoyage et maintenance
@@ -413,6 +479,78 @@ Get-EventLog -LogName Application -Source Docker -Newest 20
 ```
 
 ---
+
+!!! example "Scenario pratique"
+
+    **Contexte :** Romain est responsable des ops dans une startup. L'equipe de developpement livre une nouvelle version de leur application web ASP.NET 8 chaque semaine. Actuellement, le deploiement se fait manuellement par FTP, ce qui prend 45 minutes et necessite un arret de service. L'application tourne sur `SRV-01`.
+
+    **Probleme :** Les deploiements manuels sont longs, risques (oubli de fichiers, erreurs de configuration) et coupent le service.
+
+    **Solution :** Romain conteneurise l'application avec un Dockerfile et met en place un workflow Docker :
+
+    ```dockerfile
+    # Dockerfile (multi-stage build)
+    FROM mcr.microsoft.com/dotnet/sdk:8.0-nanoserver-ltsc2022 AS build
+    WORKDIR /src
+    COPY . .
+    RUN dotnet publish -c Release -o /app
+
+    FROM mcr.microsoft.com/dotnet/aspnet:8.0-nanoserver-ltsc2022
+    WORKDIR /app
+    COPY --from=build /app .
+    ENV ASPNETCORE_URLS=http://+:5000
+    EXPOSE 5000
+    ENTRYPOINT ["dotnet", "WebApp.dll"]
+    ```
+
+    ```powershell
+    # Build the new version
+    docker build -t myregistry.lab.local/webapp:v2.3 .
+    ```
+
+    ```text
+    [+] Building 43.2s (10/10) FINISHED
+     => [build 4/4] RUN dotnet publish -c Release -o /app
+     => [runtime 3/3] COPY --from=build /app .
+     => naming to myregistry.lab.local/webapp:v2.3
+    ```
+
+    ```powershell
+    # Stop the current container and start the new one (zero configuration drift)
+    docker stop webapp-prod
+    docker rm webapp-prod
+    docker run -d --name webapp-prod `
+        --restart=always `
+        -p 5000:5000 `
+        -v "D:\AppLogs:C:\app\logs" `
+        myregistry.lab.local/webapp:v2.3
+    ```
+
+    ```text
+    a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4
+
+    # Verify the new version is running
+    docker ps --format "table {{.Names}}\t{{.Image}}\t{{.Status}}"
+    ```
+
+    ```text
+    NAMES        IMAGE                                STATUS
+    webapp-prod  myregistry.lab.local/webapp:v2.3     Up 8 seconds
+    ```
+
+    Le deploiement complet prend maintenant moins de 2 minutes et le risque d'erreur humaine est pratiquement elimine. En cas de probleme, Romain peut revenir a la version precedente en une commande : `docker run ... webapp:v2.2`.
+
+!!! danger "Erreurs courantes"
+
+    **Image Windows incompatible avec l'hote** — Une image construite sur Windows Server 2019 (`ltsc2019`) peut ne pas fonctionner en mode process isolation sur un hote Windows Server 2022 (`ltsc2022`). Utilisez toujours le tag correspondant a votre version d'hote (`ltsc2022`) ou l'isolation Hyper-V.
+
+    **Donnees perdues au `docker rm`** — Tout ce qui est ecrit dans le systeme de fichiers du conteneur est detruit a la suppression. Montez un volume (`-v`) pour tout ce qui doit persister : logs, uploads, bases SQLite.
+
+    **Service Docker ne redemarre pas apres reboot** — Si `StartType` du service Docker n'est pas `Automatic`, Docker ne redemarrera pas apres un reboot du serveur. Verifiez avec `Get-Service docker` et corrigez avec `Set-Service docker -StartupType Automatic`.
+
+    **`docker system prune -a` en production** — Cette commande supprime toutes les images non utilisees par un conteneur actif, y compris les images d'une version precedente que vous vouliez garder comme rollback. En production, soyez selectif et utilisez `docker image prune` avec des filtres.
+
+    **Construire sans `.dockerignore`** — Sans `.dockerignore`, `docker build` inclut dans le contexte tous les fichiers du repertoire (node_modules, `.git`, secrets...), ralentissant considerablement le build et risquant d'inclure des donnees sensibles dans l'image.
 
 ## Points cles a retenir
 

@@ -17,6 +17,10 @@ tags:
 
 **PowerShell Remoting** permet d'executer des commandes sur un ou plusieurs serveurs distants a travers le protocole **WS-Management** (WinRM). C'est le mecanisme central pour l'administration a distance dans les environnements Windows Server.
 
+!!! example "Analogie"
+
+    PowerShell Remoting fonctionne comme un systeme de telephone interne dans une grande entreprise. Depuis votre bureau (poste admin), vous pouvez appeler n'importe quel bureau (serveur) pour demander qu'une action soit effectuee. `Enter-PSSession` est un appel telephonique classique (conversation en temps reel), tandis que `Invoke-Command` est comme envoyer un meme message vocal a 50 bureaux en meme temps -- chacun execute l'instruction et vous renvoie le resultat.
+
 ## Architecture
 
 ```mermaid
@@ -50,6 +54,31 @@ Get-Service -Name WinRM
 Get-WSManInstance -ResourceURI winrm/config/listener -Enumerate
 ```
 
+Resultat (Get-Service) :
+
+```text
+Status   Name               DisplayName
+------   ----               -----------
+Running  WinRM              Windows Remote Management (WS-Manag...
+```
+
+Resultat (Get-WSManInstance) :
+
+```text
+cfg                   : http://schemas.microsoft.com/wbem/wsman/1/config/listener
+xsi                   : http://www.w3.org/2001/XMLSchema-instance
+Source                : GPO
+lang                  : en-US
+Address               : *
+Transport             : HTTP
+Port                  : 5985
+Hostname              :
+Enabled               : true
+URLPrefix             : wsman
+CertificateThumbprint :
+ListeningOn           : {10.0.0.10, 127.0.0.1, ::1}
+```
+
 !!! tip "Windows Server et le Remoting"
 
     Sur Windows Server 2022, le Remoting est **active par defaut** pour les profils reseau de domaine et prives. Sur les postes de travail, il doit etre active manuellement.
@@ -80,6 +109,15 @@ Get-NetFirewallRule -Name "WINRM*" | Format-Table Name, Enabled, Direction, Acti
 
 # Enable WinRM firewall rules
 Enable-NetFirewallRule -Name "WINRM-HTTP-In-TCP"
+```
+
+Resultat :
+
+```text
+Name                  Enabled Direction Action
+----                  ------- --------- ------
+WINRM-HTTP-In-TCP        True   Inbound  Allow
+WINRM-HTTP-In-TCP-Public True   Inbound  Allow
 ```
 
 ## Session interactive (Enter-PSSession)
@@ -132,6 +170,17 @@ Invoke-Command -ComputerName $servers -ScriptBlock {
         FreeMemGB = [math]::Round((Get-CimInstance Win32_OperatingSystem).FreePhysicalMemory / 1MB, 2)
     }
 } | Format-Table -AutoSize
+```
+
+Resultat :
+
+```text
+Hostname  OS                                       Uptime             FreeMemGB
+--------  --                                       ------             ---------
+SRV-01    Microsoft Windows Server 2022 Datacenter 14.03:22:15.234    5.82
+SRV-02    Microsoft Windows Server 2022 Datacenter  7.11:45:02.118    3.47
+SRV-03    Microsoft Windows Server 2022 Datacenter 28.18:10:33.456    8.15
+SRV-04    Microsoft Windows Server 2022 Datacenter  2.06:33:48.891    6.23
 ```
 
 ### Passer des variables locales
@@ -200,6 +249,16 @@ Get-PSSession
 
 # Remove sessions when done
 Remove-PSSession $sessions
+```
+
+Resultat (Get-PSSession) :
+
+```text
+ Id Name            ComputerName    ComputerType    State     ConfigurationName     Availability
+ -- ----            ------------    ------------    -----     -----------------     ------------
+  1 WinRM1          SRV-01          RemoteMachine   Opened    Microsoft.PowerShell     Available
+  2 WinRM2          SRV-02          RemoteMachine   Opened    Microsoft.PowerShell     Available
+  3 WinRM3          DC-01           RemoteMachine   Opened    Microsoft.PowerShell     Available
 ```
 
 ### Sessions deconnectees
@@ -311,6 +370,72 @@ Set-ItemProperty -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\PowerShell\Tra
 - Les **sessions persistantes** conservent l'etat entre les appels
 - Le **double-hop** necessite une solution de delegation (Kerberos contrainte recommandee)
 - Toujours fermer les sessions apres utilisation avec `Remove-PSSession`
+
+!!! example "Scenario pratique"
+
+    **Antoine**, ingenieur systeme, doit collecter la liste des mises a jour installees sur 30 serveurs du domaine `lab.local`. Il utilise `Enter-PSSession` sur chaque serveur un par un, ce qui lui prend plus d'une heure.
+
+    **Diagnostic :**
+
+    1. Utiliser `Invoke-Command` pour interroger tous les serveurs en parallele :
+    ```powershell
+    $servers = (Get-ADComputer -Filter 'OperatingSystem -like "*Server*"' -SearchBase "OU=Servers,DC=lab,DC=local").Name
+    $servers.Count
+    ```
+    Resultat :
+    ```text
+    30
+    ```
+
+    2. Executer la collecte en parallele avec `Invoke-Command` :
+    ```powershell
+    $updates = Invoke-Command -ComputerName $servers -ScriptBlock {
+        Get-HotFix | Sort-Object InstalledOn -Descending | Select-Object -First 5
+    } -ThrottleLimit 10
+
+    $updates | Sort-Object PSComputerName, InstalledOn -Descending |
+        Format-Table PSComputerName, HotFixID, InstalledOn -AutoSize
+    ```
+    Resultat :
+    ```text
+    PSComputerName HotFixID   InstalledOn
+    -------------- --------   -----------
+    DC-01          KB5034439  2/10/2026 12:00:00 AM
+    DC-01          KB5033914  1/15/2026 12:00:00 AM
+    SRV-01         KB5034439  2/10/2026 12:00:00 AM
+    SRV-01         KB5033914  1/15/2026 12:00:00 AM
+    SRV-02         KB5034439  2/10/2026 12:00:00 AM
+    ...
+    ```
+
+    3. Identifier les serveurs en retard de mises a jour :
+    ```powershell
+    $updates | Group-Object PSComputerName | ForEach-Object {
+        $latest = ($_.Group | Sort-Object InstalledOn -Descending)[0]
+        [PSCustomObject]@{
+            Server     = $_.Name
+            LatestKB   = $latest.HotFixID
+            InstalledOn = $latest.InstalledOn
+        }
+    } | Where-Object { $_.InstalledOn -lt (Get-Date).AddDays(-30) } | Format-Table -AutoSize
+    ```
+    Resultat :
+    ```text
+    Server LatestKB  InstalledOn
+    ------ --------  -----------
+    SRV-08 KB5031358 12/12/2025 12:00:00 AM
+    SRV-15 KB5031358 12/12/2025 12:00:00 AM
+    ```
+
+    **Resolution :** En utilisant `Invoke-Command` avec `-ThrottleLimit 10`, Antoine collecte les informations de 30 serveurs en moins de 2 minutes au lieu d'une heure. Il identifie immediatement les serveurs non conformes.
+
+!!! danger "Erreurs courantes"
+
+    - **Oublier de fermer les sessions (`Remove-PSSession`)** : chaque session ouverte consomme des ressources sur le serveur distant. Les sessions orphelines s'accumulent et peuvent atteindre la limite de connexions simultanees (25 par defaut).
+    - **Utiliser `$variable` au lieu de `$using:variable`** : dans un scriptblock distant, les variables locales ne sont pas accessibles. Il faut utiliser `$using:variable` ou `-ArgumentList` pour les transmettre.
+    - **Ne pas limiter le parallelisme** : par defaut, `Invoke-Command` ouvre 32 connexions simultanees. Sur un reseau sature ou avec des serveurs peu performants, utilisez `-ThrottleLimit 5` ou `-ThrottleLimit 10`.
+    - **Ignorer le probleme du double-hop** : acceder a un partage reseau depuis un serveur distant echoue silencieusement. La delegation Kerberos contrainte est la solution recommandee (pas CredSSP).
+    - **Utiliser HTTP au lieu de HTTPS en production** : le port 5985 (HTTP) ne chiffre pas les communications. Configurez toujours un listener HTTPS (port 5986) avec un certificat valide pour les environnements de production.
 
 ## Pour aller plus loin
 

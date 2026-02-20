@@ -21,6 +21,10 @@ tags:
 
 ---
 
+!!! example "Analogie"
+
+    IPAM est comme le **registre centralisee d'un gestionnaire immobilier** qui possede des dizaines d'immeubles. Au lieu de tenir un carnet par batiment (une feuille de calcul par sous-reseau), le gestionnaire utilise un systeme unique qui repertorie tous les appartements (adresses IP), sait lesquels sont occupes (baux DHCP), par qui (audit), et declenche une alerte quand un immeuble est presque plein (seuil de saturation DHCP).
+
 ## Fonctionnalites principales
 
 | Fonctionnalite                | Description                                              |
@@ -84,6 +88,14 @@ Install-WindowsFeature IPAM -IncludeManagementTools
 Get-WindowsFeature IPAM | Select-Object Name, InstallState
 ```
 
+Resultat :
+
+```text
+Name InstallState
+---- ------------
+IPAM    Installed
+```
+
 ### Provisionnement IPAM
 
 Apres l'installation du role, IPAM doit etre provisionne pour configurer la base de donnees et les parametres initiaux :
@@ -118,7 +130,7 @@ Invoke-IpamGpoProvisioning -Domain "contoso.local" `
 
 ```powershell
 # Configure IPAM to discover servers in the domain
-Set-IpamDiscoveryDomain -Name "contoso.local" -DiscoverDc $true -DiscoverDhcp $true -DiscoverDns $true
+Set-IpamDiscoveryDomain -Name "lab.local" -DiscoverDc $true -DiscoverDhcp $true -DiscoverDns $true
 
 # Start a manual discovery scan
 Invoke-IpamServerDiscovery
@@ -128,17 +140,36 @@ Get-IpamServerInventory | Select-Object ServerName, ServerType, ManageabilitySta
     Format-Table -AutoSize
 ```
 
+Resultat :
+
+```text
+ServerName              ServerType  ManageabilityStatus
+----------              ----------  -------------------
+DC-01.lab.local         DC          Unspecified
+SRV-DHCP01.lab.local    DHCP        Unspecified
+SRV-DNS01.lab.local     DNS         Unspecified
+```
+
 ### Approuver les serveurs decouverts
 
 Apres la decouverte, les serveurs doivent etre approuves pour la gestion :
 
 ```powershell
 # Set a discovered server to "Managed" state
-Set-IpamServerInventory -ServerName "DHCP01.contoso.local" -ManageabilityStatus Managed
-Set-IpamServerInventory -ServerName "DNS01.contoso.local" -ManageabilityStatus Managed
+Set-IpamServerInventory -ServerName "SRV-DHCP01.lab.local" -ManageabilityStatus Managed
+Set-IpamServerInventory -ServerName "SRV-DNS01.lab.local" -ManageabilityStatus Managed
 
 # Verify managed servers
 Get-IpamServerInventory | Where-Object ManageabilityStatus -eq "Managed"
+```
+
+Resultat :
+
+```text
+ServerName              ServerType  ManageabilityStatus
+----------              ----------  -------------------
+SRV-DHCP01.lab.local    DHCP        Managed
+SRV-DNS01.lab.local     DNS         Managed
 ```
 
 ### Appliquer les GPO d'acces
@@ -182,6 +213,14 @@ Add-IpamSubnet -NetworkId "10.0.1.0/24" `
 Get-IpamBlock | Select-Object NetworkId, StartIPAddress, EndIPAddress, Description
 ```
 
+Resultat :
+
+```text
+NetworkId    StartIPAddress EndIPAddress    Description
+---------    -------------- ------------   -----------
+10.0.0.0/8   10.0.0.0      10.255.255.255 Corporate Network
+```
+
 ### Plages d'adresses IP
 
 ```powershell
@@ -222,6 +261,19 @@ IPAM collecte et affiche les donnees des serveurs DHCP geres :
 # Display DHCP scopes monitored by IPAM
 Get-IpamDhcpScope | Select-Object ServerName, ScopeId, Name, StartRange, EndRange, PercentageInUse |
     Format-Table -AutoSize
+```
+
+Resultat :
+
+```text
+ServerName            ScopeId      Name           StartRange  EndRange     PercentageInUse
+----------            -------      ----           ----------  --------     ---------------
+SRV-DHCP01.lab.local  10.0.0.0     Servers        10.0.0.100  10.0.0.200              65
+SRV-DHCP01.lab.local  10.0.1.0     Workstations   10.0.1.100  10.0.1.250              82
+SRV-DHCP01.lab.local  10.0.2.0     DMZ            10.0.2.100  10.0.2.150              30
+```
+
+```powershell
 
 # Display active DHCP leases
 Get-IpamDhcpScope | ForEach-Object {
@@ -258,8 +310,24 @@ Get-IpamDnsZone | Select-Object ServerName, ZoneName, ZoneType, ZoneStatus |
     Format-Table -AutoSize
 
 # Display DNS resource records
-Get-IpamDnsResourceRecord -ZoneName "contoso.local" |
+Get-IpamDnsResourceRecord -ZoneName "lab.local" |
     Select-Object Name, RecordType, RecordData -First 20
+```
+
+Resultat :
+
+```text
+ServerName            ZoneName        ZoneType  ZoneStatus
+----------            --------        --------  ----------
+SRV-DNS01.lab.local   lab.local       Primary   Running
+SRV-DNS01.lab.local   0.0.10.in-addr  Primary   Running
+
+Name         RecordType RecordData
+----         ---------- ----------
+DC-01        A          10.0.0.10
+SRV-01       A          10.0.0.15
+SRV-DHCP01   A          10.0.0.20
+SRV-WEB01    A          10.0.0.30
 ```
 
 ---
@@ -298,9 +366,18 @@ IPAM enregistre l'historique des attributions d'adresses IP, permettant de repon
 
 ```powershell
 # Search IP address audit trail
-Get-IpamIpAddressAuditEvent -IpAddress "10.0.1.50" |
+Get-IpamIpAddressAuditEvent -IpAddress "10.0.0.150" |
     Select-Object IpAddress, ClientId, HostName, StartDate, EndDate |
     Sort-Object StartDate -Descending
+```
+
+Resultat :
+
+```text
+IpAddress    ClientId              HostName       StartDate            EndDate
+---------    --------              --------       ---------            -------
+10.0.0.150   AA-BB-CC-DD-EE-FF     PC-USER05     2026-02-18 08:15:00  2026-02-20 08:15:00
+10.0.0.150   11-22-33-44-55-66     PC-USER12     2026-02-15 09:30:00  2026-02-18 09:30:00
 ```
 
 ### Suivi des baux DHCP
@@ -320,6 +397,17 @@ Backup-IpamDatabase -Path "C:\Backup\IPAM" -Force
 
 # Verify the backup
 Get-ChildItem "C:\Backup\IPAM"
+```
+
+Resultat :
+
+```text
+    Directory: C:\Backup\IPAM
+
+Mode                LastWriteTime         Length Name
+----                -------------         ------ ----
+-a----        20/02/2026    16:45       2457600  IPAM_DB_Backup.mdf
+-a----        20/02/2026    16:45        524288  IPAM_DB_Backup_log.ldf
 ```
 
 !!! warning "Base de donnees WID"
@@ -354,6 +442,49 @@ Get-ChildItem "C:\Backup\IPAM"
 | Base de donnees          | WID (petites infras) ou SQL Server (grandes infras)         |
 
 ---
+
+!!! example "Scenario pratique"
+
+    **Contexte** : Francois, administrateur reseau, recoit une demande de l'equipe securite : "Quel appareil utilisait l'adresse 10.0.0.150 le 15 fevrier a 10h ?" L'entreprise dispose d'un serveur IPAM (`SRV-IPAM01`) dans le domaine `lab.local`.
+
+    **Solution** :
+
+    ```powershell
+    # Step 1: Query the IPAM audit trail
+    Get-IpamIpAddressAuditEvent -IpAddress "10.0.0.150" |
+        Where-Object {
+            $_.StartDate -le "2026-02-15 10:00:00" -and
+            $_.EndDate -ge "2026-02-15 10:00:00"
+        } | Select-Object IpAddress, ClientId, HostName, StartDate, EndDate
+    ```
+
+    ```text
+    IpAddress    ClientId              HostName    StartDate            EndDate
+    ---------    --------              --------    ---------            -------
+    10.0.0.150   11-22-33-44-55-66     PC-USER12   2026-02-15 09:30:00  2026-02-18 09:30:00
+    ```
+
+    ```powershell
+    # Step 2: Get more details about this device
+    Get-IpamAddress -IpAddress "10.0.0.150" |
+        Select-Object IpAddress, DeviceName, Description, ManagedByService
+    ```
+
+    ```text
+    IpAddress    DeviceName  Description             ManagedByService
+    ---------    ----------  -----------             ----------------
+    10.0.0.150   PC-USER12   Poste Jean Martin RH    DHCP
+    ```
+
+    L'adresse 10.0.0.150 etait attribuee via DHCP au poste `PC-USER12` (Jean Martin, service RH) le 15 fevrier a 10h.
+
+!!! danger "Erreurs courantes"
+
+    - **Installer IPAM sur un controleur de domaine** : c'est explicitement interdit par Microsoft. IPAM doit etre installe sur un serveur membre dedie.
+    - **Installer IPAM sur un serveur DHCP** : bien que techniquement possible, cette configuration peut provoquer des conflits. Utiliser un serveur separe.
+    - **Oublier d'appliquer les GPO de provisionnement** : sans les GPO IPAM, le serveur IPAM n'a pas les permissions pour interroger les serveurs DHCP/DNS geres. Les serveurs restent en statut "Blocked" ou "Unmanaged".
+    - **Ne pas planifier la decouverte automatique** : sans scans reguliers, les nouveaux serveurs DHCP/DNS ne sont pas detectes. Configurer une tache de decouverte quotidienne.
+    - **Utiliser WID pour une grande infrastructure** : Windows Internal Database est limitee en capacite et en performance. Pour plus de 500 serveurs geres, migrer vers SQL Server.
 
 ## Pour aller plus loin
 

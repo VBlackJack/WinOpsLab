@@ -16,6 +16,10 @@ tags:
 
 Un cluster de basculement ne devient utile que lorsqu'il heberge des **roles** (ou services). Un role est une charge de travail configuree pour basculer automatiquement entre les noeuds du cluster en cas de defaillance. Windows Server 2022 propose des roles integres ainsi que la possibilite d'ajouter des applications personnalisees.
 
+!!! example "Analogie"
+
+    Un cluster sans roles, c'est comme un theatre vide : la structure (scene, sieges, eclairage) est en place, mais aucun spectacle n'est programme. Les roles sont les spectacles : serveur de fichiers, machine virtuelle Hyper-V, SQL Server. Le theatre (cluster) garantit que si un acteur (noeud) tombe malade, la doublure prend le relais et le spectacle continue.
+
 ## Architecture des roles du cluster
 
 ```mermaid
@@ -45,6 +49,25 @@ graph TD
 ```powershell
 # List all available cluster role types
 Get-ClusterResourceType -Cluster "YOURCLUSTER" | Sort-Object Name | Format-Table Name, DisplayName
+```
+
+Resultat :
+
+```text
+Name                                    DisplayName
+----                                    -----------
+DFS Replicated Folder                   DFS Replicated Folder
+DHCP Service                            DHCP Service
+Distributed Transaction Coordinator     Distributed Transaction Coordinator
+File Server                             File Server
+Generic Application                     Generic Application
+Generic Script                          Generic Script
+Generic Service                         Generic Service
+IP Address                              IP Address
+Network Name                            Network Name
+Physical Disk                           Physical Disk
+Virtual Machine                         Virtual Machine
+Virtual Machine Configuration           Virtual Machine Configuration
 ```
 
 Les principaux roles integres :
@@ -107,6 +130,10 @@ New-SmbShare -Name "HyperVStorage" `
 
 ### Configuration des machines virtuelles
 
+!!! example "Analogie"
+
+    La Live Migration, c'est comme deplacer une conversation telephonique d'un poste fixe a un autre sans que l'interlocuteur ne s'en rende compte. Le transfert est si fluide que l'appel continue sans interruption. La Quick Migration, en revanche, c'est mettre l'appel en attente quelques secondes puis le reprendre sur l'autre poste.
+
 ```powershell
 # Configure a VM for high availability (VM already exists on a CSV)
 Add-ClusterVirtualMachineRole -Cluster "YOURCLUSTER" -VMName "VM-WEB01"
@@ -119,6 +146,16 @@ Move-ClusterVirtualMachineRole -Cluster "YOURCLUSTER" `
     -Name "VM-WEB01" `
     -Node "NODE2" `
     -MigrationType Live
+```
+
+Resultat :
+
+```text
+Name        State   OwnerNode  Priority
+----        -----   ---------  --------
+VM-WEB01    Online  SRV-01     2000
+VM-SQL01    Online  SRV-02     3000
+VM-APP01    Online  SRV-01     2000
 ```
 
 ### Types de migration
@@ -295,6 +332,99 @@ Get-ClusterGroup -Cluster "YOURCLUSTER" -Name "FS-YOURCLUSTER" | Get-ClusterReso
 # Check cluster events for a specific role
 Get-ClusterLog -Cluster "YOURCLUSTER" -TimeSpan 60 -Destination "C:\Temp"
 ```
+
+Resultat :
+
+```text
+Name             State   OwnerNode  Priority
+----             -----   ---------  --------
+Cluster Group    Online  SRV-01     0
+FS-CLUSTER01     Online  SRV-01     2000
+VM-WEB01         Online  SRV-01     2000
+VM-SQL01         Online  SRV-02     3000
+
+Name                  State   ResourceType
+----                  -----   ------------
+FS-CLUSTER01          Online  Network Name
+IP Address 10.0.0.110 Online  IP Address
+Cluster Disk 1        Online  Physical Disk
+File Server           Online  File Server
+```
+
+!!! example "Scenario pratique"
+
+    **Contexte :** Emilie, ingenieure systeme dans une societe de commerce en ligne, gere un cluster Hyper-V a 2 noeuds (SRV-01, SRV-02). Elle doit effectuer une mise a jour Windows sur SRV-01 sans interruption de service pour les 12 machines virtuelles du cluster.
+
+    **Probleme :** Arreter SRV-01 directement provoquerait un basculement non controle de 8 VMs, avec des interruptions potentielles.
+
+    **Diagnostic et solution :**
+
+    1. Emilie verifie la repartition actuelle des VMs :
+
+        ```powershell
+        Get-ClusterGroup -Cluster "CLUSTER01" | Where-Object { $_.GroupType -eq "VirtualMachine" } |
+            Format-Table Name, State, OwnerNode
+        ```
+
+        Resultat :
+
+        ```text
+        Name        State   OwnerNode
+        ----        -----   ---------
+        VM-WEB01    Online  SRV-01
+        VM-WEB02    Online  SRV-01
+        VM-APP01    Online  SRV-01
+        VM-APP02    Online  SRV-01
+        VM-SQL01    Online  SRV-02
+        VM-SQL02    Online  SRV-02
+        VM-DC02     Online  SRV-01
+        VM-MON01    Online  SRV-01
+        ```
+
+    2. Elle utilise le drain pour deplacer gracieusement toutes les VMs :
+
+        ```powershell
+        Suspend-ClusterNode -Cluster "CLUSTER01" -Name "SRV-01" -Drain
+        ```
+
+        Resultat :
+
+        ```text
+        Name    State   DrainStatus
+        ----    -----   -----------
+        SRV-01  Paused  Completed
+        ```
+
+    3. Elle verifie que toutes les VMs sont sur SRV-02 :
+
+        ```powershell
+        Get-ClusterGroup -Cluster "CLUSTER01" | Where-Object { $_.GroupType -eq "VirtualMachine" } |
+            Group-Object OwnerNode | Format-Table Name, Count
+        ```
+
+        Resultat :
+
+        ```text
+        Name    Count
+        ----    -----
+        SRV-02  8
+        ```
+
+    4. Apres la maintenance, elle reintegre SRV-01 :
+
+        ```powershell
+        Resume-ClusterNode -Cluster "CLUSTER01" -Name "SRV-01" -Failback Immediate
+        ```
+
+    **Resultat :** La maintenance se deroule sans aucune interruption de service pour les utilisateurs. Les VMs migrent en Live Migration et les sessions restent actives.
+
+!!! danger "Erreurs courantes"
+
+    - **Ajouter une VM au cluster sans la placer sur un CSV** : les VMs haute disponibilite doivent etre stockees sur un Cluster Shared Volume. Un disque cluster classique ne permet pas la Live Migration.
+    - **Ne pas configurer le proprietaire prefere** : sans proprietaire prefere, les VMs peuvent se retrouver toutes sur le meme noeud apres un basculement et ne jamais revenir a une repartition equilibree.
+    - **Oublier de drainer un noeud avant maintenance** : arreter un noeud sans `Suspend-ClusterNode -Drain` provoque un basculement brutal qui interrompt les VMs quelques secondes au lieu d'une Live Migration transparente.
+    - **Dimensionner chaque noeud a 100% de capacite** : en mode actif-actif avec 2 noeuds, chaque noeud ne doit pas depasser 50% de charge en fonctionnement normal, pour absorber la totalite en cas de basculement.
+    - **Confondre Generic Service et Generic Application** : utilisez Generic Service pour les services Windows (qui s'executent en arriere-plan), et Generic Application pour les executables autonomes.
 
 ## Points cles a retenir
 

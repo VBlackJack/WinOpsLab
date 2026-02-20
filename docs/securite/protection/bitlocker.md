@@ -17,6 +17,10 @@ BitLocker Drive Encryption protege les donnees au repos en chiffrant integraleme
 
 ---
 
+!!! example "Analogie"
+
+    BitLocker fonctionne comme un coffre-fort qui enveloppe tout le contenu de votre disque dur. Sans la combinaison (la cle de chiffrement), meme si un voleur emporte physiquement le coffre, il ne pourra jamais lire son contenu. Le TPM, c'est le mecanisme qui verifie que le coffre n'a pas ete deplace dans un autre batiment avant de l'ouvrir automatiquement.
+
 ## Pourquoi BitLocker sur un serveur ?
 
 | Scenario | Risque sans BitLocker |
@@ -64,6 +68,26 @@ Get-Tpm
 # TpmOwned     : True
 ```
 
+Resultat :
+
+```text
+TpmPresent        : True
+TpmReady          : True
+TpmEnabled        : True
+TpmActivated      : True
+TpmOwned          : True
+ManufacturerId    : 1398033696
+ManufacturerIdTxt : INTC
+ManufacturerVersion : 403.1.0.0
+ManagedAuthLevel  : Full
+OwnerClearDisabled : True
+AutoProvisioning  : Enabled
+LockedOut         : False
+LockoutHealTime   : 10 minutes
+LockoutCount      : 0
+LockoutMax        : 31
+```
+
 ---
 
 ## Installation de la fonctionnalite
@@ -74,6 +98,18 @@ Install-WindowsFeature BitLocker -IncludeAllSubFeature -IncludeManagementTools -
 
 # Verify installation
 Get-WindowsFeature BitLocker
+```
+
+Resultat :
+
+```text
+Success Restart Needed Exit Code      Feature Result
+------- -------------- ---------      --------------
+True    Yes            SuccessRest... {BitLocker Drive Encryption, ...}
+
+Display Name                            Name               Install State
+------------                            ----               -------------
+[X] BitLocker Drive Encryption          BitLocker              Installed
 ```
 
 ---
@@ -94,6 +130,19 @@ Add-BitLockerKeyProtector -MountPoint "C:" -RecoveryPasswordProtector
 # View the recovery password - STORE THIS SECURELY
 $blv = Get-BitLockerVolume -MountPoint "C:"
 $blv.KeyProtector | Where-Object { $_.KeyProtectorType -eq 'RecoveryPassword' }
+```
+
+Resultat :
+
+```text
+MountPoint  VolumeStatus       VolumeType   EncryptionPercentage
+----------  ------------       ----------   --------------------
+C:          EncryptionInProgress OsVolume    45
+
+KeyProtectorId                         KeyProtectorType  RecoveryPassword
+--------------                         ----------------  ----------------
+{A1B2C3D4-E5F6-7890-ABCD-EF1234567890} TpmProtector
+{B2C3D4E5-F6A7-8901-BCDE-F12345678901} RecoveryPassword  123456-789012-345678-901234-567890-123456-789012-345678
 ```
 
 ### Sans TPM (avec mot de passe)
@@ -132,6 +181,14 @@ Enable-BitLockerAutoUnlock -MountPoint "D:"
 
 # Check encryption progress
 Get-BitLockerVolume -MountPoint "D:" | Select-Object MountPoint, VolumeStatus, EncryptionPercentage
+```
+
+Resultat :
+
+```text
+MountPoint  VolumeStatus            EncryptionPercentage
+----------  ------------            --------------------
+D:          EncryptionInProgress    67
 ```
 
 ---
@@ -177,6 +234,14 @@ Get-ADObject -Filter { objectClass -eq 'msFVE-RecoveryInformation' } `
     -SearchBase $computer.DistinguishedName `
     -Properties 'msFVE-RecoveryPassword' |
     Select-Object Name, @{N='RecoveryPassword';E={$_.'msFVE-RecoveryPassword'}}
+```
+
+Resultat :
+
+```text
+Name                                                    RecoveryPassword
+----                                                    ----------------
+2025-02-15T10:30:00-00:00{B2C3D4E5-F6A7-8901-...}     123456-789012-345678-901234-567890-123456-789012-345678
 ```
 
 ---
@@ -233,6 +298,23 @@ foreach ($server in $servers) {
 } | Format-Table -AutoSize
 ```
 
+Resultat :
+
+```text
+Server      Volume  Status               Encrypted
+------      ------  ------               ---------
+SRV-01      C:      FullyEncrypted       100%
+SRV-01      D:      FullyEncrypted       100%
+SRV-02      C:      FullyEncrypted       100%
+SRV-02      D:      EncryptionInProgress 78%
+SRV-03      N/A     Inaccessible         N/A
+
+MountPoint  VolumeStatus     EncryptionMethod  EncryptionPercentage  LockStatus  Protectors
+----------  ------------     ----------------  --------------------  ----------  ----------
+C:          FullyEncrypted   XtsAes256         100                   Unlocked    Tpm, RecoveryPassword
+D:          FullyEncrypted   XtsAes256         100                   Unlocked    RecoveryPassword, AutoUnlock
+```
+
 ---
 
 ## Suspension et desactivation
@@ -253,6 +335,72 @@ Get-BitLockerVolume -MountPoint "C:" | Select-Object VolumeStatus, EncryptionPer
 
     - **Suspend** : temporaire, BitLocker reprend au prochain redemarrage. Utile avant une mise a jour du BIOS/firmware.
     - **Disable** : dechiffrement complet du volume. Les donnees ne sont plus protegees.
+
+---
+
+## Scenario pratique
+
+!!! example "Scenario pratique"
+
+    **Contexte** : Laurent, administrateur systeme, doit effectuer une mise a jour du firmware BIOS sur le serveur `SRV-01` (10.0.0.11) protege par BitLocker avec TPM. Il craint que la modification du firmware declenche le mode de recuperation BitLocker au prochain demarrage.
+
+    **Procedure** :
+
+    ```powershell
+    # 1. Suspend BitLocker before firmware update (1 reboot)
+    Suspend-BitLocker -MountPoint "C:" -RebootCount 1
+
+    # 2. Verify suspension
+    Get-BitLockerVolume -MountPoint "C:" | Select-Object MountPoint, ProtectionStatus
+    ```
+
+    Resultat :
+
+    ```text
+    MountPoint  ProtectionStatus
+    ----------  ----------------
+    C:          Off
+    ```
+
+    ```powershell
+    # 3. Save the recovery key just in case
+    $blv = Get-BitLockerVolume -MountPoint "C:"
+    $rp = $blv.KeyProtector | Where-Object { $_.KeyProtectorType -eq 'RecoveryPassword' }
+    Write-Output "Recovery Key: $($rp.RecoveryPassword)"
+    ```
+
+    Resultat :
+
+    ```text
+    Recovery Key: 123456-789012-345678-901234-567890-123456-789012-345678
+    ```
+
+    Laurent note la cle de recuperation, effectue la mise a jour du firmware, et redemarre le serveur. BitLocker reprend automatiquement apres le redemarrage sans demander la cle de recuperation.
+
+    ```powershell
+    # 4. Verify protection is restored after reboot
+    Get-BitLockerVolume -MountPoint "C:" | Select-Object MountPoint, ProtectionStatus
+    ```
+
+    Resultat :
+
+    ```text
+    MountPoint  ProtectionStatus
+    ----------  ----------------
+    C:          On
+    ```
+
+---
+
+!!! danger "Erreurs courantes"
+
+    1. **Mettre a jour le firmware sans suspendre BitLocker** : la modification du firmware change les mesures PCR du TPM. BitLocker detecte le changement et demande la cle de recuperation au demarrage. Si personne n'a la cle, le serveur est inaccessible.
+
+    2. **Ne pas sauvegarder la cle de recuperation dans AD** : sans GPO imposant la sauvegarde AD, la cle de recuperation peut etre perdue. Configurez toujours la GPO "Do not enable BitLocker until recovery information is stored to AD DS".
+
+    3. **Utiliser AES-CBC 128 au lieu de XTS-AES 256 sur les volumes fixes** : AES-CBC est destine aux supports amovibles (compatibilite). Pour les disques fixes de serveur, XTS-AES 256 offre une securite superieure sans impact notable sur les performances.
+
+    4. **Oublier de proteger les volumes de donnees** : chiffrer uniquement le volume systeme C: laisse les donnees applicatives (D:, E:) en clair. Activez BitLocker sur tous les volumes contenant des donnees sensibles avec l'auto-unlock.
 
 ---
 

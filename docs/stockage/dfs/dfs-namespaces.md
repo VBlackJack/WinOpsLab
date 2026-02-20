@@ -13,6 +13,10 @@ tags:
 
 ## Qu'est-ce que DFS Namespaces ?
 
+!!! example "Analogie"
+
+    Imaginez un **annuaire telephonique d'entreprise**. Sans DFS, chaque employe doit retenir le numero direct de chaque service (le nom de chaque serveur). Avec DFS Namespaces, vous avez un **standard telephonique unique** : l'employe compose un seul numero (le chemin DFS), et le standard le redirige vers le bon poste (le bon serveur), de maniere totalement transparente. Si un service demenage (changement de serveur), le numero du standard ne change pas.
+
 DFS Namespaces (DFS-N) est un service de role qui permet de regrouper des dossiers partages situes sur differents serveurs sous un chemin d'acces unifie et logique. Les utilisateurs accedent a un seul chemin UNC sans se soucier du serveur physique qui heberge les donnees.
 
 ### Le probleme sans DFS
@@ -103,6 +107,14 @@ Le namespace est associe a un serveur unique :
 ```powershell
 # Install the DFS Namespaces role
 Install-WindowsFeature FS-DFS-Namespace -IncludeManagementTools
+```
+
+Resultat :
+
+```text
+Success Restart Needed Exit Code      Feature Result
+------- -------------- ---------      --------------
+True    No             Success        {DFS Namespaces, DFS Management Tools}
 ```
 
 Le parametre `-IncludeManagementTools` installe la console de gestion DFS et les cmdlets PowerShell associees.
@@ -214,6 +226,25 @@ Get-DfsnFolderTarget -Path "\\lab.local\Partages\Comptabilite" |
     Format-Table -AutoSize
 ```
 
+Resultat :
+
+```text
+Path                   Type      State
+----                   ----      -----
+\\lab.local\Partages   DomainV2  Online
+
+Path                                State  Description
+----                                -----  -----------
+\\lab.local\Partages\Comptabilite   Online Documents comptabilite
+\\lab.local\Partages\RH             Online Documents ressources humaines
+\\lab.local\Partages\Direction      Online Documents direction
+
+Path                                TargetPath                     State
+----                                ----------                     -----
+\\lab.local\Partages\Comptabilite   \\SRV-FILE01\Comptabilite      Online
+\\lab.local\Partages\Comptabilite   \\SRV-FILE04\Comptabilite      Online
+```
+
 ### Modifier les proprietes d'un dossier
 
 ```powershell
@@ -323,6 +354,20 @@ dfsdiag /TestDCs /Domain:lab.local
 dfsdiag /TestSites /DFSPath:\\lab.local\Partages
 ```
 
+Resultat :
+
+```text
+True
+
+Cache Entry Path            Active Targets
+---------------            ---------------
+\lab.local\Partages         \\SRV-DFS01\Partages
+\lab.local\Partages\Compta  \\SRV-FILE01\Comptabilite
+\lab.local\Partages\RH      \\SRV-FILE02\RH
+
+SCP Flushed. Done.
+```
+
 ### Problemes courants
 
 | Symptome | Cause probable | Solution |
@@ -341,6 +386,54 @@ dfsdiag /TestSites /DFSPath:\\lab.local\Partages
 - L'**enumeration basee sur l'acces** (ABE) masque les dossiers non accessibles
 - Les **referrals** orientent les clients vers la cible la plus appropriee (site-aware)
 - Utilisez **DFS Replication** pour synchroniser les donnees entre plusieurs cibles
+
+!!! example "Scenario pratique"
+
+    **Contexte :** Emilie, administratrice reseau, migre le serveur de fichiers `SRV-FILE01` vers un nouveau serveur `SRV-FILE05`. Les utilisateurs utilisent des lecteurs reseau mappes directement sur `\\SRV-FILE01\Comptabilite`. La migration imposera un changement de tous les lecteurs reseau sur 200 postes.
+
+    **Solution avec DFS Namespaces :** Emilie met en place un namespace DFS pour rendre la migration transparente.
+
+    ```powershell
+    # Install DFS Namespaces on SRV-DFS01
+    Install-WindowsFeature FS-DFS-Namespace -IncludeManagementTools
+
+    # Create the namespace
+    New-DfsnRoot -TargetPath "\\SRV-DFS01\Partages" `
+        -Path "\\lab.local\Partages" -Type DomainV2
+
+    # Point to current server
+    New-DfsnFolder -Path "\\lab.local\Partages\Comptabilite" `
+        -TargetPath "\\SRV-FILE01\Comptabilite"
+
+    # Remap all users via GPO to \\lab.local\Partages\Comptabilite
+    # (instead of \\SRV-FILE01\Comptabilite)
+    ```
+
+    Une fois les utilisateurs bascules sur le chemin DFS, la migration se fait en deux etapes :
+
+    ```powershell
+    # Add the new server as target
+    New-DfsnFolderTarget -Path "\\lab.local\Partages\Comptabilite" `
+        -TargetPath "\\SRV-FILE05\Comptabilite"
+
+    # Remove the old server after data migration
+    Remove-DfsnFolderTarget -Path "\\lab.local\Partages\Comptabilite" `
+        -TargetPath "\\SRV-FILE01\Comptabilite" -Confirm:$false
+    ```
+
+    Les utilisateurs n'ont rien remarque : le chemin `\\lab.local\Partages\Comptabilite` pointe maintenant vers le nouveau serveur sans aucune intervention sur les postes.
+
+!!! danger "Erreurs courantes"
+
+    1. **Utiliser un namespace autonome en environnement Active Directory** : le namespace autonome ne supporte pas la haute disponibilite. Si le serveur tombe, tout le namespace est inaccessible. Privilegiez toujours le namespace de domaine quand AD est disponible.
+
+    2. **Oublier d'activer l'ABE (Access-Based Enumeration)** : sans ABE, tous les utilisateurs voient tous les dossiers du namespace, meme ceux auxquels ils n'ont pas acces. Cela cree de la confusion et des tickets de support inutiles.
+
+    3. **Ajouter plusieurs cibles sans DFS Replication** : si un dossier DFS pointe vers deux serveurs mais que les donnees ne sont pas synchronisees, les utilisateurs verront des contenus differents selon le serveur auquel ils sont orientes. Configurez toujours DFS-R entre les cibles.
+
+    4. **Ignorer le cache referral cote client** : apres une modification de cible, les clients continuent a utiliser l'ancienne cible pendant la duree du cache (300 secondes par defaut). En cas d'urgence, forcez le vidage avec `dfsutil /pktflush` sur les postes.
+
+    5. **Ne pas creer le partage SMB sur le serveur de namespace** : `New-DfsnRoot` necessite qu'un partage SMB existe deja sur le serveur. Sans ce partage, la creation du namespace echoue avec une erreur peu explicite.
 
 ## Pour aller plus loin
 

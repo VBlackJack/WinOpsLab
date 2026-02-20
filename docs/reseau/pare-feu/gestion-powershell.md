@@ -42,6 +42,10 @@ flowchart TD
     K --> L["Sauvegarder : netsh advfirewall export"]
 ```
 
+!!! example "Analogie"
+
+    Gerer le pare-feu via PowerShell, c'est comme disposer d'une **telecommande universelle pour toutes les serrures du batiment**. Au lieu d'aller physiquement a chaque porte pour tourner la cle (console graphique), vous pouvez verrouiller, deverrouiller ou reprogrammer n'importe quelle serrure depuis votre bureau, et meme envoyer les memes instructions simultanement a tous les batiments de l'entreprise (PowerShell Remoting).
+
 ## Cmdlets principales
 
 ### Vue d'ensemble du module NetSecurity
@@ -49,6 +53,27 @@ flowchart TD
 ```powershell
 # List all available firewall cmdlets
 Get-Command -Module NetSecurity | Select-Object Name | Sort-Object Name
+```
+
+Resultat :
+
+```text
+Name
+----
+Copy-NetFirewallRule
+Disable-NetFirewallRule
+Enable-NetFirewallRule
+Get-NetFirewallAddressFilter
+Get-NetFirewallApplicationFilter
+Get-NetFirewallPortFilter
+Get-NetFirewallProfile
+Get-NetFirewallRule
+Get-NetIPsecRule
+New-NetFirewallRule
+Remove-NetFirewallRule
+Set-NetFirewallProfile
+Set-NetFirewallRule
+...
 ```
 
 ### Cmdlets les plus utilisees
@@ -82,6 +107,20 @@ New-NetFirewallRule -DisplayName "Allow HTTPS Inbound" `
     -Action Allow `
     -Profile Domain, Private `
     -Description "Allow HTTPS web traffic on port 443"
+```
+
+Resultat :
+
+```text
+Name                  : {e4f5a6b7-8901-2c3d-4e5f-6a7b8c9d0e1f}
+DisplayName           : Allow HTTPS Inbound
+Description           : Allow HTTPS web traffic on port 443
+DisplayGroup          :
+Group                 :
+Enabled               : True
+Profile               : Domain, Private
+Direction             : Inbound
+Action                : Allow
 ```
 
 ### Regle entrante par programme
@@ -175,6 +214,25 @@ Get-NetFirewallRule -Direction Inbound -Enabled True |
 
 # List all rules (enabled and disabled)
 Get-NetFirewallRule | Measure-Object
+```
+
+Resultat :
+
+```text
+DisplayName                              Action Profile
+-----------                              ------ -------
+Allow HTTPS Inbound                       Allow Domain, Private
+Allow ICMPv4 Echo Request                 Allow Domain, Private
+Allow RDP Admin Subnet                    Allow Domain
+Allow WinRM Admin Only                    Allow Domain
+Core Networking - DNS (UDP-Out)           Allow Any
+
+Count    : 312
+Average  :
+Sum      :
+Maximum  :
+Minimum  :
+Property :
 ```
 
 ### Rechercher une regle specifique
@@ -324,6 +382,15 @@ Get-NetFirewallRule -Enabled True | ForEach-Object {
 } | Export-Csv -Path "C:\Backup\firewall-rules.csv" -NoTypeInformation
 ```
 
+Resultat :
+
+```text
+Ok.
+
+# (Le fichier firewall-config.wfw est cree dans C:\Backup\)
+# (Le fichier firewall-rules.csv est genere avec toutes les regles actives)
+```
+
 ### Importer la configuration
 
 ```powershell
@@ -455,7 +522,35 @@ Get-NetFirewallRule -Enabled True | Where-Object {
 } | Select-Object DisplayName, Direction, Action
 
 # Test connectivity after rule changes
-Test-NetConnection -ComputerName "192.168.1.10" -Port 443
+Test-NetConnection -ComputerName "10.0.0.20" -Port 443
+```
+
+Resultat :
+
+```text
+Domain Profile Settings:
+----------------------------------------------------------------------
+State                                 ON
+
+Private Profile Settings:
+----------------------------------------------------------------------
+State                                 ON
+
+Public Profile Settings:
+----------------------------------------------------------------------
+State                                 ON
+
+Active inbound rules: 47
+Active outbound rules: 28
+
+DisplayName              Direction Action
+-----------              --------- ------
+Allow HTTPS Inbound       Inbound  Allow
+
+ComputerName     : 10.0.0.20
+RemoteAddress    : 10.0.0.20
+RemotePort       : 443
+TcpTestSucceeded : True
 ```
 
 ---
@@ -472,6 +567,56 @@ Test-NetConnection -ComputerName "192.168.1.10" -Port 443
 | GPO                  | Deploiement centralise avec priorite sur les regles locales   |
 
 ---
+
+!!! example "Scenario pratique"
+
+    **Contexte** : Lucie, administratrice systeme, doit securiser trois nouveaux serveurs web (`SRV-WEB01`, `SRV-WEB02`, `SRV-WEB03`) dans le domaine `lab.local`. Plutot que de configurer chaque serveur manuellement, elle decide d'automatiser le deploiement via PowerShell Remoting.
+
+    **Solution** :
+
+    ```powershell
+    # Define target servers
+    $servers = @("SRV-WEB01", "SRV-WEB02", "SRV-WEB03")
+
+    # Deploy firewall rules on all servers simultaneously
+    Invoke-Command -ComputerName $servers -ScriptBlock {
+        # Allow HTTPS
+        New-NetFirewallRule -DisplayName "Allow HTTPS Inbound" `
+            -Direction Inbound -Protocol TCP -LocalPort 443 `
+            -Action Allow -Profile Domain, Private
+
+        # Allow RDP from admin subnet only
+        New-NetFirewallRule -DisplayName "Allow RDP Admin Only" `
+            -Direction Inbound -Protocol TCP -LocalPort 3389 `
+            -RemoteAddress "10.0.0.0/24" `
+            -Action Allow -Profile Domain
+
+        # Enable logging of blocked connections
+        Set-NetFirewallProfile -Profile Domain -LogBlocked True
+
+        # Return confirmation
+        Get-NetFirewallRule -DisplayName "Allow HTTPS*" |
+            Select-Object PSComputerName, DisplayName, Enabled
+    }
+    ```
+
+    ```text
+    PSComputerName DisplayName           Enabled
+    -------------- -----------           -------
+    SRV-WEB01      Allow HTTPS Inbound      True
+    SRV-WEB02      Allow HTTPS Inbound      True
+    SRV-WEB03      Allow HTTPS Inbound      True
+    ```
+
+    Les trois serveurs sont securises de maniere identique en une seule operation.
+
+!!! danger "Erreurs courantes"
+
+    - **Oublier le parametre `-Profile`** lors de la creation d'une regle : par defaut la regle s'applique a tous les profils, ce qui peut etre trop permissif.
+    - **Ne pas sauvegarder avant un changement massif** : toujours executer `netsh advfirewall export` avant de modifier les regles sur un serveur de production.
+    - **Utiliser `Remove-NetFirewallRule` avec un wildcard trop large** : la commande `Remove-NetFirewallRule -DisplayName "*"` supprime TOUTES les regles, y compris les regles systeme. Toujours verifier avec `Get-NetFirewallRule -DisplayName "pattern"` avant de supprimer.
+    - **Confondre `netsh advfirewall` et `Get-NetFirewallRule`** : les deux systemes coexistent mais `netsh` ne voit pas toujours les regles creees via PowerShell et inversement. Privilegier une methode unique.
+    - **Oublier de tester avec `Test-NetConnection`** : apres chaque modification, verifier que les flux attendus passent correctement.
 
 ## Pour aller plus loin
 

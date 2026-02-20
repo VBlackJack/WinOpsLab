@@ -16,11 +16,37 @@ tags:
 
 La gestion des taches planifiees via PowerShell offre un controle complet et scriptable, indispensable pour les deployements automatises et la gestion a grande echelle. Le module `ScheduledTasks` fournit les cmdlets necessaires pour creer, configurer, surveiller et supprimer des taches.
 
+!!! example "Analogie"
+
+    Creer une tache planifiee avec PowerShell, c'est comme remplir un formulaire d'embauche en plusieurs etapes : d'abord on definit les horaires de travail (Trigger), puis la fiche de poste (Action), puis le reglement interieur (Settings), puis le profil du candidat (Principal) — et seulement une fois tout cela pret, on signe le contrat et on enregistre le tout (Register-ScheduledTask).
+
 ## Cmdlets principales
 
 ```powershell
 # List all ScheduledTasks cmdlets
 Get-Command -Module ScheduledTasks | Format-Table Name, CommandType
+```
+
+Resultat :
+
+```text
+Name                        CommandType
+----                        -----------
+Disable-ScheduledTask       Function
+Enable-ScheduledTask        Function
+Export-ScheduledTask        Function
+Get-ScheduledTask           Function
+Get-ScheduledTaskInfo       Function
+New-ScheduledTask           Function
+New-ScheduledTaskAction     Function
+New-ScheduledTaskPrincipal  Function
+New-ScheduledTaskSettingsSet Function
+New-ScheduledTaskTrigger    Function
+Register-ScheduledTask      Function
+Set-ScheduledTask           Function
+Start-ScheduledTask         Function
+Stop-ScheduledTask          Function
+Unregister-ScheduledTask    Function
 ```
 
 | Cmdlet | Role |
@@ -90,6 +116,14 @@ Register-ScheduledTask `
     -Settings $settings `
     -Principal $principal `
     -Description "Daily server backup executed at 10:00 PM"
+```
+
+Resultat :
+
+```text
+TaskPath                          TaskName          State
+--------                          --------          -----
+\CustomTasks\                     Daily-ServerBackup Ready
 ```
 
 ### Exemple : tache hebdomadaire
@@ -223,6 +257,17 @@ Get-ScheduledTask -TaskPath "\CustomTasks\*" | ForEach-Object {
 } | Format-Table -AutoSize
 ```
 
+Resultat :
+
+```text
+Name                  State    LastRun               LastResult  NextRun
+----                  -----    -------               ----------  -------
+Daily-ServerBackup    Ready    20/02/2026 22:00:01   Success     21/02/2026 22:00:00
+Weekly-Maintenance    Ready    16/02/2026 03:00:00   Success     23/02/2026 03:00:00
+Monitor-DiskSpace     Running  20/02/2026 20:00:00   Running     20/02/2026 00:00:00
+Alert-FailedLogon     Ready    20/02/2026 14:32:17   Success     N/A
+```
+
 ## Modifier une tache
 
 ```powershell
@@ -293,6 +338,14 @@ $xml = Get-Content -Path "C:\Backup\Daily-ServerBackup.xml" -Raw
 Register-ScheduledTask -TaskName "Daily-ServerBackup" -TaskPath "\CustomTasks\" -Xml $xml -User "SYSTEM"
 ```
 
+Resultat :
+
+```text
+TaskPath                          TaskName          State
+--------                          --------          -----
+\CustomTasks\                     Daily-ServerBackup Ready
+```
+
 !!! tip "Portabilite"
 
     L'export XML permet de versionner les taches planifiees dans un depot Git et de les deployer de maniere repetable sur plusieurs serveurs.
@@ -307,6 +360,96 @@ Register-ScheduledTask -TaskName "Daily-ServerBackup" -TaskPath "\CustomTasks\" 
 | Timeout | Definir `ExecutionTimeLimit` pour eviter les taches bloquees |
 | Erreurs | Configurer `RestartCount` et `RestartInterval` |
 | Documentation | Description detaillee dans chaque tache |
+
+!!! example "Scenario pratique"
+
+    **Contexte :** Celine administre une ferme de cinq serveurs web (`SRV-01` a `SRV-05`) chez un hebergeur. Elle doit deployer une nouvelle tache de verification de l'espace disque sur chaque serveur, en alertant si le disque C: passe sous 20 % de liberte.
+
+    **Probleme :** Creer la tache manuellement sur cinq serveurs via l'interface graphique est fastidieux et source d'erreurs (mauvais horaire, mauvais script, mauvais compte).
+
+    **Solution :** Celine cree la tache une seule fois et la deploie sur tous les serveurs via PowerShell Remoting :
+
+    ```powershell
+    # Deploy the task on all servers
+    $servers = @("SRV-01", "SRV-02", "SRV-03", "SRV-04", "SRV-05")
+
+    foreach ($server in $servers) {
+        $session = New-CimSession -ComputerName $server
+
+        $trigger = New-ScheduledTaskTrigger `
+            -Once -At "00:00" `
+            -RepetitionInterval (New-TimeSpan -Hours 4) `
+            -RepetitionDuration (New-TimeSpan -Days 365)
+
+        $action = New-ScheduledTaskAction `
+            -Execute "powershell.exe" `
+            -Argument "-ExecutionPolicy Bypass -NoProfile -File `"C:\Scripts\Monitor-DiskSpace.ps1`""
+
+        $settings = New-ScheduledTaskSettingsSet `
+            -ExecutionTimeLimit (New-TimeSpan -Minutes 30) `
+            -MultipleInstances IgnoreNew
+
+        Register-ScheduledTask `
+            -CimSession $session `
+            -TaskName "Monitor-DiskSpace" `
+            -TaskPath "\Monitoring\" `
+            -Trigger $trigger `
+            -Action $action `
+            -Settings $settings `
+            -User "SYSTEM" `
+            -RunLevel Highest `
+            -Force
+
+        Remove-CimSession $session
+        Write-Host "Task deployed on $server"
+    }
+    ```
+
+    ```text
+    Task deployed on SRV-01
+    Task deployed on SRV-02
+    Task deployed on SRV-03
+    Task deployed on SRV-04
+    Task deployed on SRV-05
+    ```
+
+    Pour verifier le deploiement, Celine interroge tous les serveurs d'un coup :
+
+    ```powershell
+    # Verify task on all servers
+    $servers | ForEach-Object {
+        $info = Get-ScheduledTaskInfo -CimSession (New-CimSession -ComputerName $_) `
+            -TaskName "Monitor-DiskSpace" -TaskPath "\Monitoring\"
+        [PSCustomObject]@{
+            Server  = $_
+            State   = (Get-ScheduledTask -CimSession (New-CimSession -ComputerName $_) `
+                        -TaskName "Monitor-DiskSpace" -TaskPath "\Monitoring\").State
+            NextRun = $info.NextRunTime
+        }
+    } | Format-Table -AutoSize
+    ```
+
+    ```text
+    Server  State  NextRun
+    ------  -----  -------
+    SRV-01  Ready  21/02/2026 00:00:00
+    SRV-02  Ready  21/02/2026 00:00:00
+    SRV-03  Ready  21/02/2026 00:00:00
+    SRV-04  Ready  21/02/2026 00:00:00
+    SRV-05  Ready  21/02/2026 00:00:00
+    ```
+
+!!! danger "Erreurs courantes"
+
+    **`Register-ScheduledTask` echoue silencieusement** — Omettez `-Force` lors de la creation initiale pour obtenir une erreur claire si la tache existe deja. Utilisez `-Force` uniquement lors d'une mise a jour intentionnelle.
+
+    **`Get-ScheduledTaskInfo` retourne `LastTaskResult = 2147942401`** — Ce code d'erreur signifie "fichier introuvable" (0x80070002). Le chemin du script dans l'action est incorrect ou le fichier n'existe pas sur le serveur cible. Verifiez que le script est deploye avant la tache.
+
+    **`RepetitionDuration` non definie pour les taches repetitives** — Sans `-RepetitionDuration`, la repetition s'arrete apres le premier cycle. Specifiez une duree suffisante (ex. `-RepetitionDuration (New-TimeSpan -Days 365)`) ou la valeur maximale possible.
+
+    **Trigger de type `AtStartup` sans delai** — Une tache au demarrage qui s'execute immediatement peut echouer si les services reseau ou autres dependances ne sont pas encore prets. Ajoutez `$trigger.Delay = "PT3M"` pour un delai de 3 minutes.
+
+    **Chemin de tache (`TaskPath`) sans barres obliques** — Le `TaskPath` doit commencer et se terminer par `\` (ex. `\CustomTasks\`). Un chemin mal formate cree la tache a la racine ou provoque une erreur selon la version de Windows.
 
 ## Points cles a retenir
 

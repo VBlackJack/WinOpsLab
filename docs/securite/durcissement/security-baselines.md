@@ -19,6 +19,10 @@ Les Security Baselines de Microsoft fournissent des configurations de securite r
 
 ## Qu'est-ce qu'une Security Baseline ?
 
+!!! example "Analogie"
+
+    Une Security Baseline est comparable au reglement de securite incendie d'un immeuble : elle definit des normes minimales (extincteurs, sorties de secours, alarmes) que tout batiment doit respecter. Vous pouvez ajouter des mesures supplementaires selon vos besoins, mais les normes de base ne sont pas negociables.
+
 Une Security Baseline est un ensemble de parametres de configuration de securite recommandes par Microsoft. Ces parametres couvrent :
 
 - Les **strategies de groupe** (GPO) : politique de mot de passe, verrouillage de compte, audit
@@ -118,6 +122,19 @@ $backupId = (Get-ChildItem -Path $backupPath -Directory).Name
 Import-GPO -BackupId $backupId -Path $backupPath -TargetName $gpoName
 ```
 
+Resultat :
+
+```text
+DisplayName                     : SEC - Windows Server 2022 Member Server Baseline
+DomainName                      : lab.local
+Owner                           : LAB\Domain Admins
+GpoStatus                      : AllSettingsEnabled
+Description                     : Microsoft Security Baseline for WS2022 Member Servers
+
+Import-GPO : l'importation a reussi.
+Imported 1456 settings from backup {3E4F2C1A-5B6D-4E8F-9A0B-1C2D3E4F5A6B}.
+```
+
 ### Etape 2 : lier la GPO a l'OU cible
 
 ```powershell
@@ -131,6 +148,16 @@ Get-GPInheritance -Target $ouPath |
     Format-Table DisplayName, Enabled, Order
 ```
 
+Resultat :
+
+```text
+GpoId       : {3E4F2C1A-5B6D-4E8F-9A0B-1C2D3E4F5A6B}
+DisplayName : SEC - Windows Server 2022 Member Server Baseline
+Enabled     : True
+Order       : 1
+Target      : OU=Servers,DC=lab,DC=local
+```
+
 ### Etape 3 : forcer l'application et verifier
 
 ```powershell
@@ -142,6 +169,28 @@ gpresult /r /scope:computer
 
 # Generate a detailed HTML report
 gpresult /h "C:\Temp\gpresult-srv01.html"
+```
+
+Resultat :
+
+```text
+Updating policy...
+
+Computer Policy update has completed successfully.
+User Policy update has completed successfully.
+
+RSOP data for SRV-01\SRV01$ on SRV-01 : Logging Mode
+-------------------------------------------------------
+OS Configuration:        Member Server
+OS Version:              10.0.20348
+Site Name:               Default-First-Site-Name
+Roaming Profile:         N/A
+Local Profile:           C:\Users\T1-jdupont
+
+Applied Group Policy Objects
+-----------------------------
+    SEC - Windows Server 2022 Member Server Baseline
+    Default Domain Policy
 ```
 
 !!! warning "Ordre d'application"
@@ -198,6 +247,16 @@ Backup-GPO -All -Path $backupFolder
 Get-ChildItem -Path $backupFolder -Directory | Select-Object Name
 ```
 
+Resultat :
+
+```text
+Name
+----
+{A1B2C3D4-E5F6-7890-ABCD-EF1234567890}
+{B2C3D4E5-F6A7-8901-BCDE-F12345678901}
+{C3D4E5F6-A7B8-9012-CDEF-123456789012}
+```
+
 ---
 
 ## Personnalisation des baselines
@@ -249,6 +308,67 @@ foreach ($check in $checks) {
     Write-Output "$($check.Description): $status"
 }
 ```
+
+Resultat :
+
+```text
+SMB Signing Required: CONFORME
+NTLMv2 Only: CONFORME
+PS ScriptBlock Logging: NON-CONFORME (valeur: )
+```
+
+---
+
+## Scenario pratique
+
+!!! example "Scenario pratique"
+
+    **Contexte** : Thomas, ingenieur systeme, doit deployer la Security Baseline Microsoft sur les 15 serveurs membres de l'OU `Servers` du domaine `lab.local`. Apres import, il constate que l'application ERP ne fonctionne plus car elle necessite NTLMv1.
+
+    **Diagnostic** :
+
+    ```powershell
+    # Check effective LmCompatibilityLevel on a server
+    Invoke-Command -ComputerName "SRV-APP01" -ScriptBlock {
+        Get-ItemProperty "HKLM:\SYSTEM\CurrentControlSet\Control\Lsa" -Name LmCompatibilityLevel
+    }
+    ```
+
+    Resultat :
+
+    ```text
+    LmCompatibilityLevel : 5
+    PSComputerName       : SRV-APP01
+    ```
+
+    La baseline a force NTLMv2 uniquement (valeur 5), mais l'application ERP historique utilise NTLMv1.
+
+    **Resolution** :
+
+    1. Creer une GPO d'exception pour l'OU contenant `SRV-APP01`
+    2. Abaisser `LmCompatibilityLevel` a 3 (accepte NTLMv1 et NTLMv2) uniquement sur ce serveur
+    3. Documenter l'exception dans le registre des derogations avec une date de revue
+    4. Planifier la migration de l'ERP vers un protocole d'authentification moderne
+
+    ```powershell
+    # Create exception GPO
+    $exceptionGPO = New-GPO -Name "SEC - Baseline Exception - SRV-APP01 NTLMv1"
+    New-GPLink -Name $exceptionGPO.DisplayName -Target "OU=ERP,OU=Servers,DC=lab,DC=local" -LinkEnabled Yes
+    ```
+
+    Thomas renseigne le tableau d'exceptions avec l'approbation du RSSI et une date de revue a 6 mois.
+
+---
+
+!!! danger "Erreurs courantes"
+
+    1. **Appliquer la baseline directement sur toute l'OU Production** : testez toujours sur un groupe pilote de 2-3 serveurs avant de generaliser. Certaines applications peuvent etre incompatibles avec les parametres de la baseline.
+
+    2. **Melanger audit de base et audit avance** : la baseline configure l'audit avance (53 sous-categories). Si vous avez deja des GPOs avec l'audit de base (9 categories), les resultats seront imprevisibles. Supprimez les anciens parametres d'audit de base.
+
+    3. **Ne pas documenter les exceptions** : chaque deviation de la baseline doit etre justifiee, approuvee par le responsable securite et revisee periodiquement. Une exception sans documentation est un trou de securite invisible.
+
+    4. **Oublier de forcer le rafraichissement GPO** : apres l'import, executez `Invoke-GPUpdate -Force` sur les serveurs cibles, ou attendez le cycle naturel de 90 minutes. Sinon, les parametres ne seront pas appliques.
 
 ---
 

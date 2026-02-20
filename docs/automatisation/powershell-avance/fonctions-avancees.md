@@ -18,6 +18,10 @@ Les **fonctions avancees** (advanced functions) sont des fonctions PowerShell qu
 
 ## CmdletBinding
 
+!!! example "Analogie"
+
+    Une fonction simple est comme un tournevis basique : il fait le travail mais sans confort. Ajouter `[CmdletBinding()]`, c'est comme passer a un tournevis electrique avec reglage de couple, eclairage LED et embouts interchangeables. L'outil fait le meme travail de base, mais avec beaucoup plus de controle et de confort.
+
 L'attribut `[CmdletBinding()]` transforme une fonction simple en fonction avancee.
 
 ```powershell
@@ -153,6 +157,10 @@ function Get-Machine {
 
 ## Support du pipeline
 
+!!! example "Analogie"
+
+    Le pipeline PowerShell fonctionne comme une chaine de montage en usine : chaque poste (fonction) recoit une piece (objet), effectue son operation, puis la transmet au poste suivant. Le bloc `begin` prepare les outils, `process` traite chaque piece individuellement, et `end` emballe le resultat final.
+
 ### ValueFromPipeline
 
 ```powershell
@@ -196,6 +204,19 @@ function Test-ServerConnection {
 
 # With AD objects (uses ValueFromPipelineByPropertyName)
 Get-ADComputer -Filter 'OperatingSystem -like "*Server*"' | Test-ServerConnection
+```
+
+Resultat :
+
+```text
+VERBOSE: Starting connectivity tests
+VERBOSE: Completed testing 3 servers
+
+ServerName Online TestTime
+---------- ------ --------
+SRV-01       True 2/20/2026 10:14:22 AM
+SRV-02       True 2/20/2026 10:14:23 AM
+SRV-03      False 2/20/2026 10:14:27 AM
 ```
 
 ```mermaid
@@ -248,6 +269,21 @@ function Get-DiskReport {
         }
     }
 }
+```
+
+```powershell
+# Call the function
+Get-DiskReport -ComputerName "SRV-01", "DC-01"
+```
+
+Resultat :
+
+```text
+ComputerName Drive SizeGB FreeGB PercentFree
+------------ ----- ------ ------ -----------
+SRV-01       C:    127.00  42.35        33.3
+SRV-01       D:    256.00 189.12        73.9
+DC-01        C:    127.00  68.77        54.1
 ```
 
 ### Retourner des objets types
@@ -375,6 +411,71 @@ function Restart-ServiceSafely {
 - `[OutputType()]` documente le type de retour et aide IntelliSense
 - Les jeux de parametres permettent des modes d'utilisation mutuellement exclusifs
 - L'aide comment-based (`.SYNOPSIS`, `.EXAMPLE`, etc.) rend la fonction auto-documentee
+
+!!! example "Scenario pratique"
+
+    **Marc**, ingenieur systeme, ecrit une fonction qui redemarrage des services sur plusieurs serveurs. La fonction fonctionne en boucle `foreach`, mais quand il essaie de l'utiliser avec le pipeline, rien ne se passe.
+
+    **Diagnostic :**
+
+    1. Verifier la declaration du parametre :
+    ```powershell
+    (Get-Command Restart-MyService).Parameters["ComputerName"]
+    ```
+    Resultat :
+    ```text
+    Name            : ComputerName
+    ParameterType   : System.String
+    ParameterSets   : {[__AllParameterSets, System.Management.Automation.ParameterSetMetadata]}
+    IsDynamic       : False
+    Aliases         : {}
+    Attributes      : {System.Management.Automation.ParameterAttribute}
+    ```
+    Aucun attribut `ValueFromPipeline` n'est declare.
+
+    2. Corriger la fonction en ajoutant le support du pipeline :
+    ```powershell
+    function Restart-MyService {
+        [CmdletBinding(SupportsShouldProcess)]
+        param(
+            [Parameter(Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName)]
+            [Alias("CN", "Name")]
+            [string[]]$ComputerName,
+
+            [Parameter(Mandatory)]
+            [string]$ServiceName
+        )
+        process {
+            foreach ($computer in $ComputerName) {
+                if ($PSCmdlet.ShouldProcess("$ServiceName on $computer", "Restart")) {
+                    Invoke-Command -ComputerName $computer -ScriptBlock {
+                        Restart-Service -Name $using:ServiceName -Force
+                    }
+                }
+            }
+        }
+    }
+    ```
+
+    3. Tester avec le pipeline :
+    ```powershell
+    "SRV-01", "SRV-02" | Restart-MyService -ServiceName "W3SVC" -Verbose
+    ```
+    Resultat :
+    ```text
+    VERBOSE: Performing the operation "Restart" on target "W3SVC on SRV-01".
+    VERBOSE: Performing the operation "Restart" on target "W3SVC on SRV-02".
+    ```
+
+    **Resolution :** L'ajout de `ValueFromPipeline` et du bloc `process` permet a la fonction de traiter chaque objet du pipeline individuellement.
+
+!!! danger "Erreurs courantes"
+
+    - **Oublier le bloc `process`** : sans bloc `process`, seul le dernier objet du pipeline est traite. Le code dans le corps de la fonction s'execute dans `end` par defaut.
+    - **Confondre `ValueFromPipeline` et `ValueFromPipelineByPropertyName`** : le premier prend l'objet entier, le second ne prend que la propriete dont le nom correspond. Les deux sont souvent necessaires ensemble.
+    - **Accumuler les resultats avec `+=` dans un tableau** : cette pratique recree le tableau a chaque iteration et est tres lente pour de gros volumes. Preferez laisser PowerShell collecter la sortie naturellement via le pipeline.
+    - **Utiliser `[OutputType()]` comme contrainte** : cet attribut est purement informatif pour IntelliSense. Il ne force pas le type de retour et ne genere pas d'erreur si un autre type est retourne.
+    - **Ignorer `SupportsShouldProcess`** : pour toute fonction qui modifie l'etat du systeme (redemarrage, suppression, modification), ajoutez `SupportsShouldProcess` pour permettre l'utilisation de `-WhatIf` et `-Confirm`.
 
 ## Pour aller plus loin
 

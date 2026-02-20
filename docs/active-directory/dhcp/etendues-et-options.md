@@ -16,6 +16,10 @@ tags:
 
 ## Qu'est-ce qu'une etendue ?
 
+!!! example "Analogie"
+
+    Une etendue DHCP est comparable a un carnet de tickets numerotes distribues a l'entree d'un parking. Le carnet va du ticket 100 au ticket 200 (plage d'adresses). Certains tickets sont reserves pour les places handicapees (exclusions). Avec chaque ticket, on remet un plan du parking avec les indications de sortie (passerelle) et le numero du gardien (serveur DNS). Quand tous les tickets sont distribues, aucun nouveau vehicule ne peut entrer.
+
 Une **etendue DHCP** (scope) est une plage d'adresses IP consecutives que le
 serveur DHCP peut distribuer aux clients d'un sous-reseau donne.
 
@@ -56,6 +60,14 @@ Chaque etendue est definie par :
 
     # Verify the scope was created
     Get-DhcpServerv4Scope -ComputerName "SRV-DHCP01"
+    ```
+
+    Resultat :
+
+    ```text
+    ScopeId        Name         SubnetMask      StartRange      EndRange        State  LeaseDuration
+    -------        ----         ----------      ----------      --------        -----  -------------
+    10.0.0.0       LAN-Bureaux  255.255.255.0   10.0.0.100      10.0.0.200      Active 08:00:00
     ```
 
 === "GUI"
@@ -104,6 +116,15 @@ automatiquement.
 
     # List all exclusion ranges in a scope
     Get-DhcpServerv4ExclusionRange -ComputerName "SRV-DHCP01" -ScopeId 192.168.1.0
+    ```
+
+    Resultat :
+
+    ```text
+    ScopeId       StartRange       EndRange
+    -------       ----------       --------
+    10.0.0.0      10.0.0.1         10.0.0.20
+    10.0.0.0      10.0.0.240       10.0.0.254
     ```
 
 === "GUI"
@@ -201,6 +222,17 @@ flowchart TD
 
     # List all options configured for a scope
     Get-DhcpServerv4OptionValue -ComputerName "SRV-DHCP01" -ScopeId 192.168.1.0
+    ```
+
+    Resultat :
+
+    ```text
+    OptionId  Name                    Type       Value                   VendorClass  UserClass  PolicyName
+    --------  ----                    ----       -----                   -----------  ---------  ----------
+    003       Router                  IPv4Address {10.0.0.1}
+    006       DNS Servers             IPv4Address {10.0.0.10, 10.0.0.11}
+    015       DNS Domain Name         String     {lab.local}
+    051       Lease                   DWord      {28800}
     ```
 
 === "GUI"
@@ -342,6 +374,24 @@ visioconference.
         Where-Object { $_.LeaseExpiryTime -lt (Get-Date).AddHours(1) }
     ```
 
+    Resultat :
+
+    ```text
+    PS> Get-DhcpServerv4ScopeStatistics -ComputerName "SRV-DHCP01" -ScopeId 10.0.0.0
+
+    ScopeId      Free   InUse  PercentageInUse  Reserved  Pending
+    -------      ----   -----  ---------------  --------  -------
+    10.0.0.0     62     19     23.46            3         0
+
+    PS> Get-DhcpServerv4Lease -ComputerName "SRV-DHCP01" -ScopeId 10.0.0.0 | Select-Object -First 3
+
+    IPAddress       ClientId             HostName         LeaseExpiryTime
+    ---------       --------             --------         ---------------
+    10.0.0.105      AA-BB-CC-11-22-33    PC-USER01        2/20/2026 4:30:00 PM
+    10.0.0.106      AA-BB-CC-11-22-34    PC-USER02        2/20/2026 5:15:00 PM
+    10.0.0.110      AA-BB-CC-44-55-66    PC-USER03        2/20/2026 3:45:00 PM
+    ```
+
 ### Seuils d'alerte
 
 !!! warning "Surveiller le taux d'utilisation"
@@ -409,6 +459,48 @@ Get-DhcpServerv4OptionValue -ComputerName $DhcpServer -ScopeId $ScopeId
 ```
 
 ---
+
+!!! example "Scenario pratique"
+
+    **Situation** : Caroline, administratrice reseau, constate que les postes du nouveau batiment B n'obtiennent pas la bonne passerelle par defaut. Ils recoivent `10.0.0.1` (passerelle du batiment A) au lieu de `10.0.1.1` (passerelle du batiment B). Le batiment B a sa propre etendue `10.0.1.0/24`.
+
+    **Diagnostic** :
+
+    ```powershell
+    # Etape 1 : Verifier les options configurees sur l'etendue du batiment B
+    Get-DhcpServerv4OptionValue -ComputerName "SRV-DHCP01" -ScopeId 10.0.1.0
+    ```
+
+    Resultat : aucune option 003 (Router) n'est definie au niveau de l'etendue.
+
+    ```powershell
+    # Etape 2 : Verifier les options au niveau serveur
+    Get-DhcpServerv4OptionValue -ComputerName "SRV-DHCP01"
+    ```
+
+    Resultat : l'option 003 est definie au niveau serveur avec la valeur `10.0.0.1`. Comme aucune option d'etendue ne la surcharge, c'est la valeur serveur qui est distribuee.
+
+    **Solution** :
+
+    ```powershell
+    # Definir la passerelle specifique au niveau de l'etendue du batiment B
+    Set-DhcpServerv4OptionValue -ComputerName "SRV-DHCP01" `
+        -ScopeId 10.0.1.0 `
+        -Router "10.0.1.1"
+
+    # Verifier la configuration
+    Get-DhcpServerv4OptionValue -ComputerName "SRV-DHCP01" -ScopeId 10.0.1.0
+    ```
+
+    Les postes du batiment B recoivent desormais la bonne passerelle `10.0.1.1` lors du prochain renouvellement de bail.
+
+!!! danger "Erreurs courantes"
+
+    - **Definir la passerelle au niveau serveur au lieu de l'etendue** : dans un environnement multi-sous-reseaux, chaque etendue doit avoir sa propre passerelle. L'option serveur ne convient que si tous les sous-reseaux partagent la meme passerelle (situation rare).
+    - **Creer une etendue qui chevauche une autre** : deux etendues avec des plages qui se chevauchent provoquent des conflits d'adresses IP. Verifiez toujours les plages existantes avant de creer une nouvelle etendue.
+    - **Oublier d'activer l'etendue apres creation** : une etendue creee via l'assistant GUI est inactive par defaut si on ne coche pas l'activation a la derniere etape. Verifiez que l'etat est `Active`.
+    - **Ne pas exclure les adresses des serveurs et equipements reseau** : les switchs, routeurs et serveurs en IP statique doivent etre exclus de la plage DHCP pour eviter les conflits d'adresses.
+    - **Confondre exclusion et reservation** : une exclusion retire definitivement l'adresse de la distribution DHCP. Une reservation attribue une adresse fixe a un client identifie par sa MAC. Utilisez les exclusions pour les equipements hors DHCP et les reservations pour les equipements en DHCP.
 
 ## Points cles a retenir
 

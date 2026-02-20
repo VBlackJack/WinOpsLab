@@ -31,6 +31,15 @@ L'equipe RH fournit regulierement des listes de nouveaux employes. Le service in
 
 ## Instructions
 
+!!! example "Analogie"
+
+    Ecrire un script PowerShell pour creer des utilisateurs, c'est comme programmer un robot
+    en cuisine : la premiere fois, cela prend plus de temps que de le faire a la main, mais
+    la dixieme iteration, c'est instantane et sans erreur. Un script mal ecrit sans gestion
+    d'erreurs, c'est un robot qui continue de travailler meme quand le bol est casse —
+    d'ou l'importance du `try/catch`. La tache planifiee est le chef qui donne le signal
+    au robot chaque lundi matin sans avoir a y penser.
+
 ### Partie 1 : Creation d'utilisateurs en masse
 
 1. Creer un fichier CSV avec les donnees des employes
@@ -120,6 +129,17 @@ L'equipe RH fournit regulierement des listes de nouveaux employes. Le service in
 
     ```powershell
     .\Import-NewUsers.ps1 -CsvPath "C:\Scripts\new-users.csv"
+    ```
+
+    Resultat attendu lors de l'execution du script :
+
+    ```text
+    Created user: Alice Moreau (alice.moreau) in Comptabilite
+    Created user: Bruno Petit (bruno.petit) in Commercial
+    Created user: Claire Robert (claire.robert) in Direction
+    Created user: David Simon (david.simon) in Informatique
+
+    User creation complete.
     ```
 
 ### Partie 2 : Rapport d'inventaire systeme
@@ -284,6 +304,35 @@ L'equipe RH fournit regulierement des listes de nouveaux employes. Le service in
        le traitement des autres serveurs. Ne jamais laisser une erreur bloquer tout le script.
     4. Un CSV malformee (caracteres speciaux, champs manquants, doublons) peut creer des
        comptes invalides ou provoquer des erreurs. La validation en amont evite ces problemes.
+
+!!! warning "Pieges frequents dans ce lab"
+
+    1. **Encodage du fichier CSV** : un CSV contenant des caracteres accentues (Prenom, Titre)
+       genere sous Windows avec Notepad peut etre en ANSI. `Import-Csv` sans `-Encoding`
+       produit des noms corrompus ("AliceÃ" au lieu de "Alice"). Toujours sauvegarder le CSV
+       en UTF-8 et utiliser `Import-Csv -Encoding UTF8`.
+
+    2. **SamAccountName trop long** : Active Directory limite le `SamAccountName` a 20 caracteres.
+       Pour un nom compose comme "Jean-Baptiste Deschampsleroy", le script genere un identifiant
+       qui depasse la limite et echoue silencieusement. Ajouter une troncature explicite :
+       `$samAccountName = $samAccountName.Substring(0, [Math]::Min(20, $samAccountName.Length))`.
+
+    3. **Tache planifiee qui ne s'execute pas** : si la tache est creee avec un compte de service
+       (`WINOPSLAB\admin.lab`) mais que le mot de passe n'est pas specifie lors de
+       `Register-ScheduledTask`, la tache s'enregistre mais echoue a l'execution avec
+       "The task's password must be supplied". Utiliser `-Password` ou croire l'interface
+       graphique (Planificateur de taches > Proprietes > Executer avec les droits maximaux).
+
+    4. **Script de surveillance avec source d'evenements inexistante** : `Write-EventLog`
+       avec `-Source "ServerHealth"` echoue si la source n'a pas ete prealablement enregistree
+       avec `New-EventLog -LogName Application -Source "ServerHealth"`. Sans cette initialisation,
+       le script plante a la premiere alerte.
+
+    5. **Chemins de scripts en dur avec des espaces** : si le script est place dans
+       `C:\Scripts PowerShell\`, le parametre `-Argument` de la tache planifiee doit encadrer
+       le chemin de guillemets doubles echappes. Un espace dans le chemin sans guillemets fait
+       que PowerShell interprete le chemin comme deux arguments distincts et echoue a trouver
+       le fichier.
 
 ## Nettoyage
 

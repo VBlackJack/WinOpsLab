@@ -11,7 +11,7 @@ tags:
 
 # Checkpoints
 
-!!! info "Niveau : intermediaire | Temps estime : 25 minutes"
+<span class="level-intermediate">Intermediaire</span> · Temps estime : 25 minutes
 
 Les checkpoints (anciennement appeles snapshots) capturent l'etat d'une machine virtuelle a un instant donne. Ils permettent de revenir rapidement a un etat anterieur, ce qui est particulierement utile avant des modifications risquees.
 

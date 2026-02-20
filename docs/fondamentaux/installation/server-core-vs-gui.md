@@ -9,9 +9,7 @@ tags:
 
 # Server Core vs Desktop Experience
 
-!!! info "Niveau : Debutant"
-
-    Temps estime : 15 minutes
+<span class="level-beginner">Debutant</span> · Temps estime : 15 minutes
 
 ## Les deux modes d'installation
 

@@ -29,6 +29,18 @@ L'entreprise a besoin d'un serveur de fichiers structure par service. Chaque ser
 | SRV-DC01 | DC avec utilisateurs et groupes (Labs precedents) |
 | CLI-W11 | Client pour tester les acces |
 
+```mermaid
+graph TD
+    USER["Utilisateur<br/>(Account)"] --> GG["Groupe Global<br/>GG_Service"]
+    GG --> DL_M["Groupe Domain Local<br/>DL_Service_Modification"]
+    GG --> DL_L["Groupe Domain Local<br/>DL_Service_Lecture"]
+    DL_M -->|"Modifier"| NTFS["Permissions NTFS<br/>sur le dossier"]
+    DL_L -->|"Lecture"| NTFS
+    CLIENT["Poste client"] -->|"Acces reseau"| SMB["Partage SMB<br/>Everyone : Full Control"]
+    SMB --> NTFS
+    NTFS --> RESULT["Permission effective<br/>= la plus restrictive<br/>entre SMB et NTFS"]
+```
+
 ## Instructions
 
 ### Partie 1 : Preparer les groupes AD (modele AGDLP)

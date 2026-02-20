@@ -10,12 +10,7 @@ tags:
 
 # Concepts des strategies de groupe (GPO)
 
-!!! info "Niveau : Intermediaire | Temps estime : 45 minutes"
-
-    Cette page presente les fondamentaux des strategies de groupe (Group Policy Objects)
-    dans un environnement Active Directory sous Windows Server 2022.
-    Prerequis : avoir un domaine AD DS fonctionnel
-    ([voir installation du premier DC](../adds/installer-premier-dc.md)).
+<span class="level-intermediate">Intermediaire</span> · Temps estime : 45 minutes
 
 ## Qu'est-ce qu'un objet de strategie de groupe (GPO) ?
 

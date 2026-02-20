@@ -11,7 +11,7 @@ tags:
 
 # Configuration Push et Pull
 
-!!! info "Niveau : avance | Temps estime : 50 minutes"
+<span class="level-advanced">Avance</span> · Temps estime : 50 minutes
 
 ## Introduction
 

@@ -10,9 +10,7 @@ tags:
 
 # iSCSI
 
-!!! info "Niveau : Intermediaire"
-
-    Temps estime : 35 minutes
+<span class="level-intermediate">Intermediaire</span> · Temps estime : 35 minutes
 
 ## Concepts fondamentaux
 

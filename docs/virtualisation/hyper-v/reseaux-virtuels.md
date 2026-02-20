@@ -11,7 +11,7 @@ tags:
 
 # Reseaux virtuels
 
-!!! info "Niveau : intermediaire | Temps estime : 30 minutes"
+<span class="level-intermediate">Intermediaire</span> · Temps estime : 30 minutes
 
 Les reseaux virtuels Hyper-V s'appuient sur des commutateurs virtuels (virtual switches) qui connectent les machines virtuelles entre elles et avec le reseau physique. Le choix du type de commutateur determine l'isolation et la connectivite des VMs.
 

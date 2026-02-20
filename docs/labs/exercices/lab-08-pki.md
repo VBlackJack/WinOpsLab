@@ -30,6 +30,16 @@ L'equipe securite a demande le deploiement d'une PKI interne pour securiser les 
 | SRV-WEB01 | Serveur IIS (destinataire du certificat) |
 | CLI-W11 | Client pour tester l'inscription |
 
+```mermaid
+graph TD
+    ROOT["WinOpsLab-Root-CA<br/>SRV-DC01<br/>CA racine d'entreprise<br/>Validite : 10 ans"]
+    ROOT -->|"Publie via AD"| AD["Active Directory<br/>winopslab.local<br/>Certificat racine de confiance"]
+    ROOT -->|"Emet certificat"| WEB["SRV-WEB01<br/>Certificat serveur web<br/>intranet.winopslab.local"]
+    ROOT -->|"Modeles de certificats"| TPL["Modele personnalise<br/>WinOpsLab Web Server"]
+    AD -->|"Auto-inscription GPO"| CLI["CLI-W11<br/>Certificats distribues<br/>automatiquement"]
+    TPL --> WEB
+```
+
 ## Instructions
 
 ### Partie 1 : Installer AD CS

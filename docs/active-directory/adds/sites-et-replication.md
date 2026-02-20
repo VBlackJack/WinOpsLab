@@ -9,9 +9,7 @@ tags:
 
 # Sites et replication
 
-!!! info "Niveau : Intermediaire"
-
-    Temps estime : 20 minutes
+<span class="level-intermediate">Intermediaire</span> · Temps estime : 20 minutes
 
 ## Concept de site AD
 

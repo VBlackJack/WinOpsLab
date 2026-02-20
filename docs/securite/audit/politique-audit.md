@@ -10,11 +10,31 @@ tags:
 
 # Politique d'audit
 
-!!! info "Niveau : avance | Temps estime : 35 minutes"
+<span class="level-advanced">Avance</span> · Temps estime : 35 minutes
 
 La politique d'audit definit quels evenements de securite sont journalises sur un serveur Windows. Une configuration adaptee permet de detecter les tentatives d'intrusion, les acces non autorises et les modifications critiques.
 
 ---
+
+## Arbre de decision pour la politique d'audit
+
+```mermaid
+flowchart TD
+    A["Definir la politique d'audit"] --> B{"Environnement de production ?"}
+    B -->|Oui| C["Utiliser l'audit avance 53 sous-categories"]
+    B -->|Non| D["Audit de base acceptable 9 categories"]
+    C --> E["Activer : Force audit policy subcategory settings"]
+    E --> F["Configurer les sous-categories via GPO ou auditpol"]
+    F --> G["Dimensionner les journaux : Security 4 Go minimum"]
+    G --> H{"Journalisation PowerShell activee ?"}
+    H -->|Non| I["Activer ScriptBlock Logging + Transcription"]
+    H -->|Oui| J["Configurer l'archivage : WEF ou SIEM"]
+    I --> J
+    D --> K["Configurer succes/echec par categorie"]
+    K --> G
+    J --> L["Verifier avec auditpol /get /category:*"]
+    L --> M["Exporter et versionner : auditpol /backup"]
+```
 
 ## Audit de base vs audit avance
 

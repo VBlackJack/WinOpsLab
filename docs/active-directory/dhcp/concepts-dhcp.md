@@ -9,11 +9,7 @@ tags:
 
 # Concepts DHCP
 
-!!! info "Niveau : Fondamental | Temps de lecture : 20 minutes"
-
-    Cette page presente les concepts fondamentaux du protocole DHCP (Dynamic Host
-    Configuration Protocol). Comprendre ces mecanismes est essentiel avant de
-    deployer le role DHCP sur Windows Server 2022.
+<span class="level-beginner">Fondamental</span> · Temps estime : 20 minutes
 
 ---
 

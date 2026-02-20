@@ -9,9 +9,29 @@ tags:
 
 # Installer le premier controleur de domaine
 
-!!! info "Niveau : Intermediaire"
+<span class="level-intermediate">Intermediaire</span> · Temps estime : 30 minutes
 
-    Temps estime : 30 minutes | Lab associe : [Lab 02](../../labs/exercices/lab-02-ad-ds-premier-domaine.md)
+## Processus d'installation
+
+```mermaid
+flowchart TD
+    A["Preparer le serveur"] --> B{"Prerequis remplis ?"}
+    B -- Non --> C["Configurer IP statique,\nnom, DNS, mises a jour"]
+    C --> B
+    B -- Oui --> D["Installer le role AD DS"]
+    D --> E{"Premier DC\nde l'infrastructure ?"}
+    E -- Oui --> F["Creer une nouvelle foret\n(Install-ADDSForest)"]
+    E -- Non --> G["Rejoindre un domaine existant\n(Install-ADDSDomainController)"]
+    F --> H["Redemarrage automatique"]
+    G --> H
+    H --> I["Verification post-promotion"]
+    I --> J["Verifier NTDS, DNS,\nSYSVOL, FSMO, SRV records"]
+
+    style A fill:#1565c0,color:#fff
+    style F fill:#2e7d32,color:#fff
+    style G fill:#2e7d32,color:#fff
+    style J fill:#00838f,color:#fff
+```
 
 ## Prerequis
 

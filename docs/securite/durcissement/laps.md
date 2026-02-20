@@ -11,7 +11,7 @@ tags:
 
 # LAPS - Local Administrator Password Solution
 
-!!! info "Niveau : avance | Temps estime : 40 minutes"
+<span class="level-advanced">Avance</span> · Temps estime : 40 minutes
 
 LAPS permet de gerer automatiquement les mots de passe des comptes administrateur locaux de chaque machine du domaine. Chaque ordinateur recoit un mot de passe unique, stocke de maniere securisee dans Active Directory.
 

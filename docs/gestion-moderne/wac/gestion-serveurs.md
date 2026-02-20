@@ -9,13 +9,26 @@ tags:
 
 # Gestion des serveurs via WAC
 
-!!! info "Niveau : Intermediaire"
-
-    Temps estime : 25 minutes
+<span class="level-intermediate">Intermediaire</span> · Temps estime : 25 minutes
 
 ## Presentation
 
 Une fois Windows Admin Center installe, il devient le point central pour gerer tous vos serveurs Windows. L'interface web offre un tableau de bord synthetique et un acces rapide a la plupart des outils d'administration.
+
+```mermaid
+graph TD
+    WAC["Windows Admin Center<br/>Interface web :443"]
+    WAC -->|WinRM 5985/5986| SRV1["Serveur Windows 1"]
+    WAC -->|WinRM 5985/5986| SRV2["Serveur Windows 2"]
+    WAC -->|WinRM 5985/5986| CORE["Serveur Core"]
+    WAC -->|WinRM 5985/5986| CLUSTER["Cluster de<br/>basculement"]
+    WAC --> OUTILS["Outils disponibles"]
+    OUTILS --> DASH["Tableau de bord<br/>CPU / RAM / Disque"]
+    OUTILS --> PS["Console<br/>PowerShell"]
+    OUTILS --> ROLES["Roles et<br/>fonctionnalites"]
+    OUTILS --> FILES["Fichiers et<br/>partages"]
+    OUTILS --> EVT["Evenements<br/>et services"]
+```
 
 ## Ajouter des connexions
 

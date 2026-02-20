@@ -10,7 +10,7 @@ tags:
 
 # Installer une autorite de certification
 
-!!! info "Niveau : avance | Temps estime : 50 minutes"
+<span class="level-advanced">Avance</span> · Temps estime : 50 minutes
 
 Active Directory Certificate Services (AD CS) est le role Windows Server qui implemente une autorite de certification (CA). Cette page couvre l'installation d'une architecture a deux niveaux avec une CA racine et une CA subordonnee.
 

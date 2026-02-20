@@ -10,9 +10,7 @@ tags:
 
 # DFS Replication
 
-!!! info "Niveau : Intermediaire"
-
-    Temps estime : 30 minutes
+<span class="level-intermediate">Intermediaire</span> · Temps estime : 30 minutes
 
 ## Qu'est-ce que DFS Replication ?
 

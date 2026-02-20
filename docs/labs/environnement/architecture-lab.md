@@ -9,15 +9,15 @@ tags:
 
 # Architecture du lab
 
-!!! info "Niveau : Debutant"
-
-    Temps estime : 15 minutes
+<span class="level-beginner">Debutant</span> · Temps estime : 15 minutes
 
 ## Presentation
 
 Ce lab simule l'infrastructure d'une PME avec un domaine Active Directory, des services reseau (DNS, DHCP), un serveur de fichiers, un serveur web et un poste client. L'ensemble est virtualise sous Hyper-V.
 
 ## Diagramme reseau
+
+![](../../diagrams/lab-architecture.drawio)
 
 ```mermaid
 graph TD

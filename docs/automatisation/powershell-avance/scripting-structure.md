@@ -10,7 +10,7 @@ tags:
 
 # Structure d'un script PowerShell
 
-!!! info "Niveau : avance | Temps estime : 40 minutes"
+<span class="level-advanced">Avance</span> · Temps estime : 40 minutes
 
 ## Introduction
 

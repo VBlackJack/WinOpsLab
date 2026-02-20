@@ -9,9 +9,27 @@ tags:
 
 # Creation d'un pool de stockage
 
-!!! info "Niveau : Intermediaire"
+<span class="level-intermediate">Intermediaire</span> · Temps estime : 30 minutes
 
-    Temps estime : 30 minutes
+## Processus de creation d'un pool de stockage
+
+```mermaid
+flowchart TD
+    A["Identifier les disques physiques disponibles"] --> B["Get-PhysicalDisk -CanPool $true"]
+    B --> C{"Disques eligibles trouves ?"}
+    C -->|Non| D["Nettoyer les disques : Clear-Disk"]
+    D --> B
+    C -->|Oui| E["Etape 1 : Creer le pool de stockage<br/>New-StoragePool"]
+    E --> F["Etape 2 : Creer le disque virtuel<br/>New-VirtualDisk"]
+    F --> G{"Choisir la resilience"}
+    G --> H["Simple : aucune redondance"]
+    G --> I["Mirror : 2 ou 3 copies"]
+    G --> J["Parity : equivalent RAID 5"]
+    H --> K["Etape 3 : Initialiser et formater<br/>Initialize-Disk + Format-Volume"]
+    I --> K
+    J --> K
+    K --> L["Volume pret a l'utilisation"]
+```
 
 ## Prerequis
 

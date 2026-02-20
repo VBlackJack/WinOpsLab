@@ -5,7 +5,24 @@ description: Infrastructure as Code - ARM, Bicep et Packer.
 
 # Infrastructure as Code
 
-## Pages
+## Contenu
 
-- [Templates ARM / Bicep](templates-arm-bicep.md)
-- [Packer - Images](packer-images.md)
+<div class="grid cards" markdown>
+
+- :material-code-braces: **Templates ARM / Bicep**
+
+    ---
+
+    Deploiement d'infrastructure Azure avec des templates declaratifs.
+
+    [:octicons-arrow-right-24: Lire](templates-arm-bicep.md)
+
+- :material-disc: **Packer - Images**
+
+    ---
+
+    Automatisation de la creation d'images systeme avec Packer.
+
+    [:octicons-arrow-right-24: Lire](packer-images.md)
+
+</div>

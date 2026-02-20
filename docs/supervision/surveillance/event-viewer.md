@@ -9,9 +9,7 @@ tags:
 
 # Observateur d'evenements (Event Viewer)
 
-!!! info "Niveau : Intermediaire"
-
-    Temps estime : 35 minutes
+<span class="level-intermediate">Intermediaire</span> · Temps estime : 35 minutes
 
 ## Presentation
 

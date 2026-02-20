@@ -9,9 +9,7 @@ tags:
 
 # Extensions Windows Admin Center
 
-!!! info "Niveau : Debutant"
-
-    Temps estime : 15 minutes
+<span class="level-beginner">Debutant</span> · Temps estime : 15 minutes
 
 ## Presentation
 

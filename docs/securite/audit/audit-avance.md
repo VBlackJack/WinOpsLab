@@ -11,7 +11,7 @@ tags:
 
 # Audit avance
 
-!!! info "Niveau : avance | Temps estime : 40 minutes"
+<span class="level-advanced">Avance</span> · Temps estime : 40 minutes
 
 L'audit avance va au-dela des evenements de connexion et de gestion de comptes. Il permet de tracer les acces aux fichiers, aux objets Active Directory et aux cles de registre grace aux SACL (System Access Control Lists).
 

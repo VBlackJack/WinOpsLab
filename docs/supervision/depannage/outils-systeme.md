@@ -9,9 +9,7 @@ tags:
 
 # Outils systeme de depannage
 
-!!! info "Niveau : Intermediaire"
-
-    Temps estime : 30 minutes
+<span class="level-intermediate">Intermediaire</span> · Temps estime : 30 minutes
 
 ## Vue d'ensemble
 

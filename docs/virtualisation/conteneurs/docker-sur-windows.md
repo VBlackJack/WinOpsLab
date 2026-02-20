@@ -11,11 +11,47 @@ tags:
 
 # Docker sur Windows Server
 
-!!! info "Niveau : intermediaire | Temps estime : 35 minutes"
+<span class="level-intermediate">Intermediaire</span> · Temps estime : 35 minutes
 
 Docker est le runtime de conteneurs le plus utilise. Sur Windows Server 2022, Docker permet de construire, distribuer et executer des applications conteneurisees avec les images Windows et Linux (via WSL2 ou des conteneurs Linux en mode isolation Hyper-V).
 
 ---
+
+## Architecture des conteneurs Windows avec Docker
+
+```mermaid
+graph TD
+    subgraph Applications
+        C1["Conteneur 1<br/>IIS + WebApp"]
+        C2["Conteneur 2<br/>API .NET"]
+        C3["Conteneur 3<br/>SQL Server"]
+    end
+
+    subgraph Runtime
+        Docker["Docker Engine"]
+    end
+
+    subgraph Images["Images de base"]
+        SC["Server Core<br/>ltsc2022"]
+        NS["Nano Server<br/>ltsc2022"]
+    end
+
+    subgraph SE["Systeme d'exploitation hote"]
+        Containers["Fonctionnalite Containers"]
+        WS["Windows Server 2022"]
+        HW["Materiel / Hyperviseur"]
+    end
+
+    C1 --> Docker
+    C2 --> Docker
+    C3 --> Docker
+    Docker --> SC
+    Docker --> NS
+    SC --> Containers
+    NS --> Containers
+    Containers --> WS
+    WS --> HW
+```
 
 ## Installation de Docker
 

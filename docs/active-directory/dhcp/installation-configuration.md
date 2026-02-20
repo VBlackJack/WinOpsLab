@@ -10,11 +10,7 @@ tags:
 
 # Installation et configuration du DHCP
 
-!!! info "Niveau : Intermediaire | Temps de lecture : 25 minutes"
-
-    Cette page explique comment installer le role DHCP sur Windows Server 2022,
-    l'autoriser dans Active Directory et effectuer la configuration initiale
-    du service.
+<span class="level-intermediate">Intermediaire</span> · Temps estime : 25 minutes
 
 ---
 

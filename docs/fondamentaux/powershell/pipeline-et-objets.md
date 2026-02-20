@@ -9,9 +9,7 @@ tags:
 
 # Pipeline et objets
 
-!!! info "Niveau : Debutant"
-
-    Temps estime : 20 minutes
+<span class="level-beginner">Debutant</span> · Temps estime : 20 minutes
 
 ## PowerShell manipule des objets
 

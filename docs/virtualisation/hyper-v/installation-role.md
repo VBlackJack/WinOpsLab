@@ -10,7 +10,7 @@ tags:
 
 # Installation du role Hyper-V
 
-!!! info "Niveau : intermediaire | Temps estime : 25 minutes"
+<span class="level-intermediate">Intermediaire</span> · Temps estime : 25 minutes
 
 Hyper-V est l'hyperviseur de type 1 integre a Windows Server. Il permet de creer et gerer des machines virtuelles (VM) avec des performances proches du materiel natif.
 

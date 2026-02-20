@@ -10,15 +10,15 @@ tags:
 
 # Storage Spaces Direct (S2D)
 
-!!! info "Niveau : Intermediaire"
-
-    Temps estime : 30 minutes
+<span class="level-intermediate">Intermediaire</span> · Temps estime : 30 minutes
 
 !!! warning "Edition requise"
 
     Storage Spaces Direct est disponible **uniquement** avec l'edition **Windows Server 2022 Datacenter**. L'edition Standard ne prend pas en charge cette fonctionnalite.
 
 ## Vue d'ensemble
+
+![](../../diagrams/storage-architecture.drawio)
 
 Storage Spaces Direct (S2D) est l'evolution de Storage Spaces pour les environnements en cluster. Il permet de creer un stockage partage hautement disponible en utilisant les disques locaux de chaque noeud du cluster, sans necessiter de SAN externe ou de boitier JBOD partage.
 

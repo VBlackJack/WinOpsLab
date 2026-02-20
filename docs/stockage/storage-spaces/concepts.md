@@ -9,9 +9,7 @@ tags:
 
 # Concepts de Storage Spaces
 
-!!! info "Niveau : Intermediaire"
-
-    Temps estime : 25 minutes
+<span class="level-intermediate">Intermediaire</span> · Temps estime : 25 minutes
 
 ## Vue d'ensemble
 

@@ -10,7 +10,7 @@ tags:
 
 # Quorum et temoin de cluster
 
-!!! info "Niveau : avance | Temps estime : 40 minutes"
+<span class="level-advanced">Avance</span> · Temps estime : 40 minutes
 
 ## Introduction
 

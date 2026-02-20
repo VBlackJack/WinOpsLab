@@ -23,6 +23,25 @@ Le module PowerShell **NetSecurity** fournit un ensemble complet de cmdlets pour
 
 ---
 
+## Workflow de gestion des regles de pare-feu
+
+```mermaid
+flowchart TD
+    A["Besoin de gestion pare-feu"] --> B{"Quelle operation ?"}
+    B -->|Creer| C["New-NetFirewallRule<br/>Direction, Protocole, Port, Action"]
+    B -->|Consulter| D["Get-NetFirewallRule<br/>+ Get-NetFirewallPortFilter"]
+    B -->|Modifier| E["Set-NetFirewallRule"]
+    B -->|Activer/Desactiver| F["Enable / Disable-NetFirewallRule"]
+    B -->|Supprimer| G["Remove-NetFirewallRule"]
+    B -->|Deployer en masse| H{"Methode de deploiement"}
+    H -->|PowerShell Remoting| I["Invoke-Command sur plusieurs serveurs"]
+    H -->|GPO| J["Deploiement centralise Active Directory"]
+    C --> K["Tester : Test-NetConnection"]
+    E --> K
+    F --> K
+    K --> L["Sauvegarder : netsh advfirewall export"]
+```
+
 ## Cmdlets principales
 
 ### Vue d'ensemble du module NetSecurity

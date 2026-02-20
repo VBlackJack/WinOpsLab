@@ -9,9 +9,7 @@ tags:
 
 # Zones integrees a Active Directory
 
-!!! info "Niveau : Intermediaire"
-
-    Temps estime : 35 minutes
+<span class="level-intermediate">Intermediaire</span> · Temps estime : 35 minutes
 
 ## Qu'est-ce qu'une zone DNS ?
 

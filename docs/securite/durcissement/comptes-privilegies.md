@@ -11,7 +11,7 @@ tags:
 
 # Protection des comptes privilegies
 
-!!! info "Niveau : avance | Temps estime : 50 minutes"
+<span class="level-advanced">Avance</span> · Temps estime : 50 minutes
 
 Les comptes privilegies sont la cible prioritaire des attaquants. Un compte Domain Admin compromis donne un acces total a l'infrastructure. La protection de ces comptes necessite une architecture de securite en couches.
 

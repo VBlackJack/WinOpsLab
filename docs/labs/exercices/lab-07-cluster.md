@@ -31,6 +31,17 @@ L'entreprise a besoin de haute disponibilite pour un serveur de fichiers critiqu
 | SRV-DC02 | Noeud 2 du cluster (ou creer SRV-NODE02) |
 | Stockage partage | Disque iSCSI ou VHDX partage |
 
+```mermaid
+graph LR
+    CLI["CLI-W11<br/>Poste client"] -->|"\\\\FS-CLUSTER\\Donnees"| VIP["FS-CLUSTER<br/>192.168.10.51<br/>IP virtuelle"]
+    VIP --> NODE1["SRV-FILE01<br/>Noeud 1"]
+    VIP --> NODE2["SRV-DC02<br/>Noeud 2"]
+    NODE1 <-->|"Heartbeat"| NODE2
+    NODE1 --> DISK["Disque partage<br/>ClusterStorage<br/>20 Go"]
+    NODE2 --> DISK
+    DC["SRV-DC01<br/>DC + DNS"] -.->|"Authentification"| VIP
+```
+
 ## Instructions
 
 ### Partie 1 : Preparer le stockage partage

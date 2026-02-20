@@ -11,7 +11,7 @@ tags:
 
 # Corbeille Active Directory
 
-!!! info "Niveau : avance | Temps estime : 35 minutes"
+<span class="level-advanced">Avance</span> · Temps estime : 35 minutes
 
 ## Introduction
 

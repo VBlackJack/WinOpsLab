@@ -10,7 +10,7 @@ tags:
 
 # Creer une machine virtuelle
 
-!!! info "Niveau : intermediaire | Temps estime : 30 minutes"
+<span class="level-intermediate">Intermediaire</span> · Temps estime : 30 minutes
 
 La creation d'une machine virtuelle Hyper-V implique plusieurs choix architecturaux : generation de la VM, allocation des ressources (CPU, RAM, stockage) et configuration des services d'integration.
 

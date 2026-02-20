@@ -9,13 +9,31 @@ tags:
 
 # Analyse des ecrans bleus (BSOD)
 
-!!! info "Niveau : Avance"
-
-    Temps estime : 35 minutes
+<span class="level-advanced">Avance</span> · Temps estime : 35 minutes
 
 ## Presentation
 
 Un ecran bleu (BSOD - Blue Screen of Death) se produit lorsque Windows detecte une erreur critique dont il ne peut pas se remettre. Le systeme genere un fichier de vidage memoire (memory dump) avant de redemarrer, ce qui permet une analyse post-mortem.
+
+## Arbre de decision : diagnostic d'un BSOD
+
+```mermaid
+flowchart TD
+    A["BSOD survenu"] --> B["Recuperer le code d'arret et le fichier fautif"]
+    B --> C{"Fichier dump genere ?"}
+    C -->|Oui| D["Ouvrir le dump dans WinDbg"]
+    C -->|Non| E["Verifier la configuration du pagefile et du dump"]
+    D --> F["Executer !analyze -v"]
+    F --> G{"IMAGE_NAME identifie un pilote ?"}
+    G -->|Oui| H["Mettre a jour ou annuler le pilote"]
+    G -->|Non| I{"Code lie a la memoire ?<br/>0x50, 0x0A, 0x19"}
+    I -->|Oui| J["Tester la RAM : mdsched.exe"]
+    I -->|Non| K{"Code lie au disque ?<br/>0x24 NTFS_FILE_SYSTEM"}
+    K -->|Oui| L["Verifier le disque : chkdsk /f /r"]
+    K -->|Non| M["Verifier mises a jour recentes<br/>et temperature systeme"]
+    E --> N["Configurer Kernel Memory Dump et verifier le pagefile"]
+    N --> O["Attendre le prochain BSOD pour analyse"]
+```
 
 ## Anatomie d'un BSOD
 

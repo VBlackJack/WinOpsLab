@@ -10,11 +10,7 @@ tags:
 
 # Etendues et options DHCP
 
-!!! info "Niveau : Intermediaire | Temps de lecture : 30 minutes"
-
-    Cette page explique comment creer des etendues (scopes) DHCP, configurer
-    les options a differents niveaux, definir des plages d'exclusion et
-    utiliser les superscopes.
+<span class="level-intermediate">Intermediaire</span> · Temps estime : 30 minutes
 
 ---
 

@@ -9,9 +9,7 @@ tags:
 
 # DFS Namespaces
 
-!!! info "Niveau : Intermediaire"
-
-    Temps estime : 25 minutes
+<span class="level-intermediate">Intermediaire</span> · Temps estime : 25 minutes
 
 ## Qu'est-ce que DFS Namespaces ?
 

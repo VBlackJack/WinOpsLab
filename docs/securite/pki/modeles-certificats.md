@@ -11,7 +11,7 @@ tags:
 
 # Modeles de certificats
 
-!!! info "Niveau : avance | Temps estime : 35 minutes"
+<span class="level-advanced">Avance</span> · Temps estime : 35 minutes
 
 Les modeles de certificats (Certificate Templates) definissent les proprietes des certificats emis par une CA Enterprise. Ils controlent la duree de validite, l'algorithme de chiffrement, les usages autorises et les permissions d'inscription.
 

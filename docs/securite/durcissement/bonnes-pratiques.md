@@ -10,7 +10,7 @@ tags:
 
 # Bonnes pratiques de durcissement
 
-!!! info "Niveau : avance | Temps estime : 45 minutes"
+<span class="level-advanced">Avance</span> · Temps estime : 45 minutes
 
 Le durcissement (hardening) consiste a reduire la surface d'attaque d'un serveur en eliminant les composants, services et configurations inutiles. Sur Windows Server 2022, cette demarche suit des principes eprouves que tout administrateur doit maitriser.
 

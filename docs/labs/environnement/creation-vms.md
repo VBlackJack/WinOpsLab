@@ -9,9 +9,7 @@ tags:
 
 # Creation des machines virtuelles
 
-!!! info "Niveau : Intermediaire"
-
-    Temps estime : 30 minutes
+<span class="level-intermediate">Intermediaire</span> · Temps estime : 30 minutes
 
 ## Presentation
 

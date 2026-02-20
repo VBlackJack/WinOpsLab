@@ -9,9 +9,7 @@ tags:
 
 # Structure des unites d'organisation (OU)
 
-!!! info "Niveau : Intermediaire"
-
-    Temps estime : 15 minutes
+<span class="level-intermediate">Intermediaire</span> · Temps estime : 15 minutes
 
 ## Qu'est-ce qu'une OU ?
 
@@ -28,6 +26,38 @@ Une **OU** (Organizational Unit / Unite d'Organisation) est un conteneur dans Ac
     - Un utilisateur est **dans une seule OU** mais peut etre **membre de plusieurs groupes**
 
 ## Modeles de structure
+
+### Vue d'ensemble d'une hierarchie type
+
+```mermaid
+graph TD
+    ROOT["🏢 lab.local"] --> OU_USERS["OU=Utilisateurs"]
+    ROOT --> OU_PC["OU=Ordinateurs"]
+    ROOT --> OU_SRV["OU=Serveurs"]
+    ROOT --> OU_GRP["OU=Groupes"]
+    ROOT --> OU_SVC["OU=Comptes-Service"]
+
+    OU_USERS --> U_DIR["OU=Direction"]
+    OU_USERS --> U_IT["OU=IT"]
+    OU_USERS --> U_COMPTA["OU=Comptabilite"]
+    OU_USERS --> U_RH["OU=RH"]
+
+    OU_PC --> PC_FIX["OU=Postes"]
+    OU_PC --> PC_PORT["OU=Portables"]
+
+    OU_SRV --> SRV_DC["OU=Controleurs-Domaine"]
+    OU_SRV --> SRV_MBR["OU=Serveurs-Membres"]
+
+    OU_GRP --> GRP_SEC["OU=Groupes-Securite"]
+    OU_GRP --> GRP_DIST["OU=Groupes-Distribution"]
+
+    style ROOT fill:#1565c0,color:#fff
+    style OU_USERS fill:#2e7d32,color:#fff
+    style OU_PC fill:#e65100,color:#fff
+    style OU_SRV fill:#6a1b9a,color:#fff
+    style OU_GRP fill:#00838f,color:#fff
+    style OU_SVC fill:#795548,color:#fff
+```
 
 ### Par departement (recommande pour les PME)
 

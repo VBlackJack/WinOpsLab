@@ -9,9 +9,7 @@ tags:
 
 # Installation de Windows Server
 
-!!! info "Niveau : Debutant"
-
-    Temps estime : 30 minutes | Lab associe : [Lab 01](../../labs/exercices/lab-01-installation.md)
+<span class="level-beginner">Debutant</span> · Temps estime : 30 minutes
 
 ## Introduction
 
@@ -23,6 +21,26 @@ L'installation de Windows Server 2022 est la premiere etape pour mettre en place
 - Machine virtuelle Hyper-V ou poste physique
 - Minimum 512 Mo de RAM (2 Go recommande)
 - Minimum 32 Go d'espace disque
+
+## Vue d'ensemble du processus d'installation
+
+```mermaid
+flowchart TD
+    A["Preparer l'ISO et le materiel"] --> B["Demarrer depuis l'ISO"]
+    B --> C{"Choix du type d'installation"}
+    C -->|Interactive| D["Selectionner la langue et le clavier"]
+    C -->|Automatisee| E["Fournir le fichier autounattend.xml"]
+    D --> F{"Desktop Experience ou Server Core ?"}
+    F -->|Desktop Experience| G["Installation avec interface graphique"]
+    F -->|Server Core| H["Installation minimale CLI"]
+    G --> I["Partitionnement du disque"]
+    H --> I
+    E --> I
+    I --> J["Installation et redemarrage"]
+    J --> K["Definir le mot de passe administrateur"]
+    K --> L["Configuration post-installation"]
+    L --> M["Renommer le serveur, IP statique, Windows Update"]
+```
 
 ## Methodes d'installation
 

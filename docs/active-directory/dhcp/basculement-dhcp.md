@@ -10,12 +10,7 @@ tags:
 
 # Basculement DHCP (Failover)
 
-!!! info "Niveau : Avance | Temps de lecture : 30 minutes"
-
-    Cette page explique comment mettre en place la haute disponibilite du
-    service DHCP avec le basculement (failover) entre deux serveurs
-    Windows Server 2022. Deux modes sont disponibles : Hot Standby et
-    Load Balancing.
+<span class="level-advanced">Avance</span> · Temps estime : 30 minutes
 
 ---
 

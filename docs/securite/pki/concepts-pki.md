@@ -10,9 +10,13 @@ tags:
 
 # Concepts fondamentaux de la PKI
 
-!!! info "Niveau : avance | Temps estime : 35 minutes"
+<span class="level-advanced">Avance</span> · Temps estime : 35 minutes
 
 La PKI (Public Key Infrastructure) est l'ensemble des composants, politiques et procedures qui permettent de gerer des certificats numeriques. Elle constitue le socle de la confiance dans les environnements Windows Server.
+
+---
+
+![](../../diagrams/pki-hierarchy.drawio)
 
 ---
 

@@ -11,7 +11,7 @@ tags:
 
 # EFS - Encrypting File System
 
-!!! info "Niveau : avance | Temps estime : 30 minutes"
+<span class="level-advanced">Avance</span> · Temps estime : 30 minutes
 
 EFS (Encrypting File System) est une fonctionnalite de chiffrement integree a NTFS qui protege des fichiers et dossiers individuels. Contrairement a BitLocker qui chiffre des volumes entiers, EFS offre une granularite au niveau du fichier.
 

@@ -9,9 +9,31 @@ tags:
 
 # Ajout et suppression de roles
 
-!!! info "Niveau : Debutant"
+<span class="level-beginner">Debutant</span> · Temps estime : 10 minutes
 
-    Temps estime : 10 minutes
+## Workflow d'ajout et de suppression de roles
+
+```mermaid
+flowchart TD
+    A["Identifier le role necessaire"] --> B["Rechercher le nom PowerShell"]
+    B --> C["Get-WindowsFeature -Name '*Nom*'"]
+    C --> D{"Installer ou supprimer ?"}
+    D -->|Installer| E["Install-WindowsFeature -Name Role -IncludeManagementTools"]
+    D -->|Supprimer| F["Uninstall-WindowsFeature -Name Role"]
+    E --> G{"Redemarrage requis ?"}
+    F --> H{"Supprimer les binaires ?"}
+    H -->|Oui| I["Ajouter -Remove"]
+    H -->|Non| J["Conserver les binaires sur disque"]
+    I --> G
+    J --> G
+    G -->|Oui| K["Redemarrer le serveur"]
+    G -->|Non| L["Verifier avec Get-WindowsFeature"]
+    K --> L
+    L --> M{"Configuration post-installation requise ?"}
+    M -->|Oui| N["Configurer le role : AD DS, DHCP, DNS..."]
+    M -->|Non| O["Role operationnel"]
+    N --> O
+```
 
 ## Installation via PowerShell
 

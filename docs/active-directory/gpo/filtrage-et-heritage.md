@@ -12,12 +12,7 @@ tags:
 
 # Filtrage et heritage des GPO
 
-!!! info "Niveau : Intermediaire-Avance | Temps estime : 55 minutes"
-
-    Cette page explique les mecanismes avances qui controlent **quelles GPO
-    s'appliquent a quels objets**. Prerequis : comprendre les
-    [concepts GPO](concepts-gpo.md) et savoir
-    [creer et lier une GPO](creer-et-lier.md).
+<span class="level-advanced">Intermediaire-Avance</span> · Temps estime : 55 minutes
 
 ## Heritage des GPO
 

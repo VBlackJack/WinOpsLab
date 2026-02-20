@@ -12,13 +12,7 @@ tags:
 
 # Modeles ADMX / ADML
 
-!!! info "Niveau : Intermediaire-Avance | Temps estime : 45 minutes"
-
-    Cette page explique le fonctionnement des modeles d'administration
-    ADMX/ADML, la mise en place du Central Store et l'integration de modeles
-    tiers sous Windows Server 2022. Prerequis : maitriser les
-    [concepts GPO](concepts-gpo.md) et savoir
-    [creer et lier une GPO](creer-et-lier.md).
+<span class="level-advanced">Intermediaire-Avance</span> · Temps estime : 45 minutes
 
 ## Qu'est-ce qu'un modele ADMX ?
 

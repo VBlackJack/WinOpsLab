@@ -18,9 +18,7 @@ tags:
     - [ ] Migrer des comptes utilisateurs et groupes
     - [ ] Verifier et valider la migration
 
-!!! info "Niveau : Avance"
-
-    Temps estime : 4 a 6 heures
+<span class="level-advanced">Avance</span>
 
 ## Contexte
 

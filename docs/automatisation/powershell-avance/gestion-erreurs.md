@@ -10,7 +10,7 @@ tags:
 
 # Gestion des erreurs PowerShell
 
-!!! info "Niveau : avance | Temps estime : 45 minutes"
+<span class="level-advanced">Avance</span> · Temps estime : 45 minutes
 
 ## Introduction
 
@@ -86,6 +86,26 @@ if (-not $service) {
 ```
 
 ## Try / Catch / Finally
+
+```mermaid
+flowchart TD
+    A["Debut du bloc Try"] --> B["Executer le code"]
+    B --> C{"Erreur\nterminante ?"}
+    C -- Non --> D["Code suivant\ndans Try"]
+    D --> E["Bloc Finally\n(toujours execute)"]
+    C -- Oui --> F{"Type d'exception\ncorrespond ?"}
+    F -- Oui --> G["Catch specifique\n(ex: SqlException)"]
+    F -- Non --> H["Catch generique"]
+    G --> E
+    H --> E
+    E --> I["Suite du script"]
+
+    style A fill:#1565c0,color:#fff
+    style C fill:#e65100,color:#fff
+    style G fill:#2e7d32,color:#fff
+    style H fill:#2e7d32,color:#fff
+    style E fill:#6a1b9a,color:#fff
+```
 
 ### Syntaxe de base
 

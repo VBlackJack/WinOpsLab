@@ -10,7 +10,7 @@ tags:
 
 # Concepts du Network Load Balancing
 
-!!! info "Niveau : avance | Temps estime : 35 minutes"
+<span class="level-advanced">Avance</span> · Temps estime : 35 minutes
 
 ## Introduction
 

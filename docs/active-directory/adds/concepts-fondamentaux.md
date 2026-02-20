@@ -9,9 +9,7 @@ tags:
 
 # Concepts fondamentaux d'AD DS
 
-!!! info "Niveau : Intermediaire"
-
-    Temps estime : 25 minutes
+<span class="level-intermediate">Intermediaire</span> · Temps estime : 25 minutes
 
 ## Qu'est-ce qu'Active Directory ?
 
@@ -23,6 +21,8 @@ tags:
 - **Gestion centralisee** : strategies de groupe (GPO) pour configurer des centaines de postes
 
 ## Hierarchie logique
+
+![](../../diagrams/ad-ds-forest.drawio)
 
 ```mermaid
 graph TD

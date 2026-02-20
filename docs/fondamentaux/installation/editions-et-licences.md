@@ -9,9 +9,7 @@ tags:
 
 # Editions et licences
 
-!!! info "Niveau : Debutant"
-
-    Temps estime : 15 minutes
+<span class="level-beginner">Debutant</span> · Temps estime : 15 minutes
 
 ## Les editions de Windows Server 2022
 

@@ -5,8 +5,32 @@ description: Audit et conformite Windows Server - politiques et journaux.
 
 # Audit et conformite
 
-## Pages
+## Contenu
 
-- [Politique d'audit](politique-audit.md)
-- [Journaux d'evenements](journaux-evenements.md)
-- [Audit avance](audit-avance.md)
+<div class="grid cards" markdown>
+
+- :material-shield-search: **Politique d'audit**
+
+    ---
+
+    Definition et configuration des politiques d'audit Windows.
+
+    [:octicons-arrow-right-24: Configurer](politique-audit.md)
+
+- :material-text-box-search: **Journaux d'evenements**
+
+    ---
+
+    Consultation et gestion des journaux d'evenements Windows.
+
+    [:octicons-arrow-right-24: Explorer](journaux-evenements.md)
+
+- :material-magnify-scan: **Audit avance**
+
+    ---
+
+    Strategies d'audit avancees et surveillance granulaire des acces.
+
+    [:octicons-arrow-right-24: Lire](audit-avance.md)
+
+</div>

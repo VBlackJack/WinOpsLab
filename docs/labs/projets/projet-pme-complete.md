@@ -17,9 +17,7 @@ tags:
     - [ ] Configurer la supervision de base
     - [ ] Documenter l'infrastructure deployee
 
-!!! info "Niveau : Avance"
-
-    Temps estime : 4 a 6 heures
+<span class="level-advanced">Avance</span>
 
 ## Contexte
 
@@ -60,6 +58,22 @@ La PME **TechNova** (50 employes, 3 sites) vous mandate pour deployer son infras
 | DC02 | 10.10.10.11 | AD DS, DNS (secondaire) |
 | FILE01 | 10.10.10.20 | Serveur de fichiers, DFS |
 | WEB01 | 10.10.10.30 | IIS (intranet) |
+
+```mermaid
+graph TD
+    LAN["Reseau LAN<br/>10.10.10.0/24"]
+    LAN --- DC1["DC01 - 10.10.10.10<br/>AD DS / DNS / DHCP / CA"]
+    LAN --- DC2["DC02 - 10.10.10.11<br/>AD DS / DNS secondaire"]
+    LAN --- FILE["FILE01 - 10.10.10.20<br/>Serveur de fichiers / DFS"]
+    LAN --- WEB["WEB01 - 10.10.10.30<br/>IIS intranet"]
+    LAN --- CLIENTS["Postes clients<br/>DHCP : .100-.250"]
+    DC1 <-->|"Replication AD"| DC2
+    DC1 -->|"DHCP"| CLIENTS
+    DC1 -->|"DNS"| CLIENTS
+    DC1 -->|"GPO"| CLIENTS
+    DC1 -->|"Certificats PKI"| WEB
+    FILE -->|"Partages SMB<br/>AGDLP"| CLIENTS
+```
 
 ## Livrables attendus
 

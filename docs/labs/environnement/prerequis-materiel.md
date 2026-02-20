@@ -9,9 +9,7 @@ tags:
 
 # Prerequis materiel
 
-!!! info "Niveau : Debutant"
-
-    Temps estime : 10 minutes
+<span class="level-beginner">Debutant</span> · Temps estime : 10 minutes
 
 ## Presentation
 

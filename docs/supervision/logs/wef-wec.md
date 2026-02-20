@@ -9,9 +9,7 @@ tags:
 
 # Windows Event Forwarding (WEF/WEC)
 
-!!! info "Niveau : Intermediaire"
-
-    Temps estime : 35 minutes
+<span class="level-intermediate">Intermediaire</span> · Temps estime : 35 minutes
 
 ## Presentation
 

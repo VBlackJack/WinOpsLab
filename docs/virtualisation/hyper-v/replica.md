@@ -11,7 +11,7 @@ tags:
 
 # Hyper-V Replica
 
-!!! info "Niveau : intermediaire | Temps estime : 35 minutes"
+<span class="level-intermediate">Intermediaire</span> · Temps estime : 35 minutes
 
 Hyper-V Replica replique une machine virtuelle d'un hote principal vers un hote secondaire de maniere asynchrone. En cas de panne du site principal, la VM repliquee peut etre activee sur le site secondaire, assurant la continuite d'activite.
 

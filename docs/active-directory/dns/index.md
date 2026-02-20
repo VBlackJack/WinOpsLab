@@ -7,10 +7,48 @@ description: Service DNS integre a Active Directory.
 
 Cette section couvre la configuration et la gestion du DNS integre a Active Directory.
 
-## Pages
+## Contenu
 
-- [Concepts DNS](concepts-dns.md)
-- [Zones integrees AD](zones-integrees-ad.md)
-- [Enregistrements](enregistrements.md)
-- [Resolution conditionnelle](resolution-conditionnelle.md)
-- [Depannage DNS](depannage-dns.md)
+<div class="grid cards" markdown>
+
+- :material-book-open-variant: **Concepts DNS**
+
+    ---
+
+    Comprendre le fonctionnement du systeme de noms de domaine.
+
+    [:octicons-arrow-right-24: Lire](concepts-dns.md)
+
+- :material-database-sync: **Zones integrees AD**
+
+    ---
+
+    Configurer des zones DNS integrees a Active Directory.
+
+    [:octicons-arrow-right-24: Configurer](zones-integrees-ad.md)
+
+- :material-format-list-bulleted: **Enregistrements**
+
+    ---
+
+    Gerer les differents types d'enregistrements DNS (A, CNAME, MX, SRV, etc.).
+
+    [:octicons-arrow-right-24: Lire](enregistrements.md)
+
+- :material-call-split: **Resolution conditionnelle**
+
+    ---
+
+    Mettre en place des redirecteurs conditionnels pour la resolution inter-domaines.
+
+    [:octicons-arrow-right-24: Configurer](resolution-conditionnelle.md)
+
+- :material-bug-outline: **Depannage DNS**
+
+    ---
+
+    Diagnostiquer et resoudre les problemes de resolution de noms.
+
+    [:octicons-arrow-right-24: Explorer](depannage-dns.md)
+
+</div>

@@ -9,9 +9,7 @@ tags:
 
 # Resource Monitor (resmon)
 
-!!! info "Niveau : Debutant"
-
-    Temps estime : 20 minutes
+<span class="level-beginner">Debutant</span> · Temps estime : 20 minutes
 
 ## Presentation
 

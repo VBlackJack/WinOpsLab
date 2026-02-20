@@ -9,9 +9,7 @@ tags:
 
 # Methodologie de depannage
 
-!!! info "Niveau : Debutant"
-
-    Temps estime : 25 minutes
+<span class="level-beginner">Debutant</span> · Temps estime : 25 minutes
 
 ## Presentation
 

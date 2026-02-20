@@ -9,9 +9,7 @@ tags:
 
 # Resolution conditionnelle et redirecteurs
 
-!!! info "Niveau : Avance"
-
-    Temps estime : 25 minutes
+<span class="level-advanced">Avance</span> · Temps estime : 25 minutes
 
 ## Principe de la redirection DNS
 

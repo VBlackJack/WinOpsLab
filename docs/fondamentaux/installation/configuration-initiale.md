@@ -9,13 +9,35 @@ tags:
 
 # Configuration initiale
 
-!!! info "Niveau : Debutant"
-
-    Temps estime : 20 minutes | Lab associe : [Lab 01](../../labs/exercices/lab-01-installation.md)
+<span class="level-beginner">Debutant</span> · Temps estime : 20 minutes
 
 ## Introduction
 
 Apres l'installation de Windows Server 2022, plusieurs etapes de configuration sont necessaires avant de mettre le serveur en production.
+
+## Processus de configuration post-installation
+
+```mermaid
+flowchart TD
+    A["Installation terminee"] --> B["1. Renommer le serveur"]
+    B --> C["2. Configurer IP statique"]
+    C --> D["3. Configurer fuseau horaire\net NTP"]
+    D --> E["4. Activer Bureau a distance\n(RDP + NLA)"]
+    E --> F["5. Installer mises a jour\n(Windows Update)"]
+    F --> G["6. Configurer le pare-feu"]
+    G --> H["7. Activer gestion a distance\n(WinRM / PSRemoting)"]
+    H --> I{"Serveur pret\npour la production"}
+
+    style A fill:#795548,color:#fff
+    style B fill:#1565c0,color:#fff
+    style C fill:#1565c0,color:#fff
+    style D fill:#1565c0,color:#fff
+    style E fill:#2e7d32,color:#fff
+    style F fill:#e65100,color:#fff
+    style G fill:#e65100,color:#fff
+    style H fill:#6a1b9a,color:#fff
+    style I fill:#2e7d32,color:#fff
+```
 
 ## Etape 1 : Renommer le serveur
 

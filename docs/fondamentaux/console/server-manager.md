@@ -9,9 +9,7 @@ tags:
 
 # Server Manager
 
-!!! info "Niveau : Debutant"
-
-    Temps estime : 15 minutes
+<span class="level-beginner">Debutant</span> · Temps estime : 15 minutes
 
 ## Presentation
 
@@ -26,6 +24,35 @@ Server Manager est la console d'administration centrale de Windows Server Deskto
 
     Server Manager n'est pas disponible sur Server Core. Utilisez PowerShell,
     RSAT depuis un poste client, ou Windows Admin Center.
+
+## Vue d'ensemble du tableau de bord
+
+```mermaid
+graph TD
+    SM["Server Manager"] --> DASH["Dashboard\nVue d'ensemble"]
+    SM --> LOCAL["Local Server\nProprietes du serveur"]
+    SM --> ALL["All Servers\nServeurs geres"]
+    SM --> ROLES["Roles installes"]
+
+    DASH --> EVENTS["Evenements"]
+    DASH --> SERVICES["Services"]
+    DASH --> PERF["Performances"]
+    DASH --> BPA["Analyseur BPA"]
+
+    LOCAL --> NOM["Nom du serveur"]
+    LOCAL --> IP["Adresse IP"]
+    LOCAL --> FW["Pare-feu"]
+    LOCAL --> RDP["Bureau a distance"]
+
+    ROLES --> ADDS["AD DS"]
+    ROLES --> DNS["DNS"]
+    ROLES --> DHCP["DHCP"]
+
+    style SM fill:#1565c0,color:#fff
+    style DASH fill:#2e7d32,color:#fff
+    style LOCAL fill:#e65100,color:#fff
+    style ROLES fill:#6a1b9a,color:#fff
+```
 
 ## Interface principale
 

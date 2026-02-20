@@ -9,9 +9,27 @@ tags:
 
 # Comptes ordinateurs
 
-!!! info "Niveau : Intermediaire"
+<span class="level-intermediate">Intermediaire</span> · Temps estime : 15 minutes
 
-    Temps estime : 15 minutes
+## Cycle de vie d'un compte ordinateur
+
+```mermaid
+flowchart LR
+    A["Creation\n(pre-staging ou\njonction auto)"] --> B["Jonction\nau domaine"]
+    B --> C["Actif\n(authentification\nreguliere)"]
+    C --> D{"Inactif\n> 90 jours ?"}
+    D -- Non --> C
+    D -- Oui --> E["Desactivation\n(Disable-ADAccount)"]
+    E --> F{"Confirme\nobsolete ?"}
+    F -- Non --> G["Reactivation"]
+    G --> C
+    F -- Oui --> H["Suppression\n(Remove-ADComputer)"]
+
+    style A fill:#1565c0,color:#fff
+    style C fill:#2e7d32,color:#fff
+    style E fill:#e65100,color:#fff
+    style H fill:#b71c1c,color:#fff
+```
 
 ## Jonction au domaine
 

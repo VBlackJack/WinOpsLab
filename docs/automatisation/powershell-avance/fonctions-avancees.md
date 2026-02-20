@@ -10,7 +10,7 @@ tags:
 
 # Fonctions avancees PowerShell
 
-!!! info "Niveau : avance | Temps estime : 50 minutes"
+<span class="level-advanced">Avance</span> · Temps estime : 50 minutes
 
 ## Introduction
 

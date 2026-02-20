@@ -9,9 +9,7 @@ tags:
 
 # Premiers pas avec PowerShell
 
-!!! info "Niveau : Debutant"
-
-    Temps estime : 20 minutes
+<span class="level-beginner">Debutant</span> · Temps estime : 20 minutes
 
 ## Qu'est-ce que PowerShell ?
 

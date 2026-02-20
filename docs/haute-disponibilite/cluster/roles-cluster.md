@@ -10,11 +10,35 @@ tags:
 
 # Roles du cluster
 
-!!! info "Niveau : avance | Temps estime : 50 minutes"
+<span class="level-advanced">Avance</span> · Temps estime : 50 minutes
 
 ## Introduction
 
 Un cluster de basculement ne devient utile que lorsqu'il heberge des **roles** (ou services). Un role est une charge de travail configuree pour basculer automatiquement entre les noeuds du cluster en cas de defaillance. Windows Server 2022 propose des roles integres ainsi que la possibilite d'ajouter des applications personnalisees.
+
+## Architecture des roles du cluster
+
+```mermaid
+graph TD
+    Cluster["Cluster de basculement"] --> Integres["Roles integres"]
+    Cluster --> Generiques["Roles generiques"]
+
+    Integres --> FS["File Server"]
+    Integres --> HyperV["Hyper-V / VM"]
+    Integres --> DVFS["DFS Namespace"]
+    Integres --> DHCP["DHCP Server"]
+    Integres --> SQL["SQL Server FCI"]
+
+    FS --> FSClassique["Actif-passif classique"]
+    FS --> SOFS["Scale-Out File Server actif-actif"]
+
+    Generiques --> GenSvc["Generic Service"]
+    Generiques --> GenApp["Generic Application"]
+    Generiques --> GenScript["Generic Script"]
+
+    HyperV --> Live["Live Migration"]
+    HyperV --> Quick["Quick Migration"]
+```
 
 ## Vue d'ensemble des roles disponibles
 

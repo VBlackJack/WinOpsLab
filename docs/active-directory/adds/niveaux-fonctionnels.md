@@ -9,9 +9,7 @@ tags:
 
 # Niveaux fonctionnels
 
-!!! info "Niveau : Intermediaire"
-
-    Temps estime : 10 minutes
+<span class="level-intermediate">Intermediaire</span> · Temps estime : 10 minutes
 
 ## Concept
 
@@ -22,6 +20,31 @@ Les **niveaux fonctionnels** determinent les fonctionnalites AD disponibles. Ils
     L'elevation du niveau fonctionnel est une operation **irreversible**.
     Une fois eleve, vous ne pouvez plus ajouter de DC avec une version
     anterieure de Windows Server.
+
+## Progression des niveaux fonctionnels
+
+```mermaid
+graph LR
+    A["WS 2008 R2"] -->|"Elever"| B["WS 2012"]
+    B -->|"Elever"| C["WS 2012 R2"]
+    C -->|"Elever"| D["WS 2016"]
+    D -->|"Elever"| E["WS 2025"]
+
+    A ---|"AD Recycle Bin\nMSA"| A
+    B ---|"gMSA\nClaims-based auth"| B
+    C ---|"Protected Users\nAuth Policies"| C
+    D ---|"PAM\nAES Kerberos"| D
+
+    style A fill:#795548,color:#fff
+    style B fill:#e65100,color:#fff
+    style C fill:#2e7d32,color:#fff
+    style D fill:#1565c0,color:#fff
+    style E fill:#6a1b9a,color:#fff
+```
+
+!!! warning "Sens unique"
+
+    L'elevation est **irreversible** : chaque fleche ne va que dans un sens. Impossible de revenir a un niveau precedent.
 
 ## Niveaux disponibles
 

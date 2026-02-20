@@ -35,6 +35,18 @@ Votre responsable vous demande de mettre en place le domaine Active Directory de
     Le Lab 01 (installation et configuration initiale) doit etre termine.
     SRV-DC01 et SRV-DC02 doivent etre installes, renommes et configures avec des IP statiques.
 
+```mermaid
+graph TD
+    FOREST["Foret : winopslab.local"]
+    FOREST --> DOMAIN["Domaine : winopslab.local"]
+    DOMAIN --> DC1["SRV-DC01<br/>192.168.10.10<br/>DC principal + DNS"]
+    DOMAIN --> DC2["SRV-DC02<br/>192.168.10.11<br/>DC secondaire + DNS"]
+    DOMAIN --> CLI["CLI-W11<br/>Poste client"]
+    DC1 -->|"Replication AD"| DC2
+    DC1 -.->|"DNS"| CLI
+    DC2 -.->|"DNS"| CLI
+```
+
 ## Instructions
 
 ### Partie 1 : Installer le role AD DS sur SRV-DC01

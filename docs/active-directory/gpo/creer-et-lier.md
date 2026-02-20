@@ -10,12 +10,7 @@ tags:
 
 # Creer et lier une GPO
 
-!!! info "Niveau : Intermediaire | Temps estime : 50 minutes"
-
-    Cette page detaille les etapes pour creer, lier et configurer des strategies
-    de groupe dans un environnement Active Directory sous Windows Server 2022.
-    Prerequis : comprendre les [concepts GPO](concepts-gpo.md) et disposer d'un
-    domaine AD DS fonctionnel.
+<span class="level-intermediate">Intermediaire</span> · Temps estime : 50 minutes
 
 ## Cycle de vie d'une GPO
 

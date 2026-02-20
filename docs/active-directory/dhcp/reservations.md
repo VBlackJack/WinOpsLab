@@ -10,11 +10,7 @@ tags:
 
 # Reservations DHCP
 
-!!! info "Niveau : Intermediaire | Temps de lecture : 20 minutes"
-
-    Cette page explique comment creer des reservations DHCP pour garantir
-    qu'un equipement recoit toujours la meme adresse IP, tout en beneficiant
-    de la gestion centralisee du DHCP.
+<span class="level-intermediate">Intermediaire</span> · Temps estime : 20 minutes
 
 ---
 

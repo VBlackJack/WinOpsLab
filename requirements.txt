@@ -5,3 +5,4 @@ mkdocs-minify-plugin>=0.8.0
 pymdown-extensions>=10.17.1
 pygments>=2.19.2
 mkdocs-glightbox>=0.4.0
+mkdocs-drawio>=1.8.0

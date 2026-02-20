@@ -11,11 +11,28 @@ tags:
 
 # Configuration du NLB
 
-!!! info "Niveau : avance | Temps estime : 45 minutes"
+<span class="level-advanced">Avance</span> · Temps estime : 45 minutes
 
 ## Introduction
 
 Ce chapitre couvre la mise en oeuvre pratique du Network Load Balancing sous Windows Server 2022. Nous allons configurer un cluster NLB pour des serveurs web IIS en utilisant PowerShell et l'interface graphique (NLB Manager).
+
+## Architecture NLB
+
+```mermaid
+graph LR
+    C1["Client 1"] --> VIP["IP virtuelle NLB<br/>192.168.1.200"]
+    C2["Client 2"] --> VIP
+    C3["Client 3"] --> VIP
+
+    VIP --> NLB{"Repartition NLB<br/>Regles de port + Affinite"}
+
+    NLB --> N1["NODE1<br/>IIS / Application<br/>Priorite 1"]
+    NLB --> N2["NODE2<br/>IIS / Application<br/>Priorite 2"]
+
+    N1 --> DNS["Enregistrement DNS<br/>web.domaine.local"]
+    N2 --> DNS
+```
 
 ## Prerequis
 

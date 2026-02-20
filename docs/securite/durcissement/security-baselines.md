@@ -11,7 +11,7 @@ tags:
 
 # Microsoft Security Baselines
 
-!!! info "Niveau : avance | Temps estime : 40 minutes"
+<span class="level-advanced">Avance</span> · Temps estime : 40 minutes
 
 Les Security Baselines de Microsoft fournissent des configurations de securite recommandees et testees pour Windows Server. Elles permettent d'etablir rapidement un socle de securite coherent a l'echelle de l'entreprise.
 

@@ -10,7 +10,7 @@ tags:
 
 # Concepts du clustering avec basculement
 
-!!! info "Niveau : avance | Temps estime : 45 minutes"
+<span class="level-advanced">Avance</span> · Temps estime : 45 minutes
 
 ## Introduction
 
@@ -19,6 +19,8 @@ Le **failover clustering** (clustering avec basculement) est la technologie de h
 L'objectif principal est d'assurer qu'une application ou un service reste accessible meme lorsqu'un composant materiel ou logiciel tombe en panne.
 
 ## Architecture d'un cluster
+
+![](../../diagrams/cluster-architecture.drawio)
 
 ### Les noeuds
 

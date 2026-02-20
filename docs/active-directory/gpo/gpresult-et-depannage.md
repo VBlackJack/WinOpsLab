@@ -12,12 +12,7 @@ tags:
 
 # GPResult et depannage des GPO
 
-!!! info "Niveau : Intermediaire-Avance | Temps estime : 50 minutes"
-
-    Cette page presente les outils et methodes pour verifier l'application
-    effective des GPO et diagnostiquer les problemes courants sous Windows
-    Server 2022. Prerequis : maitriser les [concepts GPO](concepts-gpo.md),
-    le [filtrage et heritage](filtrage-et-heritage.md).
+<span class="level-advanced">Intermediaire-Avance</span> · Temps estime : 50 minutes
 
 ## gpresult : l'outil de diagnostic principal
 

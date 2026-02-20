@@ -31,6 +31,20 @@ et un serveur Core pour les services reseau.
 | Reseau | Switch virtuel interne |
 | ISO | Windows Server 2022 Evaluation |
 
+```mermaid
+flowchart TD
+    A["Creer le switch<br/>virtuel LabSwitch"] --> B["Creer VM 1<br/>SRV-GUI<br/>4 Go RAM / 60 Go"]
+    A --> C["Creer VM 2<br/>SRV-CORE<br/>2 Go RAM / 40 Go"]
+    B --> D["Installer Windows Server<br/>Desktop Experience"]
+    C --> E["Installer Windows Server<br/>Server Core"]
+    D --> F["Configuration post-installation"]
+    E --> F
+    F --> G["Renommer le serveur"]
+    G --> H["Configurer IP statique"]
+    H --> I["Configurer DNS"]
+    I --> J["Activer gestion<br/>a distance"]
+```
+
 ## Instructions
 
 ### Partie 1 : Creer les machines virtuelles

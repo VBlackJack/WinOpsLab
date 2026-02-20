@@ -10,7 +10,7 @@ tags:
 
 # Conteneurs Windows
 
-!!! info "Niveau : intermediaire | Temps estime : 30 minutes"
+<span class="level-intermediate">Intermediaire</span> · Temps estime : 30 minutes
 
 Les conteneurs Windows permettent d'executer des applications dans des environnements isoles et legers, sans la surcharge d'une machine virtuelle complete. Windows Server 2022 supporte les conteneurs nativement avec deux modes d'isolation.
 

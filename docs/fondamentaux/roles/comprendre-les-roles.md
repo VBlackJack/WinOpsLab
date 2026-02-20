@@ -9,9 +9,7 @@ tags:
 
 # Comprendre les roles et fonctionnalites
 
-!!! info "Niveau : Debutant"
-
-    Temps estime : 15 minutes
+<span class="level-beginner">Debutant</span> · Temps estime : 15 minutes
 
 ## Roles vs fonctionnalites
 

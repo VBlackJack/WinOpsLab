@@ -11,7 +11,7 @@ tags:
 
 # PowerShell Remoting
 
-!!! info "Niveau : avance | Temps estime : 45 minutes"
+<span class="level-advanced">Avance</span> · Temps estime : 45 minutes
 
 ## Introduction
 

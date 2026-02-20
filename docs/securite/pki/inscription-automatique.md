@@ -11,7 +11,7 @@ tags:
 
 # Inscription automatique des certificats
 
-!!! info "Niveau : avance | Temps estime : 30 minutes"
+<span class="level-advanced">Avance</span> · Temps estime : 30 minutes
 
 L'inscription automatique (auto-enrollment) permet aux machines et utilisateurs du domaine d'obtenir et de renouveler leurs certificats sans intervention manuelle. Cette fonctionnalite est essentielle pour deployer la PKI a grande echelle.
 

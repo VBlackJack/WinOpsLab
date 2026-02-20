@@ -10,7 +10,7 @@ tags:
 
 # Live Migration
 
-!!! info "Niveau : intermediaire | Temps estime : 35 minutes"
+<span class="level-intermediate">Intermediaire</span> · Temps estime : 35 minutes
 
 La Live Migration permet de deplacer une machine virtuelle en cours d'execution d'un hote Hyper-V a un autre **sans interruption de service**. C'est une fonctionnalite cle pour la maintenance des hotes et l'equilibrage de charge.
 

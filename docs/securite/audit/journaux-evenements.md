@@ -11,7 +11,7 @@ tags:
 
 # Journaux d'evenements
 
-!!! info "Niveau : avance | Temps estime : 45 minutes"
+<span class="level-advanced">Avance</span> · Temps estime : 45 minutes
 
 Les journaux d'evenements Windows sont la source principale d'information pour la detection d'incidents, l'investigation forensique et la conformite. Maitriser les Event IDs critiques et les requetes PowerShell associees est indispensable pour tout administrateur securite.
 

@@ -11,7 +11,7 @@ tags:
 
 # BitLocker sur serveur
 
-!!! info "Niveau : avance | Temps estime : 35 minutes"
+<span class="level-advanced">Avance</span> · Temps estime : 35 minutes
 
 BitLocker Drive Encryption protege les donnees au repos en chiffrant integralement les volumes de disque. Sur un serveur, BitLocker empeche l'acces aux donnees en cas de vol physique du disque ou du serveur.
 

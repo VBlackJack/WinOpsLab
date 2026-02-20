@@ -9,9 +9,7 @@ tags:
 
 # Depannage DNS
 
-!!! info "Niveau : Avance"
-
-    Temps estime : 40 minutes
+<span class="level-advanced">Avance</span> · Temps estime : 40 minutes
 
 ## Methodologie de diagnostic
 

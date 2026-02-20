@@ -9,9 +9,7 @@ tags:
 
 # Concepts DNS
 
-!!! info "Niveau : Fondamental"
-
-    Temps estime : 30 minutes
+<span class="level-beginner">Fondamental</span> · Temps estime : 30 minutes
 
 ## Qu'est-ce que le DNS ?
 

@@ -18,9 +18,7 @@ tags:
     - [ ] Rediger la documentation du PRA
     - [ ] Tester le plan de reprise
 
-!!! info "Niveau : Avance"
-
-    Temps estime : 4 a 6 heures
+<span class="level-advanced">Avance</span>
 
 ## Contexte
 

@@ -11,7 +11,7 @@ tags:
 
 # Stockage virtuel
 
-!!! info "Niveau : intermediaire | Temps estime : 25 minutes"
+<span class="level-intermediate">Intermediaire</span> · Temps estime : 25 minutes
 
 Le stockage virtuel Hyper-V s'appuie principalement sur des fichiers de disques virtuels (VHD/VHDX). Le choix du format et du type de disque impacte directement les performances, la flexibilite et l'utilisation de l'espace disque.
 

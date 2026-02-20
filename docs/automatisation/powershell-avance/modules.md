@@ -10,7 +10,7 @@ tags:
 
 # Modules PowerShell
 
-!!! info "Niveau : avance | Temps estime : 45 minutes"
+<span class="level-advanced">Avance</span> · Temps estime : 45 minutes
 
 ## Introduction
 
@@ -37,6 +37,27 @@ $env:PSModulePath -split ";"
 | Utilisateur courant | Utilisateur | `$HOME\Documents\PowerShell\Modules` |
 | Tous les utilisateurs | Machine | `$env:ProgramFiles\PowerShell\Modules` |
 | Systeme | Built-in | `$PSHOME\Modules` |
+
+## Architecture d'un module
+
+```mermaid
+graph TD
+    MANIFEST["Manifeste (.psd1)\nVersion, auteur,\ndependances"] --> ROOT_MOD["Module racine (.psm1)\nPoint d'entree"]
+    ROOT_MOD --> PUB["Public/\nFonctions exportees"]
+    ROOT_MOD --> PRIV["Private/\nFonctions internes"]
+    PUB --> F1["Get-Something.ps1"]
+    PUB --> F2["Set-Something.ps1"]
+    PRIV --> F3["Invoke-Helper.ps1"]
+    MANIFEST --> TESTS["Tests/\nTests Pester"]
+    MANIFEST --> HELP["en-US/\nAide localisee"]
+
+    style MANIFEST fill:#1565c0,color:#fff
+    style ROOT_MOD fill:#2e7d32,color:#fff
+    style PUB fill:#00838f,color:#fff
+    style PRIV fill:#795548,color:#fff
+    style TESTS fill:#e65100,color:#fff
+    style HELP fill:#6a1b9a,color:#fff
+```
 
 ## Creer un module de script
 

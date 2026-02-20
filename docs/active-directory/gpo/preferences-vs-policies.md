@@ -11,11 +11,7 @@ tags:
 
 # Preferences vs Policies
 
-!!! info "Niveau : Intermediaire | Temps estime : 40 minutes"
-
-    Cette page clarifie la distinction fondamentale entre les **Policies**
-    (strategies) et les **Preferences** (preferences) dans les GPO.
-    Prerequis : comprendre les [concepts GPO](concepts-gpo.md).
+<span class="level-intermediate">Intermediaire</span> · Temps estime : 40 minutes
 
 ## Vue d'ensemble
 

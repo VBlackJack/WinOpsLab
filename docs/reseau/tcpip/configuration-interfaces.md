@@ -54,6 +54,21 @@ ipconfig /all
 
 ---
 
+```mermaid
+graph LR
+    A["Decouvrir les<br/>interfaces"] --> B["Choisir la<br/>methode"]
+    B --> C["PowerShell"]
+    B --> D["netsh"]
+    B --> E["Interface<br/>graphique"]
+    C --> F["Desactiver DHCP"]
+    D --> F
+    E --> F
+    F --> G["Attribuer IP<br/>statique"]
+    G --> H["Configurer<br/>DNS"]
+    H --> I["Configurer<br/>passerelle"]
+    I --> J["Diagnostiquer<br/>et valider"]
+```
+
 ## Configuration via PowerShell (recommande)
 
 ### Attribuer une adresse IPv4 statique

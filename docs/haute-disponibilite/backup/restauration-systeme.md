@@ -1,3 +1,18 @@
+﻿<!--
+  Copyright 2026 Julien Bombled
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
 ---
 title: "Restauration systeme"
 description: "Restaurer un serveur Windows Server 2022 : Bare Metal Recovery, restauration de l'etat systeme, WinRE et procedures de recuperation."
@@ -11,7 +26,7 @@ tags:
 
 # Restauration systeme
 
-<span class="level-advanced">Avance</span> · Temps estime : 50 minutes
+<span class="level-advanced">Avance</span> Â· Temps estime : 50 minutes
 
 ## Introduction
 
@@ -353,19 +368,19 @@ Apres la restauration :
     DC-01               2026-02-20 10:15:30  0d.00h:00m:30s (no error)
     ```
 
-    La restauration complete a pris 58 minutes — en dessous du RTO de 2 heures defini avec la direction.
+    La restauration complete a pris 58 minutes â€” en dessous du RTO de 2 heures defini avec la direction.
 
 !!! danger "Erreurs courantes"
 
-    **Restauration system state DC sans mode DSRM** — Sur un controleur de domaine, tenter une restauration de l'etat systeme depuis Windows normal (pas DSRM) echoue car le service NTDS est en cours d'utilisation. Redemarrez toujours en mode DSRM (`bcdedit /set safeboot dsrepair`) avant la restauration.
+    **Restauration system state DC sans mode DSRM** â€” Sur un controleur de domaine, tenter une restauration de l'etat systeme depuis Windows normal (pas DSRM) echoue car le service NTDS est en cours d'utilisation. Redemarrez toujours en mode DSRM (`bcdedit /set safeboot dsrepair`) avant la restauration.
 
-    **Oublier de desactiver le mode DSRM apres restauration** — Apres la restauration, si on oublie `bcdedit /deletevalue safeboot`, le serveur redemarre en mode DSRM a chaque fois et ne rejoint pas le domaine normalement.
+    **Oublier de desactiver le mode DSRM apres restauration** â€” Apres la restauration, si on oublie `bcdedit /deletevalue safeboot`, le serveur redemarre en mode DSRM a chaque fois et ne rejoint pas le domaine normalement.
 
-    **Restauration authoritative par erreur** — La restauration authoritative est irreversible sur le plan de la replication : elle ecrase les donnees des autres DC pour les objets concernes. Ne l'utilisez que si des objets ont ete deliberement supprimes et ne peuvent pas etre recuperes via la corbeille AD.
+    **Restauration authoritative par erreur** â€” La restauration authoritative est irreversible sur le plan de la replication : elle ecrase les donnees des autres DC pour les objets concernes. Ne l'utilisez que si des objets ont ete deliberement supprimes et ne peuvent pas etre recuperes via la corbeille AD.
 
-    **Materiel incompatible lors du BMR** — Si le nouveau serveur a un controleur de stockage different, Windows peut ne pas trouver les disques apres restauration. Injectez les pilotes depuis WinRE avant de lancer la restauration (`Troubleshoot > Advanced Options > Install drivers`).
+    **Materiel incompatible lors du BMR** â€” Si le nouveau serveur a un controleur de stockage different, Windows peut ne pas trouver les disques apres restauration. Injectez les pilotes depuis WinRE avant de lancer la restauration (`Troubleshoot > Advanced Options > Install drivers`).
 
-    **Sauvegarde reseau inaccessible lors du BMR** — WinRE doit pouvoir acceder au partage reseau pendant la restauration. Verifiez que les identifiants de connexion (stockes a part, pas seulement dans WSB) sont disponibles et que le reseau est configure dans WinRE.
+    **Sauvegarde reseau inaccessible lors du BMR** â€” WinRE doit pouvoir acceder au partage reseau pendant la restauration. Verifiez que les identifiants de connexion (stockes a part, pas seulement dans WSB) sont disponibles et que le reseau est configure dans WinRE.
 
 ## Points cles a retenir
 
@@ -381,3 +396,4 @@ Apres la restauration :
 - Windows Server Backup : [Windows Server Backup](windows-server-backup.md)
 - Corbeille AD : [AD Recycle Bin](ad-recycle-bin.md)
 - Strategie de sauvegarde : [Strategie de sauvegarde](strategie-sauvegarde.md)
+

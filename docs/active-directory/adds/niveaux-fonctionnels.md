@@ -1,3 +1,18 @@
+﻿<!--
+  Copyright 2026 Julien Bombled
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
 ---
 title: Niveaux fonctionnels
 description: Niveaux fonctionnels de la foret et du domaine Active Directory.
@@ -9,7 +24,7 @@ tags:
 
 # Niveaux fonctionnels
 
-<span class="level-intermediate">Intermediaire</span> · Temps estime : 10 minutes
+<span class="level-intermediate">Intermediaire</span> Â· Temps estime : 10 minutes
 
 ## Concept
 
@@ -157,7 +172,7 @@ Windows2016Forest
 
 !!! example "Scenario pratique"
 
-    **Contexte :** Lucas, administrateur AD, souhaite activer la fonctionnalite **AD Recycle Bin** pour pouvoir restaurer des objets supprimes accidentellement. La commande `Enable-ADOptionalFeature` echoue avec l'erreur « The forest is not at a functional level that can support this feature ».
+    **Contexte :** Lucas, administrateur AD, souhaite activer la fonctionnalite **AD Recycle Bin** pour pouvoir restaurer des objets supprimes accidentellement. La commande `Enable-ADOptionalFeature` echoue avec l'erreur Â« The forest is not at a functional level that can support this feature Â».
 
     **Diagnostic :**
 
@@ -226,3 +241,4 @@ Windows2016Forest
 
 - [Concepts fondamentaux](concepts-fondamentaux.md) - architecture AD
 - [AD Recycle Bin](../../haute-disponibilite/backup/ad-recycle-bin.md) - restauration d'objets
+

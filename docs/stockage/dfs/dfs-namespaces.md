@@ -1,3 +1,18 @@
+﻿<!--
+  Copyright 2026 Julien Bombled
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
 ---
 title: DFS Namespaces
 description: Comprendre et configurer les espaces de noms DFS - namespace de domaine vs autonome, creation de dossiers et cibles.
@@ -9,7 +24,7 @@ tags:
 
 # DFS Namespaces
 
-<span class="level-intermediate">Intermediaire</span> · Temps estime : 25 minutes
+<span class="level-intermediate">Intermediaire</span> Â· Temps estime : 25 minutes
 
 ## Qu'est-ce que DFS Namespaces ?
 
@@ -35,19 +50,19 @@ Sans DFS, les utilisateurs doivent connaitre le nom de chaque serveur :
 Avec un namespace DFS, tous les partages sont accessibles depuis une racine unique :
 
 ```
-\\lab.local\Partages\Comptabilite    → \\SRV-FILE01\Comptabilite
-\\lab.local\Partages\RH              → \\SRV-FILE02\RH
-\\lab.local\Partages\Direction        → \\SRV-FILE03\Direction
-\\lab.local\Partages\Archives         → \\SRV-ARCHIVE\Anciens-Projets
+\\lab.local\Partages\Comptabilite    â†’ \\SRV-FILE01\Comptabilite
+\\lab.local\Partages\RH              â†’ \\SRV-FILE02\RH
+\\lab.local\Partages\Direction        â†’ \\SRV-FILE03\Direction
+\\lab.local\Partages\Archives         â†’ \\SRV-ARCHIVE\Anciens-Projets
 ```
 
 ```mermaid
 graph TB
     U[Utilisateur] -->|"\\lab.local\Partages"| NS[Namespace DFS<br/>Partages]
-    NS --> F1["Comptabilite<br/>→ \\SRV-FILE01\Comptabilite"]
-    NS --> F2["RH<br/>→ \\SRV-FILE02\RH"]
-    NS --> F3["Direction<br/>→ \\SRV-FILE03\Direction"]
-    NS --> F4["Archives<br/>→ \\SRV-ARCHIVE\Anciens-Projets"]
+    NS --> F1["Comptabilite<br/>â†’ \\SRV-FILE01\Comptabilite"]
+    NS --> F2["RH<br/>â†’ \\SRV-FILE02\RH"]
+    NS --> F3["Direction<br/>â†’ \\SRV-FILE03\Direction"]
+    NS --> F4["Archives<br/>â†’ \\SRV-ARCHIVE\Anciens-Projets"]
 ```
 
 ## Terminologie
@@ -440,3 +455,4 @@ SCP Flushed. Done.
 - [DFS Replication](dfs-replication.md)
 - [Permissions de partage](../partage/permissions-partage.md)
 - [Permissions NTFS](../partage/permissions-ntfs.md)
+

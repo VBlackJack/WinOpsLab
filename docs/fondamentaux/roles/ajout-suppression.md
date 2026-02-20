@@ -1,3 +1,18 @@
+﻿<!--
+  Copyright 2026 Julien Bombled
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
 ---
 title: Ajout et suppression de roles
 description: Installer et supprimer des roles et fonctionnalites sur Windows Server 2022.
@@ -9,7 +24,7 @@ tags:
 
 # Ajout et suppression de roles
 
-<span class="level-beginner">Debutant</span> · Temps estime : 10 minutes
+<span class="level-beginner">Debutant</span> Â· Temps estime : 10 minutes
 
 ## Workflow d'ajout et de suppression de roles
 
@@ -39,7 +54,7 @@ flowchart TD
 
 !!! example "Analogie"
 
-    Installer un role sur Windows Server, c'est comme ajouter une application sur votre telephone. Vous parcourez le catalogue (`Get-WindowsFeature`), vous choisissez l'application (`Install-WindowsFeature`), et parfois le telephone doit redemarrer pour finaliser l'installation. Pour desinstaller, c'est le chemin inverse — et avec l'option `-Remove`, vous supprimez aussi les fichiers d'installation pour liberer de l'espace, comme vider le cache d'une application.
+    Installer un role sur Windows Server, c'est comme ajouter une application sur votre telephone. Vous parcourez le catalogue (`Get-WindowsFeature`), vous choisissez l'application (`Install-WindowsFeature`), et parfois le telephone doit redemarrer pour finaliser l'installation. Pour desinstaller, c'est le chemin inverse â€” et avec l'option `-Remove`, vous supprimez aussi les fichiers d'installation pour liberer de l'espace, comme vider le cache d'une application.
 
 ### Lister les roles disponibles
 
@@ -420,3 +435,4 @@ True    No             Success        {Active Directory Domain Services,
 
 - [Comprendre les roles](comprendre-les-roles.md) - theorie sur les roles
 - [AD DS - Installer le premier DC](../../active-directory/adds/installer-premier-dc.md) - exemple concret
+

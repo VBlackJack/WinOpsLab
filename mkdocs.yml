@@ -267,6 +267,7 @@ nav:
       - securite/index.md
       - Durcissement:
           - securite/durcissement/index.md
+          - securite/durcissement/tiering-model.md
           - securite/durcissement/bonnes-pratiques.md
           - securite/durcissement/security-baselines.md
           - securite/durcissement/comptes-privilegies.md
@@ -347,6 +348,7 @@ nav:
       - supervision/index.md
       - Surveillance systeme:
           - supervision/surveillance/index.md
+          - supervision/surveillance/monitoring-moderne.md
           - supervision/surveillance/performance-monitor.md
           - supervision/surveillance/resource-monitor.md
           - supervision/surveillance/event-viewer.md
@@ -354,6 +356,7 @@ nav:
       - Depannage:
           - supervision/depannage/index.md
           - supervision/depannage/methodologie.md
+          - supervision/depannage/analyse-trafic-pktmon.md
           - supervision/depannage/outils-reseau.md
           - supervision/depannage/outils-systeme.md
           - supervision/depannage/blue-screen.md
@@ -383,6 +386,7 @@ nav:
       - labs/index.md
       - Environnement de lab:
           - labs/environnement/index.md
+          - labs/environnement/vagrant-lab.md
           - labs/environnement/prerequis-materiel.md
           - labs/environnement/architecture-lab.md
           - labs/environnement/creation-vms.md
@@ -405,6 +409,8 @@ nav:
           - labs/projets/projet-plan-reprise.md
   - Ressources:
       - ressources/index.md
+      - ressources/memento-ports-ad.md
+      - ressources/memento-server-core.md
       - ressources/glossaire.md
       - ressources/commandes-essentielles.md
       - ressources/liens-utiles.md

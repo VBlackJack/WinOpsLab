@@ -1,3 +1,18 @@
+<!--
+  Copyright 2026 Julien Bombled
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
 ---
 title: "Azure AD Connect"
 description: Mettre en place l'identite hybride avec Azure AD Connect - synchronisation, modes d'authentification et architecture.
@@ -36,6 +51,8 @@ graph LR
 Azure AD Connect propose trois modes d'authentification :
 
 ### Password Hash Synchronization (PHS)
+
+![Azure AD Connect PHS](../../diagrams/azure-ad-connect.drawio#Azure_AD_Connect_PHS)
 
 | Caracteristique | Valeur |
 |-----------------|--------|
@@ -326,7 +343,7 @@ NumberOfPendingExports          : 0
 
 !!! danger "Erreurs courantes"
 
-    **Installer Azure AD Connect sur un controleur de domaine.** Bien que techniquement possible, cette configuration est deconseилlee. Le compte de service ADSync obtient des droits etendus sur l'AD ; un serveur dedie limite l'exposition en cas de compromission.
+    **Installer Azure AD Connect sur un controleur de domaine.** Bien que techniquement possible, cette configuration est deconseillee. Le compte de service ADSync obtient des droits etendus sur l'AD ; un serveur dedie limite l'exposition en cas de compromission.
 
     **Ignorer les erreurs de synchronisation dans le portail Azure AD Connect Health.** Les erreurs IdentitySynchronizationError (UPN en double, attribut proxyAddress conflict) bloquent silencieusement certains comptes. Verifier le portail de sante hebdomadairement.
 

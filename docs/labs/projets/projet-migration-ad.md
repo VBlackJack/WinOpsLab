@@ -1,3 +1,18 @@
+﻿<!--
+  Copyright 2026 Julien Bombled
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
 ---
 title: "Projet : Migration Active Directory"
 description: Projet de synthese - planifier et executer une migration Active Directory avec approbation de foret, ADMT et migration des comptes.
@@ -9,6 +24,10 @@ tags:
 ---
 
 # Projet : Migration Active Directory
+
+<span class="level-advanced">Avance</span> · Temps estime : 180 minutes
+
+---
 
 !!! abstract "Objectifs du projet"
 
@@ -27,7 +46,7 @@ tags:
     car les employes de DataSoft ont encore des fichiers et des acces sur leurs anciens
     serveurs. L'approbation de foret est le protocole d'accord entre les deux DRH. ADMT avec
     le SID History, c'est le systeme qui permet aux ex-employes DataSoft de garder leur ancien
-    badge valide en parallele du nouveau — jusqu'a ce que tous les acces aient ete migres.
+    badge valide en parallele du nouveau â€” jusqu'a ce que tous les acces aient ete migres.
 
 ## Contexte
 
@@ -267,3 +286,4 @@ graph LR
 
 - [Projet : Infrastructure PME complete](projet-pme-complete.md)
 - [Projet : Plan de reprise d'activite](projet-plan-reprise.md)
+

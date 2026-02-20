@@ -1,3 +1,18 @@
+﻿<!--
+  Copyright 2026 Julien Bombled
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
 ---
 title: "Installation de Windows Admin Center"
 description: Installer et configurer Windows Admin Center sur Windows Server 2022 - mode gateway, mode desktop, certificat et premier acces.
@@ -9,7 +24,7 @@ tags:
 
 # Installation de Windows Admin Center
 
-<span class="level-intermediate">Intermediaire</span> · Temps estime : 25 minutes
+<span class="level-intermediate">Intermediaire</span> Â· Temps estime : 25 minutes
 
 ## Presentation
 
@@ -292,3 +307,4 @@ msiexec /i "WindowsAdminCenter-NEW.msi" /qn /L*v "C:\Logs\wac-upgrade.log" SME_P
 
 - [Gestion des serveurs via WAC](gestion-serveurs.md) pour decouvrir les outils disponibles
 - [Extensions WAC](extensions.md) pour etendre les fonctionnalites
+

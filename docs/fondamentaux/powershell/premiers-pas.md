@@ -1,3 +1,18 @@
+﻿<!--
+  Copyright 2026 Julien Bombled
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
 ---
 title: Premiers pas avec PowerShell
 description: Introduction a PowerShell - lancement, navigation et concepts de base.
@@ -9,13 +24,13 @@ tags:
 
 # Premiers pas avec PowerShell
 
-<span class="level-beginner">Debutant</span> · Temps estime : 20 minutes
+<span class="level-beginner">Debutant</span> Â· Temps estime : 20 minutes
 
 ## Qu'est-ce que PowerShell ?
 
 !!! example "Analogie"
 
-    Imaginez `cmd.exe` comme un telephone fixe : il fait le minimum, appeler et raccrocher. PowerShell, c'est un smartphone — il fait tout ce que fait le telephone fixe, mais aussi naviguer, envoyer des messages, prendre des photos. C'est un outil complet qui ouvre un monde de possibilites.
+    Imaginez `cmd.exe` comme un telephone fixe : il fait le minimum, appeler et raccrocher. PowerShell, c'est un smartphone â€” il fait tout ce que fait le telephone fixe, mais aussi naviguer, envoyer des messages, prendre des photos. C'est un outil complet qui ouvre un monde de possibilites.
 
 PowerShell est le shell et langage de script de Microsoft pour l'administration systeme. Contrairement a `cmd.exe`, PowerShell manipule des **objets .NET** plutot que du texte brut, ce qui le rend bien plus puissant.
 
@@ -354,3 +369,4 @@ RemoteSigned
 - [Cmdlets essentielles](cmdlets-essentielles.md) - les commandes a connaitre
 - [Pipeline et objets](pipeline-et-objets.md) - la puissance du pipeline
 - [Aide et decouverte](aide-et-decouverte.md) - apprendre a se debrouiller seul
+

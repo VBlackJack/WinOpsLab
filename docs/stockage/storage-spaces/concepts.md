@@ -1,3 +1,18 @@
+<!--
+  Copyright 2026 Julien Bombled
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
 ---
 title: Concepts de Storage Spaces
 description: Comprendre les concepts fondamentaux de Storage Spaces - pools de stockage, disques virtuels, tiers et modes de resilience.
@@ -18,6 +33,8 @@ tags:
     Imaginez que vous avez plusieurs **tirelires** de tailles differentes (vos disques physiques). Plutot que de gerer chaque tirelire separement, vous versez tout dans un **coffre-fort commun** (le pool de stockage). Ensuite, vous creez des **enveloppes budgetaires** (les disques virtuels) avec des regles de protection : une enveloppe en double exemplaire pour vos documents importants (miroir), ou une enveloppe moins protegee pour vos brouillons (simple).
 
 Storage Spaces est la technologie de virtualisation du stockage integree a Windows Server. Elle permet de regrouper des disques physiques heterogenes dans un pool commun, puis de creer des disques virtuels avec differents niveaux de resilience.
+
+![Storage Spaces Architecture](../../diagrams/storage-architecture.drawio#Storage_Spaces)
 
 ```mermaid
 graph TB

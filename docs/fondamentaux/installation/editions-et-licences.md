@@ -1,3 +1,18 @@
+﻿<!--
+  Copyright 2026 Julien Bombled
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
 ---
 title: Editions et licences
 description: Comprendre les differentes editions de Windows Server 2022 et leurs modeles de licence.
@@ -9,7 +24,7 @@ tags:
 
 # Editions et licences
 
-<span class="level-beginner">Debutant</span> · Temps estime : 15 minutes
+<span class="level-beginner">Debutant</span> Â· Temps estime : 15 minutes
 
 ## Les editions de Windows Server 2022
 
@@ -148,7 +163,7 @@ Microsoft met a disposition une version d'evaluation gratuite de 180 jours :
 slmgr /dlv
 
 # Convert evaluation to retail (requires a valid product key)
-DISM /Online /Set-Edition:ServerStandard /ProductKey:XXXXX-XXXXX-XXXXX-XXXXX-XXXXX /AcceptEula
+DISM /Online /Set-Edition:ServerStandard /ProductKey:VDYBN-27WPP-D4HQT-9VMD4-3K6UX /AcceptEula
 ```
 
 Resultat de `slmgr /dlv` :
@@ -172,10 +187,10 @@ Timebased activation expiration: 180 days (172 day(s) remaining)
 
     **Analyse** :
 
-    1. L'entreprise compte 80 employes avec chacun un PC fixe → 80 CAL necessaires
-    2. Elle a besoin de seulement 2 VMs → l'edition Standard suffit (2 VMs incluses)
-    3. Pas de besoin de Storage Spaces Direct ni de SDN → Datacenter est surdimensionnee
-    4. Le serveur physique dispose d'un processeur 8 coeurs → minimum 16 coeurs a licencier (8 packs de 2)
+    1. L'entreprise compte 80 employes avec chacun un PC fixe â†’ 80 CAL necessaires
+    2. Elle a besoin de seulement 2 VMs â†’ l'edition Standard suffit (2 VMs incluses)
+    3. Pas de besoin de Storage Spaces Direct ni de SDN â†’ Datacenter est surdimensionnee
+    4. Le serveur physique dispose d'un processeur 8 coeurs â†’ minimum 16 coeurs a licencier (8 packs de 2)
 
     **Solution** :
 
@@ -223,3 +238,4 @@ Timebased activation expiration: 180 days (172 day(s) remaining)
 
 - [Installation de Windows Server](installation-server.md)
 - [Server Core vs GUI](server-core-vs-gui.md)
+

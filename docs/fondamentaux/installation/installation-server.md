@@ -1,3 +1,18 @@
+﻿<!--
+  Copyright 2026 Julien Bombled
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
 ---
 title: Installation de Windows Server
 description: Guide pas a pas pour installer Windows Server 2022.
@@ -9,7 +24,7 @@ tags:
 
 # Installation de Windows Server
 
-<span class="level-beginner">Debutant</span> · Temps estime : 30 minutes
+<span class="level-beginner">Debutant</span> Â· Temps estime : 30 minutes
 
 ## Introduction
 
@@ -200,3 +215,4 @@ WIN-A1B2C3D4E5F6
 - [Configuration initiale](configuration-initiale.md) - etapes post-installation
 - [Server Core vs GUI](server-core-vs-gui.md) - comparatif des deux modes
 - [Lab 01 : Installation](../../labs/exercices/lab-01-installation.md) - exercice pratique
+

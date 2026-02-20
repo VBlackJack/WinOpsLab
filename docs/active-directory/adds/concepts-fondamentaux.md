@@ -1,3 +1,18 @@
+<!--
+  Copyright 2026 Julien Bombled
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
 ---
 title: Concepts fondamentaux
 description: Les concepts cles d'Active Directory Domain Services - foret, domaine, DC, LDAP, Kerberos.
@@ -26,7 +41,9 @@ tags:
 
 ## Hierarchie logique
 
-![](../../diagrams/ad-ds-forest.drawio)
+![Architecture Active Directory](../../diagrams/ad-architecture.drawio#Architecture_AD)
+
+Active Directory organise les ressources de maniere hierarchique :
 
 ```mermaid
 graph TD
@@ -129,7 +146,7 @@ sequenceDiagram
 ```
 
 - Port **88** (TCP/UDP)
-- Basé sur des tickets (pas de mot de passe transmis sur le reseau)
+- Base sur des tickets (pas de mot de passe transmis sur le reseau)
 - Tolerance maximale de **5 minutes** de decalage horaire
 - Le **KDC** (Key Distribution Center) fonctionne sur chaque DC
 
@@ -320,3 +337,16 @@ Le **schema** definit les types d'objets et leurs attributs :
 - [Installer le premier DC](installer-premier-dc.md) - deployer Active Directory
 - [Structure des OU](structure-ou.md) - organiser l'annuaire
 - [Sites et replication](sites-et-replication.md) - topologie multi-sites
+
+---
+
+## Quizz de validation
+
+??? question "Question 1 : Quel est le role FSMO responsable de l'heure ?"
+    Le **PDC Emulator**. Il agit comme serveur de temps NTP de reference pour tout le domaine.
+
+??? question "Question 2 : Combien de DC minimum faut-il pour une infrastructure de production ?"
+    Au minimum **deux (2)**. Un DC unique est un SPOF (Single Point of Failure).
+
+??? question "Question 3 : Quel groupe peut modifier le schema AD ?"
+    Le groupe **Schema Admins**. Il est recommande de laisser ce groupe vide sauf lors d'operations de maintenance specifiques (installation Exchange/SCCM).

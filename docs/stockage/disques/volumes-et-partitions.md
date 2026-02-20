@@ -1,3 +1,18 @@
+﻿<!--
+  Copyright 2026 Julien Bombled
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
 ---
 title: Volumes et partitions
 description: Creer, redimensionner et gerer les volumes et partitions sous Windows Server 2022 avec PowerShell et la console graphique.
@@ -9,7 +24,7 @@ tags:
 
 # Volumes et partitions
 
-<span class="level-intermediate">Intermediaire</span> · Temps estime : 30 minutes
+<span class="level-intermediate">Intermediaire</span> Â· Temps estime : 30 minutes
 
 ## Concepts fondamentaux
 
@@ -420,3 +435,4 @@ F           SQL_Data         99.87  99.80  99.9
 - [iSCSI](iscsi.md)
 - [Storage Spaces : concepts](../storage-spaces/concepts.md)
 - [Quotas et filtrage FSRM](../partage/quotas-et-filtrage.md)
+

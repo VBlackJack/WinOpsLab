@@ -1,3 +1,18 @@
+﻿<!--
+  Copyright 2026 Julien Bombled
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
 ---
 title: "Prerequis materiel"
 description: Configuration materielle requise pour le lab Windows Server 2022 - CPU, RAM, disque et virtualisation imbriquee.
@@ -9,7 +24,7 @@ tags:
 
 # Prerequis materiel
 
-<span class="level-beginner">Debutant</span> · Temps estime : 10 minutes
+<span class="level-beginner">Debutant</span> Â· Temps estime : 10 minutes
 
 ## Presentation
 
@@ -137,3 +152,4 @@ foreach ($vm in $vms) {
 
 - [Architecture du lab](architecture-lab.md) pour le plan reseau et les roles des serveurs
 - [Creation des VMs](creation-vms.md) pour automatiser le deploiement des machines virtuelles
+

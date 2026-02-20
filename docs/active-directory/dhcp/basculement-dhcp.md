@@ -1,3 +1,18 @@
+﻿<!--
+  Copyright 2026 Julien Bombled
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
 ---
 title: "Basculement DHCP (Failover)"
 description: "Configurer la haute disponibilite du service DHCP avec le basculement (failover) entre deux serveurs Windows Server 2022 en mode Hot Standby ou Load Balancing."
@@ -10,7 +25,7 @@ tags:
 
 # Basculement DHCP (Failover)
 
-<span class="level-advanced">Avance</span> · Temps estime : 30 minutes
+<span class="level-advanced">Avance</span> Â· Temps estime : 30 minutes
 
 ---
 
@@ -559,3 +574,4 @@ DHCP Server Failover (TCP-Out)  True     Outbound
 - [Reservations DHCP](reservations.md) -- les reservations doivent etre repliquees manuellement
 - [Installation et configuration](installation-configuration.md) -- installer le role DHCP sur les deux serveurs
 - [Concepts Cluster de basculement](../../haute-disponibilite/cluster/concepts-cluster.md) -- autre approche de haute disponibilite pour d'autres services
+

@@ -1,3 +1,18 @@
+﻿<!--
+  Copyright 2026 Julien Bombled
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
 ---
 title: Utilisateurs et groupes
 description: Gestion des comptes utilisateurs et des groupes dans Active Directory.
@@ -9,7 +24,7 @@ tags:
 
 # Utilisateurs et groupes
 
-<span class="level-intermediate">Intermediaire</span> · Temps estime : 25 minutes
+<span class="level-intermediate">Intermediaire</span> Â· Temps estime : 25 minutes
 
 ## Comptes utilisateurs
 
@@ -128,7 +143,7 @@ UserPrincipalName : jdupont@lab.local
 
 !!! example "Analogie"
 
-    AGDLP fonctionne comme un **systeme de pass dans un immeuble de bureaux**. Chaque employe (Account) recoit un badge de son departement (Global Group : « Equipe Comptabilite »). Ce badge departement est enregistre dans la liste d'acces d'une salle specifique (Domain Local Group : « Acces Salle Archives »). La salle elle-meme a un niveau de permission (Permission : lecture seule ou lecture/ecriture). Si un employe change de service, il suffit de changer son badge departement, pas de reconfigurer chaque salle.
+    AGDLP fonctionne comme un **systeme de pass dans un immeuble de bureaux**. Chaque employe (Account) recoit un badge de son departement (Global Group : Â« Equipe Comptabilite Â»). Ce badge departement est enregistre dans la liste d'acces d'une salle specifique (Domain Local Group : Â« Acces Salle Archives Â»). La salle elle-meme a un niveau de permission (Permission : lecture seule ou lecture/ecriture). Si un employe change de service, il suffit de changer son badge departement, pas de reconfigurer chaque salle.
 
 La methode **AGDLP** est la bonne pratique Microsoft pour attribuer les permissions :
 
@@ -323,3 +338,4 @@ Les suffixes indiquent le niveau d'acces :
 - [Comptes ordinateurs](comptes-ordinateurs.md) - jonction au domaine
 - [GPO - Filtrage](../gpo/filtrage-et-heritage.md) - appliquer des GPO par groupe
 - [Comptes privilegies](../../securite/durcissement/comptes-privilegies.md) - securite des admins
+

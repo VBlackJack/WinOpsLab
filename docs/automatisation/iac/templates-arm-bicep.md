@@ -1,3 +1,18 @@
+﻿<!--
+  Copyright 2026 Julien Bombled
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
 ---
 title: "Templates ARM et Bicep"
 description: "Deployer des machines virtuelles Windows Server sur Azure avec les templates ARM et Bicep : structure, parametres, deploiement et bonnes pratiques."
@@ -12,7 +27,7 @@ tags:
 
 # Templates ARM et Bicep
 
-<span class="level-advanced">Avance</span> · Temps estime : 50 minutes
+<span class="level-advanced">Avance</span> Â· Temps estime : 50 minutes
 
 ## Introduction
 
@@ -35,7 +50,7 @@ Les templates **ARM** (Azure Resource Manager) et **Bicep** sont les outils d'**
 
 !!! example "Analogie"
 
-    Un template ARM ou Bicep, c'est comme un plan d'architecte pour une maison. Le plan decrit precisement chaque piece, chaque porte, chaque fenetre. N'importe quel constructeur peut prendre ce plan et construire une maison identique, que ce soit en France, en Belgique ou au Canada. Et si vous voulez construire deux maisons identiques, vous utilisez exactement le meme plan — pas besoin de re-inventer les fondations.
+    Un template ARM ou Bicep, c'est comme un plan d'architecte pour une maison. Le plan decrit precisement chaque piece, chaque porte, chaque fenetre. N'importe quel constructeur peut prendre ce plan et construire une maison identique, que ce soit en France, en Belgique ou au Canada. Et si vous voulez construire deux maisons identiques, vous utilisez exactement le meme plan â€” pas besoin de re-inventer les fondations.
 
 ## Structure d'un template ARM
 
@@ -515,15 +530,15 @@ module webServer 'modules/windows-vm.bicep' = {
 
 !!! danger "Erreurs courantes"
 
-    **Mot de passe en clair dans le fichier de parametres** — Ne stockez jamais `adminPassword` en clair dans un fichier `.parameters.json` commite dans Git. Utilisez une reference Key Vault ou passez le parametre interactivement via `-adminPassword (Read-Host -AsSecureString)`.
+    **Mot de passe en clair dans le fichier de parametres** â€” Ne stockez jamais `adminPassword` en clair dans un fichier `.parameters.json` commite dans Git. Utilisez une reference Key Vault ou passez le parametre interactivement via `-adminPassword (Read-Host -AsSecureString)`.
 
-    **API version obsolete** — Azure retire regulierement les anciennes versions d'API. Si votre template utilise une `apiVersion` obsolete, le deploiement echoue. Verifiez les versions supportees dans la documentation ou via `az provider show`.
+    **API version obsolete** â€” Azure retire regulierement les anciennes versions d'API. Si votre template utilise une `apiVersion` obsolete, le deploiement echoue. Verifiez les versions supportees dans la documentation ou via `az provider show`.
 
-    **Deploiement sans mode What-If** — Deployer directement sans `-WhatIf` dans un environnement existant peut modifier ou supprimer des ressources non prevues. Utilisez systematiquement What-If pour les ressources en production.
+    **Deploiement sans mode What-If** â€” Deployer directement sans `-WhatIf` dans un environnement existant peut modifier ou supprimer des ressources non prevues. Utilisez systematiquement What-If pour les ressources en production.
 
-    **Dependances implicites manquantes** — En ARM JSON, les dependances doivent etre declarcees explicitement avec `dependsOn`. En Bicep, les dependances symboliques sont automatiques (reference directe a la ressource), mais si vous copiez des blocs JSON vers Bicep, verifiez que les dependances sont bien gerees.
+    **Dependances implicites manquantes** â€” En ARM JSON, les dependances doivent etre declarcees explicitement avec `dependsOn`. En Bicep, les dependances symboliques sont automatiques (reference directe a la ressource), mais si vous copiez des blocs JSON vers Bicep, verifiez que les dependances sont bien gerees.
 
-    **Region non supportee pour le type de VM** — Certaines tailles de VM (`Standard_D*v5`) ne sont pas disponibles dans toutes les regions Azure. Verifiez la disponibilite avant de deployer ou parametrez la region dynamiquement.
+    **Region non supportee pour le type de VM** â€” Certaines tailles de VM (`Standard_D*v5`) ne sont pas disponibles dans toutes les regions Azure. Verifiez la disponibilite avant de deployer ou parametrez la region dynamiquement.
 
 ## Points cles a retenir
 
@@ -539,3 +554,4 @@ module webServer 'modules/windows-vm.bicep' = {
 - Packer pour les images : [Packer](packer-images.md)
 - DSC pour la configuration : [Concepts DSC](../dsc/concepts-dsc.md)
 - Documentation Microsoft : Bicep Documentation
+

@@ -1,3 +1,18 @@
+﻿<!--
+  Copyright 2026 Julien Bombled
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
 ---
 title: "Serveur VPN (RRAS)"
 description: "Installer et configurer un serveur VPN sous Windows Server 2022 avec RRAS : protocoles SSTP, L2TP/IPsec, IKEv2 et configuration client."
@@ -10,6 +25,10 @@ tags:
 ---
 
 # Serveur VPN (RRAS)
+
+<span class="level-intermediate">Intermediaire</span> · Temps estime : 35 minutes
+
+---
 
 ## Introduction
 
@@ -463,3 +482,4 @@ RemoteAccess  Running
 - Centraliser l'authentification VPN : voir la page [NPS / RADIUS](nps-radius.md)
 - Decouvrir Always On VPN : voir la page [Always On VPN](always-on-vpn.md)
 - Comprendre DirectAccess (historique) : voir la page [DirectAccess](directaccess.md)
+

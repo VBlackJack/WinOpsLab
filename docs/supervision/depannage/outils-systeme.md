@@ -1,3 +1,18 @@
+﻿<!--
+  Copyright 2026 Julien Bombled
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
 ---
 title: "Outils systeme de depannage"
 description: Utiliser les outils systeme de depannage Windows Server 2022 - Gestionnaire des taches, msconfig, msinfo32, SFC, DISM et moniteur de fiabilite.
@@ -9,7 +24,7 @@ tags:
 
 # Outils systeme de depannage
 
-<span class="level-intermediate">Intermediaire</span> · Temps estime : 30 minutes
+<span class="level-intermediate">Intermediaire</span> Â· Temps estime : 30 minutes
 
 ## Vue d'ensemble
 
@@ -458,3 +473,4 @@ Get-WindowsUpdateLog  # Generates readable WindowsUpdate.log on desktop
 - [Methodologie de depannage](methodologie.md) pour une approche structuree
 - [Outils reseau de depannage](outils-reseau.md) pour le diagnostic reseau
 - [Analyse des ecrans bleus](blue-screen.md) pour le diagnostic avance des BSOD
+

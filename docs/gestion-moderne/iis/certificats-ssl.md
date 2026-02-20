@@ -1,3 +1,18 @@
+﻿<!--
+  Copyright 2026 Julien Bombled
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
 ---
 title: "Certificats SSL/TLS sur IIS"
 description: Configurer SSL/TLS sur IIS - demander un certificat, creer un binding HTTPS, forcer la redirection HTTPS.
@@ -10,7 +25,7 @@ tags:
 
 # Certificats SSL/TLS sur IIS
 
-<span class="level-intermediate">Intermediaire</span> · Temps estime : 25 minutes
+<span class="level-intermediate">Intermediaire</span> Â· Temps estime : 25 minutes
 
 ## Presentation
 
@@ -373,3 +388,4 @@ TcpTestSucceeded : True
 - [Installation d'IIS](installation-iis.md) pour la mise en place du role
 - [Sites et applications](sites-et-applications.md) pour la configuration des sites
 - [Concepts PKI](../../securite/pki/concepts-pki.md) pour comprendre l'infrastructure de certificats
+

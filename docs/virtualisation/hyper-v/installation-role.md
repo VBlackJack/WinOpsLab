@@ -1,3 +1,18 @@
+﻿<!--
+  Copyright 2026 Julien Bombled
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
 ---
 title: "Installation du role Hyper-V"
 description: "Installation et configuration du role Hyper-V sur Windows Server 2022 : prerequis materiels, virtualisation imbriquee et verification post-installation."
@@ -10,7 +25,7 @@ tags:
 
 # Installation du role Hyper-V
 
-<span class="level-intermediate">Intermediaire</span> · Temps estime : 25 minutes
+<span class="level-intermediate">Intermediaire</span> Â· Temps estime : 25 minutes
 
 Hyper-V est l'hyperviseur de type 1 integre a Windows Server. Il permet de creer et gerer des machines virtuelles (VM) avec des performances proches du materiel natif.
 
@@ -366,3 +381,4 @@ Windows Admin Center offre une interface web moderne pour gerer Hyper-V, incluan
 - Creation de VMs (voir la page [Creer une VM](creer-vm.md))
 - Reseaux virtuels (voir la page [Reseaux virtuels](reseaux-virtuels.md))
 - Microsoft : Hyper-V on Windows Server documentation
+

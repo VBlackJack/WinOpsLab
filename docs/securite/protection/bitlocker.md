@@ -1,3 +1,18 @@
+﻿<!--
+  Copyright 2026 Julien Bombled
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
 ---
 title: "BitLocker sur serveur"
 description: "Activation et gestion de BitLocker sur Windows Server 2022 : chiffrement de volume, TPM, cles de recuperation et administration PowerShell."
@@ -11,7 +26,7 @@ tags:
 
 # BitLocker sur serveur
 
-<span class="level-advanced">Avance</span> · Temps estime : 35 minutes
+<span class="level-advanced">Avance</span> Â· Temps estime : 35 minutes
 
 BitLocker Drive Encryption protege les donnees au repos en chiffrant integralement les volumes de disque. Sur un serveur, BitLocker empeche l'acces aux donnees en cas de vol physique du disque ou du serveur.
 
@@ -421,3 +436,4 @@ Get-BitLockerVolume -MountPoint "C:" | Select-Object VolumeStatus, EncryptionPer
 - Microsoft : BitLocker deployment guide for Windows Server
 - Microsoft : BitLocker recovery guide
 - ANSSI : Recommandations pour le chiffrement des postes et serveurs
+

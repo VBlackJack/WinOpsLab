@@ -1,3 +1,18 @@
+﻿<!--
+  Copyright 2026 Julien Bombled
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
 ---
 title: "Windows Server Backup"
 description: "Installer et utiliser Windows Server Backup sous Windows Server 2022 : sauvegardes completes, incrementales, bare metal recovery et planification."
@@ -10,7 +25,7 @@ tags:
 
 # Windows Server Backup
 
-<span class="level-advanced">Avance</span> · Temps estime : 45 minutes
+<span class="level-advanced">Avance</span> Â· Temps estime : 45 minutes
 
 ## Introduction
 
@@ -328,15 +343,15 @@ TimeCreated             Message
 
 !!! danger "Erreurs courantes"
 
-    **Sauvegarde reseau avec une seule version** — Lors de la sauvegarde vers un partage reseau (`\\serveur\partage`), WSB ecrase la version precedente a chaque execution. Il n'y a pas de retention automatique. Pour garder un historique, utilisez un disque local dedie ou une solution tierce.
+    **Sauvegarde reseau avec une seule version** â€” Lors de la sauvegarde vers un partage reseau (`\\serveur\partage`), WSB ecrase la version precedente a chaque execution. Il n'y a pas de retention automatique. Pour garder un historique, utilisez un disque local dedie ou une solution tierce.
 
-    **Oublier `Add-WBBareMetalRecovery`** — Sans BMR, la sauvegarde ne peut pas etre utilisee pour une restauration a partir de zero. Sur un controleur de domaine, incluez toujours `Add-WBBareMetalRecovery` et `Add-WBSystemState`.
+    **Oublier `Add-WBBareMetalRecovery`** â€” Sans BMR, la sauvegarde ne peut pas etre utilisee pour une restauration a partir de zero. Sur un controleur de domaine, incluez toujours `Add-WBBareMetalRecovery` et `Add-WBSystemState`.
 
-    **Sauvegarde systeme sur le meme volume** — Windows Server Backup ne permet pas de sauvegarder le volume systeme sur lui-meme. Le disque cible doit etre different du disque systeme.
+    **Sauvegarde systeme sur le meme volume** â€” Windows Server Backup ne permet pas de sauvegarder le volume systeme sur lui-meme. Le disque cible doit etre different du disque systeme.
 
-    **Ne pas verifier le resultat apres la premiere planification** — Apres avoir configure `Set-WBPolicy`, verifiez avec `Get-WBPolicy` et attendez la premiere execution planifiee pour confirmer le succes via `Get-WBSummary`.
+    **Ne pas verifier le resultat apres la premiere planification** â€” Apres avoir configure `Set-WBPolicy`, verifiez avec `Get-WBPolicy` et attendez la premiere execution planifiee pour confirmer le succes via `Get-WBSummary`.
 
-    **WSB pour des besoins d'entreprise** — WSB ne supporte pas la deduplication, le chiffrement natif, la sauvegarde sur bande, ni la granularite applicative (ex. elements Exchange). Pour ces besoins, evaluez Veeam Backup & Replication ou Azure Backup.
+    **WSB pour des besoins d'entreprise** â€” WSB ne supporte pas la deduplication, le chiffrement natif, la sauvegarde sur bande, ni la granularite applicative (ex. elements Exchange). Pour ces besoins, evaluez Veeam Backup & Replication ou Azure Backup.
 
 ## Points cles a retenir
 
@@ -352,3 +367,4 @@ TimeCreated             Message
 - Strategie de sauvegarde : [Strategie de sauvegarde](strategie-sauvegarde.md)
 - Restauration systeme : [Restauration systeme](restauration-systeme.md)
 - Documentation Microsoft : Windows Server Backup Feature Overview
+

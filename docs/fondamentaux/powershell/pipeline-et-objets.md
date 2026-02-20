@@ -1,3 +1,18 @@
+﻿<!--
+  Copyright 2026 Julien Bombled
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
 ---
 title: Pipeline et objets
 description: Comprendre le pipeline PowerShell et la manipulation d'objets .NET.
@@ -9,13 +24,13 @@ tags:
 
 # Pipeline et objets
 
-<span class="level-beginner">Debutant</span> · Temps estime : 20 minutes
+<span class="level-beginner">Debutant</span> Â· Temps estime : 20 minutes
 
 ## PowerShell manipule des objets
 
 !!! example "Analogie"
 
-    Imaginez un tapis roulant dans une usine. Avec `cmd.exe`, le tapis transporte des feuilles de papier avec du texte ecrit dessus — vous devez lire et interpreter chaque feuille vous-meme. Avec PowerShell, le tapis transporte des **boites etiquetees** contenant des informations structurees (nom, taille, date...). Vous pouvez trier les boites, en ouvrir certaines, en jeter d'autres — sans jamais avoir a dechiffrer du texte brut.
+    Imaginez un tapis roulant dans une usine. Avec `cmd.exe`, le tapis transporte des feuilles de papier avec du texte ecrit dessus â€” vous devez lire et interpreter chaque feuille vous-meme. Avec PowerShell, le tapis transporte des **boites etiquetees** contenant des informations structurees (nom, taille, date...). Vous pouvez trier les boites, en ouvrir certaines, en jeter d'autres â€” sans jamais avoir a dechiffrer du texte brut.
 
 La difference fondamentale entre PowerShell et les shells traditionnels (bash, cmd) :
 
@@ -463,3 +478,4 @@ setupapi.dev.log      3.87  C:\Windows\inf
 
 - [Aide et decouverte](aide-et-decouverte.md) - explorer les cmdlets
 - [PowerShell avance](../../automatisation/powershell-avance/index.md) - scripting et fonctions
+

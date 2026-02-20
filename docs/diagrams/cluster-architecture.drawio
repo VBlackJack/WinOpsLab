@@ -1,230 +1,51 @@
-<mxfile host="app.diagrams.net" modified="2026-02-20T00:00:00.000Z" agent="WinOpsLab" version="24.0.0" type="device">
-  <diagram id="cluster" name="Cluster Architecture">
-    <mxGraphModel dx="1422" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1169" pageHeight="827" math="0" shadow="0">
+<mxfile host="Electron" modified="2024-02-20T12:00:00.000Z" agent="Mozilla/5.0" version="21.6.8" type="device">
+  <diagram id="cluster-architecture" name="Architecture_Cluster">
+    <mxGraphModel dx="1422" dy="762" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
       <root>
-        <mxCell id="0"/>
-        <mxCell id="1" parent="0"/>
-
-        <!-- Title -->
-        <mxCell id="title" value="Failover Cluster Topology" style="text;html=1;fontSize=20;fontStyle=1;align=center;verticalAlign=middle;whiteSpace=wrap;" vertex="1" parent="1">
-          <mxGeometry x="334" y="10" width="500" height="40" as="geometry"/>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="2" value="Nœud 1 (Actif)" style="whiteSpace=wrap;html=1;aspect=fixed;fillColor=#dae8fc;strokeColor=#6c8ebf;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="160" y="160" width="120" height="120" as="geometry" />
         </mxCell>
-
-        <!-- Client Network -->
-        <mxCell id="client-net" value="Client Network (10.0.0.0/24) - Production VLAN" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#C8E6C9;strokeColor=#2E7D32;fontSize=12;fontStyle=1;shadow=1;strokeWidth=2;" vertex="1" parent="1">
-          <mxGeometry x="134" y="60" width="900" height="35" as="geometry"/>
+        <mxCell id="3" value="Nœud 2 (Passif)" style="whiteSpace=wrap;html=1;aspect=fixed;fillColor=#f5f5f5;fontColor=#333333;strokeColor=#666666;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="440" y="160" width="120" height="120" as="geometry" />
         </mxCell>
-
-        <!-- Clients -->
-        <mxCell id="client1" value="Client A" style="shape=mxgraph.cisco.computers_and_peripherals.laptop;whiteSpace=wrap;html=1;fillColor=#FFF2CC;strokeColor=#D6B656;fontSize=9;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="34" y="45" width="70" height="55" as="geometry"/>
+        <mxCell id="4" value="Stockage Partagé (SAN / iSCSI)" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#fff2cc;strokeColor=#d6b656;" vertex="1" parent="1">
+          <mxGeometry x="300" y="360" width="120" height="80" as="geometry" />
         </mxCell>
-        <mxCell id="e-cl1" style="rounded=1;strokeColor=#2E7D32;strokeWidth=1;" edge="1" source="client1" target="client-net" parent="1">
-          <mxGeometry relative="1" as="geometry"/>
+        <mxCell id="5" value="Réseau Public (Clients)" style="ellipse;shape=cloud;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="280" y="40" width="160" height="80" as="geometry" />
         </mxCell>
-
-        <!-- Virtual IP / CNO -->
-        <mxCell id="vip-bg" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8EAF6;strokeColor=#3F51B5;strokeWidth=2;arcSize=12;shadow=1;" vertex="1" parent="1">
-          <mxGeometry x="404" y="120" width="360" height="90" as="geometry"/>
-        </mxCell>
-        <mxCell id="vip" value="Cluster Virtual IP&#xa;10.0.0.50&#xa;&#xa;Cluster Name Object (CNO): CLUSTER-01" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#7986CB;strokeColor=#3F51B5;fontSize=11;fontStyle=1;fontColor=#FFFFFF;shadow=1;" vertex="1" parent="1">
-          <mxGeometry x="424" y="130" width="320" height="65" as="geometry"/>
-        </mxCell>
-        <mxCell id="e-vip-net" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#3F51B5;strokeWidth=2;endArrow=block;" edge="1" source="client-net" target="vip" parent="1">
-          <mxGeometry relative="1" as="geometry"/>
-        </mxCell>
-
-        <!-- Cluster container -->
-        <mxCell id="cluster-bg" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#666666;strokeWidth=2;arcSize=4;dashed=1;dashPattern=8 4;" vertex="1" parent="1">
-          <mxGeometry x="84" y="230" width="1000" height="350" as="geometry"/>
-        </mxCell>
-        <mxCell id="cluster-label" value="Windows Server Failover Cluster (WSFC)" style="text;html=1;fontSize=15;fontStyle=1;align=center;fillColor=#666666;fontColor=#FFFFFF;rounded=1;" vertex="1" parent="1">
-          <mxGeometry x="334" y="235" width="400" height="28" as="geometry"/>
-        </mxCell>
-
-        <!-- Node 1 -->
-        <mxCell id="node1-bg" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#DAEAF6;strokeColor=#4472C4;strokeWidth=2;arcSize=8;shadow=1;" vertex="1" parent="1">
-          <mxGeometry x="114" y="280" width="380" height="270" as="geometry"/>
-        </mxCell>
-        <mxCell id="node1-label" value="NODE-01 (Active)" style="text;html=1;fontSize=14;fontStyle=1;align=center;fillColor=#4472C4;fontColor=#FFFFFF;rounded=1;" vertex="1" parent="1">
-          <mxGeometry x="194" y="285" width="210" height="28" as="geometry"/>
-        </mxCell>
-        <mxCell id="node1-ip" value="10.0.0.11 (Client)&#xa;192.168.1.11 (Heartbeat)" style="text;html=1;fontSize=10;fontStyle=0;align=center;" vertex="1" parent="1">
-          <mxGeometry x="204" y="315" width="190" height="30" as="geometry"/>
-        </mxCell>
-
-        <!-- Clustered Roles on Node 1 -->
-        <mxCell id="role-fs" value="File Server Role&#xa;(SOFS)&#xa;\\\\CLUSTER-FS\\Share1&#xa;10.0.0.51" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#66BB6A;strokeColor=#2E7D32;fontSize=10;fontStyle=1;fontColor=#FFFFFF;shadow=1;" vertex="1" parent="1">
-          <mxGeometry x="134" y="355" width="160" height="80" as="geometry"/>
-        </mxCell>
-        <mxCell id="role-sql" value="SQL Server Role&#xa;&#xa;CLUSTER-SQL&#xa;10.0.0.52" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#42A5F5;strokeColor=#1565C0;fontSize=10;fontStyle=1;fontColor=#FFFFFF;shadow=1;" vertex="1" parent="1">
-          <mxGeometry x="314" y="355" width="160" height="80" as="geometry"/>
-        </mxCell>
-
-        <!-- Failover direction arrow -->
-        <mxCell id="failover-arrow" value="" style="shape=flexArrow;endArrow=classic;startArrow=classic;html=1;fillColor=#FFF2CC;strokeColor=#D6B656;width=20;endSize=6;startSize=6;" edge="1" parent="1">
-          <mxGeometry relative="1" as="geometry">
-            <mxPoint x="504" y="400" as="sourcePoint"/>
-            <mxPoint x="654" y="400" as="targetPoint"/>
+        <mxCell id="6" value="Heartbeat (Privé)" style="endArrow=classic;startArrow=classic;html=1;dashed=1;strokeColor=#FF3333;strokeWidth=2;" edge="1" parent="1" source="2" target="3">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="400" y="420" as="sourcePoint" />
+            <mxPoint x="450" y="370" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="failover-label" value="Failover" style="text;html=1;fontSize=11;fontStyle=3;align=center;fillColor=#FFF2CC;strokeColor=#D6B656;rounded=1;" vertex="1" parent="1">
-          <mxGeometry x="534" y="385" width="70" height="20" as="geometry"/>
+        <mxCell id="7" value="" style="endArrow=none;html=1;entryX=0.5;entryY=1;entryDx=0;entryDy=0;exitX=0;exitY=0;exitDx=0;exitDy=27.5;exitPerimeter=0;" edge="1" parent="1" source="4" target="2">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="400" y="420" as="sourcePoint" />
+            <mxPoint x="450" y="370" as="targetPoint" />
+          </mxGeometry>
         </mxCell>
-
-        <!-- Node 2 -->
-        <mxCell id="node2-bg" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#9E9E9E;strokeWidth=2;arcSize=8;shadow=1;dashed=1;" vertex="1" parent="1">
-          <mxGeometry x="674" y="280" width="380" height="270" as="geometry"/>
+        <mxCell id="8" value="" style="endArrow=none;html=1;entryX=0.5;entryY=1;entryDx=0;entryDy=0;exitX=1;exitY=0;exitDx=0;exitDy=27.5;exitPerimeter=0;" edge="1" parent="1" source="4" target="3">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="310" y="370" as="sourcePoint" />
+            <mxPoint x="230" y="290" as="targetPoint" />
+          </mxGeometry>
         </mxCell>
-        <mxCell id="node2-label" value="NODE-02 (Passive)" style="text;html=1;fontSize=14;fontStyle=1;align=center;fillColor=#9E9E9E;fontColor=#FFFFFF;rounded=1;" vertex="1" parent="1">
-          <mxGeometry x="754" y="285" width="210" height="28" as="geometry"/>
+        <mxCell id="9" value="" style="endArrow=classic;html=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;" edge="1" parent="1" source="2" target="5">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="400" y="420" as="sourcePoint" />
+            <mxPoint x="450" y="370" as="targetPoint" />
+          </mxGeometry>
         </mxCell>
-        <mxCell id="node2-ip" value="10.0.0.12 (Client)&#xa;192.168.1.12 (Heartbeat)" style="text;html=1;fontSize=10;fontStyle=0;align=center;" vertex="1" parent="1">
-          <mxGeometry x="764" y="315" width="190" height="30" as="geometry"/>
+        <mxCell id="10" value="" style="endArrow=classic;html=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;" edge="1" parent="1" source="3" target="5">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="230" y="170" as="sourcePoint" />
+            <mxPoint x="316" y="116" as="targetPoint" />
+          </mxGeometry>
         </mxCell>
-
-        <!-- Standby roles (ghosted) on Node 2 -->
-        <mxCell id="role-fs-ghost" value="File Server Role&#xa;(Standby)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8E8E8;strokeColor=#9E9E9E;fontSize=10;fontStyle=1;fontColor=#9E9E9E;dashed=1;dashPattern=4 4;" vertex="1" parent="1">
-          <mxGeometry x="694" y="355" width="160" height="80" as="geometry"/>
-        </mxCell>
-        <mxCell id="role-sql-ghost" value="SQL Server Role&#xa;(Standby)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#E8E8E8;strokeColor=#9E9E9E;fontSize=10;fontStyle=1;fontColor=#9E9E9E;dashed=1;dashPattern=4 4;" vertex="1" parent="1">
-          <mxGeometry x="874" y="355" width="160" height="80" as="geometry"/>
-        </mxCell>
-
-        <!-- Node connections to client network -->
-        <mxCell id="e-n1-cnet" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#2E7D32;strokeWidth=2;" edge="1" source="node1-bg" target="client-net" parent="1">
-          <mxGeometry relative="1" as="geometry"/>
-        </mxCell>
-        <mxCell id="e-n2-cnet" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#2E7D32;strokeWidth=2;" edge="1" source="node2-bg" target="client-net" parent="1">
-          <mxGeometry relative="1" as="geometry"/>
-        </mxCell>
-
-        <!-- Heartbeat Network -->
-        <mxCell id="heartbeat-net" value="Cluster / Heartbeat Network (192.168.1.0/24) - Private VLAN" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFCDD2;strokeColor=#C62828;fontSize=11;fontStyle=1;shadow=1;strokeWidth=2;" vertex="1" parent="1">
-          <mxGeometry x="134" y="465" width="900" height="30" as="geometry"/>
-        </mxCell>
-        <mxCell id="e-n1-hb" style="rounded=1;strokeColor=#C62828;strokeWidth=2;dashed=1;" edge="1" source="node1-bg" target="heartbeat-net" parent="1">
-          <mxGeometry relative="1" as="geometry"/>
-        </mxCell>
-        <mxCell id="e-n2-hb" style="rounded=1;strokeColor=#C62828;strokeWidth=2;dashed=1;" edge="1" source="node2-bg" target="heartbeat-net" parent="1">
-          <mxGeometry relative="1" as="geometry"/>
-        </mxCell>
-        <mxCell id="hb-note" value="Heartbeat: Node health monitoring, cluster communication" style="text;html=1;fontSize=9;fontStyle=2;align=center;" vertex="1" parent="1">
-          <mxGeometry x="334" y="498" width="400" height="16" as="geometry"/>
-        </mxCell>
-
-        <!-- Quorum Witness -->
-        <mxCell id="quorum-bg" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF8E1;strokeColor=#F9A825;strokeWidth=2;arcSize=10;shadow=1;" vertex="1" parent="1">
-          <mxGeometry x="34" y="350" width="70" height="120" as="geometry"/>
-        </mxCell>
-        <mxCell id="quorum" value="Quorum&#xa;Witness" style="shape=mxgraph.cisco.servers.generic_appliance;whiteSpace=wrap;html=1;fillColor=#F9A825;strokeColor=#F57F17;fontSize=9;fontStyle=1;fontColor=#FFFFFF;shadow=1;" vertex="1" parent="1">
-          <mxGeometry x="39" y="355" width="60" height="50" as="geometry"/>
-        </mxCell>
-        <mxCell id="quorum-type" value="File Share&#xa;Witness&#xa;or&#xa;Cloud Witness&#xa;(Azure)" style="text;html=1;fontSize=8;fontStyle=2;align=center;" vertex="1" parent="1">
-          <mxGeometry x="29" y="410" width="80" height="55" as="geometry"/>
-        </mxCell>
-        <mxCell id="e-q-n1" style="rounded=1;strokeColor=#F9A825;strokeWidth=2;dashed=1;endArrow=classic;" edge="1" source="quorum" target="node1-bg" parent="1">
-          <mxGeometry relative="1" as="geometry"/>
-        </mxCell>
-        <mxCell id="e-q-n2" style="rounded=1;strokeColor=#F9A825;strokeWidth=2;dashed=1;endArrow=classic;" edge="1" source="quorum" target="node2-bg" parent="1">
-          <mxGeometry relative="1" as="geometry"/>
-        </mxCell>
-        <mxCell id="quorum-vote" value="Vote" style="edgeLabel;html=1;fontSize=8;fontStyle=2;" vertex="1" connectable="0" parent="e-q-n1">
-          <mxGeometry relative="1" as="geometry"><mxPoint as="offset"/></mxGeometry>
-        </mxCell>
-
-        <!-- Shared Storage -->
-        <mxCell id="storage-bg" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFF3E0;strokeColor=#E65100;strokeWidth=2;arcSize=6;shadow=1;" vertex="1" parent="1">
-          <mxGeometry x="234" y="600" width="700" height="200" as="geometry"/>
-        </mxCell>
-        <mxCell id="storage-label" value="Shared Storage" style="text;html=1;fontSize=15;fontStyle=1;align=center;fillColor=#E65100;fontColor=#FFFFFF;rounded=1;" vertex="1" parent="1">
-          <mxGeometry x="454" y="605" width="200" height="28" as="geometry"/>
-        </mxCell>
-
-        <!-- iSCSI Target -->
-        <mxCell id="iscsi-target" value="iSCSI Target&#xa;(SRV-STORAGE-01)&#xa;&#xa;10.0.0.30" style="shape=mxgraph.cisco.servers.standard_server;whiteSpace=wrap;html=1;fillColor=#EF6C00;strokeColor=#E65100;fontSize=10;fontStyle=1;fontColor=#FFFFFF;shadow=1;verticalAlign=middle;" vertex="1" parent="1">
-          <mxGeometry x="264" y="650" width="150" height="80" as="geometry"/>
-        </mxCell>
-
-        <!-- Shared LUNs -->
-        <mxCell id="lun-data" value="LUN 1: Data&#xa;(500 GB)" style="shape=cylinder3;whiteSpace=wrap;html=1;fillColor=#FFB74D;strokeColor=#E65100;fontSize=10;fontStyle=1;fontColor=#FFFFFF;size=10;shadow=1;" vertex="1" parent="1">
-          <mxGeometry x="474" y="660" width="110" height="55" as="geometry"/>
-        </mxCell>
-        <mxCell id="lun-log" value="LUN 2: Logs&#xa;(100 GB)" style="shape=cylinder3;whiteSpace=wrap;html=1;fillColor=#FFB74D;strokeColor=#E65100;fontSize=10;fontStyle=1;fontColor=#FFFFFF;size=10;shadow=1;" vertex="1" parent="1">
-          <mxGeometry x="614" y="660" width="110" height="55" as="geometry"/>
-        </mxCell>
-        <mxCell id="lun-quorum" value="LUN 3: Quorum&#xa;(1 GB)" style="shape=cylinder3;whiteSpace=wrap;html=1;fillColor=#FFB74D;strokeColor=#E65100;fontSize=10;fontStyle=1;fontColor=#FFFFFF;size=10;shadow=1;" vertex="1" parent="1">
-          <mxGeometry x="754" y="660" width="110" height="55" as="geometry"/>
-        </mxCell>
-
-        <!-- iSCSI to LUN connections -->
-        <mxCell id="e-iscsi-lun1" style="rounded=1;strokeColor=#E65100;strokeWidth=1;" edge="1" source="iscsi-target" target="lun-data" parent="1">
-          <mxGeometry relative="1" as="geometry"/>
-        </mxCell>
-        <mxCell id="e-iscsi-lun2" style="rounded=1;strokeColor=#E65100;strokeWidth=1;" edge="1" source="iscsi-target" target="lun-log" parent="1">
-          <mxGeometry relative="1" as="geometry"/>
-        </mxCell>
-        <mxCell id="e-iscsi-lun3" style="rounded=1;strokeColor=#E65100;strokeWidth=1;" edge="1" source="iscsi-target" target="lun-quorum" parent="1">
-          <mxGeometry relative="1" as="geometry"/>
-        </mxCell>
-
-        <!-- S2D Alternative -->
-        <mxCell id="s2d-alt" value="Alternative: Storage Spaces Direct (S2D)&#xa;Local disks on each node, software-defined" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5F5F5;strokeColor=#9E9E9E;fontSize=9;fontStyle=2;shadow=1;" vertex="1" parent="1">
-          <mxGeometry x="354" y="740" width="290" height="40" as="geometry"/>
-        </mxCell>
-
-        <!-- iSCSI Network -->
-        <mxCell id="iscsi-net" value="iSCSI / Storage Network (10.0.2.0/24)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFE0B2;strokeColor=#E65100;fontSize=11;fontStyle=1;strokeWidth=2;" vertex="1" parent="1">
-          <mxGeometry x="134" y="530" width="900" height="30" as="geometry"/>
-        </mxCell>
-        <mxCell id="e-n1-iscsi" style="rounded=1;strokeColor=#E65100;strokeWidth=2;" edge="1" source="node1-bg" target="iscsi-net" parent="1">
-          <mxGeometry relative="1" as="geometry"/>
-        </mxCell>
-        <mxCell id="e-n2-iscsi" style="rounded=1;strokeColor=#E65100;strokeWidth=2;" edge="1" source="node2-bg" target="iscsi-net" parent="1">
-          <mxGeometry relative="1" as="geometry"/>
-        </mxCell>
-        <mxCell id="e-iscsi-storage" style="edgeStyle=orthogonalEdgeStyle;rounded=1;strokeColor=#E65100;strokeWidth=2;endArrow=block;" edge="1" source="iscsi-net" target="storage-bg" parent="1">
-          <mxGeometry relative="1" as="geometry"/>
-        </mxCell>
-
-        <!-- Legend -->
-        <mxCell id="legend-bg" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FAFAFA;strokeColor=#CCCCCC;" vertex="1" parent="1">
-          <mxGeometry x="700" y="740" width="330" height="60" as="geometry"/>
-        </mxCell>
-        <mxCell id="leg-title" value="Legend" style="text;fontSize=10;fontStyle=1;" vertex="1" parent="1">
-          <mxGeometry x="710" y="742" width="50" height="16" as="geometry"/>
-        </mxCell>
-        <mxCell id="l1c" value="" style="rounded=1;fillColor=#C8E6C9;strokeColor=#2E7D32;" vertex="1" parent="1">
-          <mxGeometry x="710" y="762" width="16" height="12" as="geometry"/>
-        </mxCell>
-        <mxCell id="l1t" value="Client Network" style="text;fontSize=9;" vertex="1" parent="1">
-          <mxGeometry x="730" y="760" width="80" height="16" as="geometry"/>
-        </mxCell>
-        <mxCell id="l2c" value="" style="rounded=1;fillColor=#FFCDD2;strokeColor=#C62828;" vertex="1" parent="1">
-          <mxGeometry x="710" y="780" width="16" height="12" as="geometry"/>
-        </mxCell>
-        <mxCell id="l2t" value="Heartbeat" style="text;fontSize=9;" vertex="1" parent="1">
-          <mxGeometry x="730" y="778" width="60" height="16" as="geometry"/>
-        </mxCell>
-        <mxCell id="l3c" value="" style="rounded=1;fillColor=#FFE0B2;strokeColor=#E65100;" vertex="1" parent="1">
-          <mxGeometry x="830" y="762" width="16" height="12" as="geometry"/>
-        </mxCell>
-        <mxCell id="l3t" value="Storage Network" style="text;fontSize=9;" vertex="1" parent="1">
-          <mxGeometry x="850" y="760" width="90" height="16" as="geometry"/>
-        </mxCell>
-        <mxCell id="l4c" value="" style="rounded=1;fillColor=#F9A825;strokeColor=#F57F17;" vertex="1" parent="1">
-          <mxGeometry x="830" y="780" width="16" height="12" as="geometry"/>
-        </mxCell>
-        <mxCell id="l4t" value="Quorum Witness" style="text;fontSize=9;" vertex="1" parent="1">
-          <mxGeometry x="850" y="778" width="90" height="16" as="geometry"/>
-        </mxCell>
-        <mxCell id="l5c" value="" style="rounded=1;fillColor=#7986CB;strokeColor=#3F51B5;" vertex="1" parent="1">
-          <mxGeometry x="950" y="762" width="16" height="12" as="geometry"/>
-        </mxCell>
-        <mxCell id="l5t" value="Virtual IP / CNO" style="text;fontSize=9;" vertex="1" parent="1">
-          <mxGeometry x="970" y="760" width="90" height="16" as="geometry"/>
-        </mxCell>
-
       </root>
     </mxGraphModel>
   </diagram>

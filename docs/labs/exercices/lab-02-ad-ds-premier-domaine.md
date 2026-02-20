@@ -1,3 +1,18 @@
+﻿<!--
+  Copyright 2026 Julien Bombled
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
 ---
 title: "Lab 02 : Premier domaine AD DS"
 description: Exercice pratique - creer un premier domaine Active Directory, promouvoir un controleur de domaine et verifier le fonctionnement.
@@ -8,6 +23,10 @@ tags:
 ---
 
 # Lab 02 : Premier domaine AD DS
+
+<span class="level-beginner">Debutant</span> · Temps estime : 60 minutes
+
+---
 
 !!! abstract "Objectifs du lab"
 
@@ -55,7 +74,7 @@ graph TD
     le premier controleur de domaine est le receptionniste principal qui tient le registre
     (l'annuaire). Le second DC est son collegue de nuit avec un double du registre (replication).
     Sans IP statique configuree avant la promotion, c'est comme si le receptionniste changeait
-    de bureau a chaque poste — personne ne saurait ou le trouver.
+    de bureau a chaque poste â€” personne ne saurait ou le trouver.
 
 ### Partie 1 : Installer le role AD DS sur SRV-DC01
 
@@ -232,7 +251,7 @@ Apres le redemarrage, verifier que le domaine est fonctionnel.
 
     3. **Mot de passe DSRM oublie ou trop simple** : le mot de passe DSRM est independant
        du mot de passe Administrateur du domaine. Il doit respecter la politique de complexite.
-       Notez-le dans votre documentation de lab — impossible a recuperer sans reinitialisation.
+       Notez-le dans votre documentation de lab â€” impossible a recuperer sans reinitialisation.
 
     4. **Joindre SRV-DC02 sans redemarrer avant la promotion** : apres `Add-Computer -Restart`,
        attendre le redemarrage complet et la reconnexion avec le compte de domaine avant
@@ -260,3 +279,4 @@ Uninstall-ADDSDomainController -LastDomainControllerInDomain `
 ## Prochaine etape
 
 :material-arrow-right: [Lab 03 : DNS et DHCP](lab-03-dns-dhcp.md)
+

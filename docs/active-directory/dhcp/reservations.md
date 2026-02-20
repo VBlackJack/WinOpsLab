@@ -1,3 +1,18 @@
+﻿<!--
+  Copyright 2026 Julien Bombled
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
 ---
 title: "Reservations DHCP"
 description: "Creer et gerer des reservations DHCP pour attribuer des adresses IP fixes a des equipements specifiques identifies par leur adresse MAC."
@@ -10,7 +25,7 @@ tags:
 
 # Reservations DHCP
 
-<span class="level-intermediate">Intermediaire</span> · Temps estime : 20 minutes
+<span class="level-intermediate">Intermediaire</span> Â· Temps estime : 20 minutes
 
 ---
 
@@ -18,7 +33,7 @@ tags:
 
 !!! example "Analogie"
 
-    Une reservation DHCP fonctionne comme une place de parking nominative dans un parking d'entreprise. La place numero 150 est reservee au nom de "Imprimante RDC". Meme si l'imprimante est eteinte pendant le week-end, personne d'autre ne peut occuper cette place. Des que l'imprimante arrive (s'allume), elle retrouve toujours sa place attitrée. Les autres places du parking restent disponibles pour les visiteurs (clients DHCP classiques).
+    Une reservation DHCP fonctionne comme une place de parking nominative dans un parking d'entreprise. La place numero 150 est reservee au nom de "Imprimante RDC". Meme si l'imprimante est eteinte pendant le week-end, personne d'autre ne peut occuper cette place. Des que l'imprimante arrive (s'allume), elle retrouve toujours sa place attitrÃ©e. Les autres places du parking restent disponibles pour les visiteurs (clients DHCP classiques).
 
 Une **reservation DHCP** associe une adresse IP specifique a une **adresse MAC**
 (adresse physique) d'un equipement. Lorsque cet equipement envoie un DHCP
@@ -436,3 +451,4 @@ IPAddress    ClientId             HostName      AddressState    LeaseExpiryTime
 - [Concepts DHCP](concepts-dhcp.md) -- revoir le mecanisme d'attribution des baux
 - [Basculement DHCP](basculement-dhcp.md) -- repliquer les reservations entre serveurs
 - [Installation et configuration](installation-configuration.md) -- mise en place initiale du serveur DHCP
+

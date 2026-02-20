@@ -1,3 +1,18 @@
+<!--
+  Copyright 2026 Julien Bombled
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
 ---
 title: Concepts DNS
 description: Fonctionnement du DNS, hierarchie des noms, types de requetes et role critique dans Active Directory.
@@ -61,33 +76,37 @@ graph TD
 
 ## Types de requetes DNS
 
-### Requete recursive
+### Requete recursive vs Iterative
 
-Le client demande une reponse **complete** au serveur DNS. Le serveur doit fournir la reponse finale ou une erreur -- il ne peut pas rediriger vers un autre serveur.
+C'est la difference fondamentale entre ce que fait votre PC et ce que fait le serveur DNS.
 
-### Requete iterative
-
-Le serveur DNS repond avec la **meilleure information qu'il possede** : soit la reponse, soit une reference vers un autre serveur DNS qui pourrait connaitre la reponse.
+1.  **Recursive (Le Client)** : "Trouve-moi l'adresse IP de www.google.fr, je ne veux rien d'autre que la reponse finale."
+2.  **Iterative (Le Serveur)** : "Je ne connais pas la reponse, mais je vais demander a la racine, puis au .fr, puis a google.fr..."
 
 ```mermaid
 sequenceDiagram
-    participant C as Client
-    participant L as DNS Local (DC)
-    participant R as Serveur racine
-    participant T as Serveur TLD
-    participant A as Serveur autoritaire
+    participant C as Client (PC)
+    participant L as Serveur DNS Local (DC)
+    participant R as Racine (.)
+    participant T as TLD (.fr)
+    participant A as Autoritaire (google.fr)
 
-    C->>L: 1. Requete recursive : www.microsoft.com ?
-    L->>R: 2. Requete iterative : www.microsoft.com ?
-    R->>L: 3. Referral vers serveur .com
-    L->>T: 4. Requete iterative : www.microsoft.com ?
-    T->>L: 5. Referral vers serveur microsoft.com
-    L->>A: 6. Requete iterative : www.microsoft.com ?
-    A->>L: 7. Reponse : 20.70.246.20
-    L->>C: 8. Reponse finale : 20.70.246.20
+    Note over C,L: Requete Recursive
+    C->>L: Qui est www.google.fr ?
+    
+    Note over L,A: Processus Iteratif
+    L->>R: Qui est www.google.fr ?
+    R-->>L: Vois avec les serveurs .fr (192.x.x.x)
+    
+    L->>T: Qui est www.google.fr ?
+    T-->>L: Vois avec ns1.google.fr (216.x.x.x)
+    
+    L->>A: Qui est www.google.fr ?
+    A-->>L: C'est 142.250.x.x !
+    
+    Note over C,L: Reponse Finale
+    L-->>C: C'est 142.250.x.x
 ```
-
-Le serveur DNS local effectue le travail iteratif pour le client -- c'est le modele standard dans un reseau Active Directory.
 
 ## Resolution directe et inverse
 
@@ -371,3 +390,16 @@ srv-fs01.lab.local             A      3600  Answer     10.0.0.20
 - [Enregistrements DNS](enregistrements.md) -- types d'enregistrements et gestion
 - [Depannage DNS](depannage-dns.md) -- diagnostiquer les problemes de resolution
 - [Concepts fondamentaux AD DS](../adds/concepts-fondamentaux.md) -- comprendre l'annuaire Active Directory
+
+---
+
+## Quizz de validation
+
+??? question "Question 1 : Quel type d'enregistrement permet a un client de trouver un Controleur de Domaine ?"
+    Les enregistrements **SRV** (Service Locator). Par exemple `_ldap._tcp.lab.local`.
+
+??? question "Question 2 : Quelle est la difference entre une requete recursive et iterative ?"
+    Dans une requete **recursive**, le client delegue tout le travail au serveur et attend une reponse finale. Dans une requete **iterative**, le serveur renvoie la meilleure reponse qu'il a (ou un renvoi vers un autre serveur), et c'est au demandeur de continuer l'enquete.
+
+??? question "Question 3 : Pourquoi ne faut-il pas mettre 8.8.8.8 en DNS primaire sur un poste du domaine ?"
+    Parce que les serveurs publics (comme Google) ne connaissent pas vos enregistrements internes (AD, SRV, serveurs de fichiers). L'authentification et l'acces aux ressources echoueront.

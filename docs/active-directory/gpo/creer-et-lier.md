@@ -1,3 +1,18 @@
+﻿<!--
+  Copyright 2026 Julien Bombled
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
 ---
 title: Creer et lier une GPO
 description: Guide pratique pour creer, lier et configurer des GPO via la console GPMC et PowerShell sous Windows Server 2022.
@@ -10,7 +25,7 @@ tags:
 
 # Creer et lier une GPO
 
-<span class="level-intermediate">Intermediaire</span> · Temps estime : 50 minutes
+<span class="level-intermediate">Intermediaire</span> Â· Temps estime : 50 minutes
 
 ## Cycle de vie d'une GPO
 
@@ -481,3 +496,4 @@ Lorsque plusieurs GPO sont liees au meme conteneur, leur **ordre de liaison**
 - [GPResult et depannage](gpresult-et-depannage.md) -- verifier l'application effective
 - [Structure des OU](../adds/structure-ou.md) -- concevoir une arborescence adaptee aux GPO
 - [Utilisateurs et groupes](../adds/utilisateurs-et-groupes.md) -- gerer les cibles des GPO
+

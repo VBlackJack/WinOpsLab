@@ -1,3 +1,18 @@
+﻿<!--
+  Copyright 2026 Julien Bombled
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
 ---
 title: "Bonnes pratiques de durcissement"
 description: "Principes fondamentaux du hardening Windows Server 2022 : desactivation des services inutiles, moindre privilege, strategie de mises a jour, securisation SMB et comptes administrateurs."
@@ -10,7 +25,7 @@ tags:
 
 # Bonnes pratiques de durcissement
 
-<span class="level-advanced">Avance</span> · Temps estime : 45 minutes
+<span class="level-advanced">Avance</span> Â· Temps estime : 45 minutes
 
 Le durcissement (hardening) consiste a reduire la surface d'attaque d'un serveur en eliminant les composants, services et configurations inutiles. Sur Windows Server 2022, cette demarche suit des principes eprouves que tout administrateur doit maitriser.
 
@@ -503,3 +518,4 @@ Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\SecurityProviders
 - CIS Benchmarks pour Windows Server 2022
 - ANSSI - Recommandations de securite relatives a Active Directory
 - NIST SP 800-123 : Guide to General Server Security
+

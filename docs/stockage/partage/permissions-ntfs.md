@@ -1,3 +1,18 @@
+﻿<!--
+  Copyright 2026 Julien Bombled
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
 ---
 title: Permissions NTFS
 description: Comprendre les permissions NTFS - niveaux de permission, heritage, permissions effectives et gestion avec PowerShell.
@@ -11,7 +26,7 @@ tags:
 
 # Permissions NTFS
 
-<span class="level-intermediate">Intermediaire</span> · Temps estime : 30 minutes
+<span class="level-intermediate">Intermediaire</span> Â· Temps estime : 30 minutes
 
 ## Vue d'ensemble
 
@@ -322,7 +337,7 @@ D:\Partages\                         Administrators: Full Control
 
     Exemple :
 
-    - Marie (compte) → GRP-G-Comptabilite (global) → GRP-DL-Compta-Modify (domain local) → Modify sur `D:\Partages\Comptabilite`
+    - Marie (compte) â†’ GRP-G-Comptabilite (global) â†’ GRP-DL-Compta-Modify (domain local) â†’ Modify sur `D:\Partages\Comptabilite`
 
 - Attribuez les permissions aux **groupes**, jamais directement aux utilisateurs
 - Evitez les permissions **Deny** explicites sauf en cas de necessite absolue
@@ -404,3 +419,4 @@ D:\Partages\                         Administrators: Full Control
 - [Permissions de partage](permissions-partage.md)
 - [Quotas et filtrage FSRM](quotas-et-filtrage.md)
 - [DFS Namespaces](../dfs/dfs-namespaces.md)
+

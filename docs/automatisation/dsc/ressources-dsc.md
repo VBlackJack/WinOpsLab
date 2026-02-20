@@ -1,3 +1,18 @@
+﻿<!--
+  Copyright 2026 Julien Bombled
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
 ---
 title: "Ressources DSC"
 description: "Decouvrir et utiliser les ressources DSC : ressources integrees, ressources communautaires sur la PowerShell Gallery et les ressources les plus courantes."
@@ -10,7 +25,7 @@ tags:
 
 # Ressources DSC
 
-<span class="level-advanced">Avance</span> · Temps estime : 40 minutes
+<span class="level-advanced">Avance</span> Â· Temps estime : 40 minutes
 
 ## Introduction
 
@@ -20,7 +35,7 @@ Les **ressources DSC** sont les briques de base de toute configuration. Chaque r
 
 !!! example "Analogie"
 
-    Une ressource DSC fonctionne comme un technicien de maintenance charge d'un equipement specifique. Il sait verifier si l'equipement est en bon etat (**Test**), lire son etat actuel (**Get**), et le reparer ou le reconfigurer si necessaire (**Set**). Le responsable (LCM) n'a pas besoin de savoir comment chaque technicien travaille — il leur donne simplement les specifications a atteindre.
+    Une ressource DSC fonctionne comme un technicien de maintenance charge d'un equipement specifique. Il sait verifier si l'equipement est en bon etat (**Test**), lire son etat actuel (**Get**), et le reparer ou le reconfigurer si necessaire (**Set**). Le responsable (LCM) n'a pas besoin de savoir comment chaque technicien travaille â€” il leur donne simplement les specifications a atteindre.
 
 Chaque ressource DSC implemente trois fonctions :
 
@@ -426,15 +441,15 @@ Configuration WithDependencies {
 
 !!! danger "Erreurs courantes"
 
-    **Ressource introuvable apres `Install-Module`** — Les modules doivent etre installes dans un chemin accessible par le LCM (`$env:ProgramFiles\WindowsPowerShell\Modules`). Si vous installez en scope `CurrentUser`, le LCM (qui tourne en SYSTEM) ne trouvera pas la ressource. Utilisez toujours `-Scope AllUsers`.
+    **Ressource introuvable apres `Install-Module`** â€” Les modules doivent etre installes dans un chemin accessible par le LCM (`$env:ProgramFiles\WindowsPowerShell\Modules`). Si vous installez en scope `CurrentUser`, le LCM (qui tourne en SYSTEM) ne trouvera pas la ressource. Utilisez toujours `-Scope AllUsers`.
 
-    **`DependsOn` mal formate** — La syntaxe correcte est `"[TypeRessource]NomRessource"` avec les crochets. Une erreur frequente est d'oublier les crochets ou d'inverser type et nom.
+    **`DependsOn` mal formate** â€” La syntaxe correcte est `"[TypeRessource]NomRessource"` avec les crochets. Une erreur frequente est d'oublier les crochets ou d'inverser type et nom.
 
-    **Conflit de version de ressource** — Si plusieurs versions d'un module communautaire sont installees, DSC peut charger la mauvaise. Specifiez la version dans `Import-DscResource -ModuleVersion` pour etre explicite.
+    **Conflit de version de ressource** â€” Si plusieurs versions d'un module communautaire sont installees, DSC peut charger la mauvaise. Specifiez la version dans `Import-DscResource -ModuleVersion` pour etre explicite.
 
-    **Ressource `Script` non idempotente** — Si le bloc `SetScript` n'est pas idempotent (il effectue une action meme si deja faite), DSC la ré-executera a chaque cycle. Assurez-vous que `TestScript` retourne `$true` une fois que l'etat souhaite est atteint.
+    **Ressource `Script` non idempotente** â€” Si le bloc `SetScript` n'est pas idempotent (il effectue une action meme si deja faite), DSC la rÃ©-executera a chaque cycle. Assurez-vous que `TestScript` retourne `$true` une fois que l'etat souhaite est atteint.
 
-    **Utiliser `Script` en premier recours** — La ressource `Script` est facile mais contourne l'approche declarative. Cherchez d'abord une ressource dediee sur la PowerShell Gallery avant de recourir a `Script`.
+    **Utiliser `Script` en premier recours** â€” La ressource `Script` est facile mais contourne l'approche declarative. Cherchez d'abord une ressource dediee sur la PowerShell Gallery avant de recourir a `Script`.
 
 ## Points cles a retenir
 
@@ -450,3 +465,4 @@ Configuration WithDependencies {
 - Concepts DSC : [Concepts DSC](concepts-dsc.md)
 - Modes Push et Pull : [Configuration Push/Pull](configuration-push-pull.md)
 - Documentation Microsoft : DSC Resources
+

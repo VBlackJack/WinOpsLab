@@ -1,3 +1,18 @@
+﻿<!--
+  Copyright 2026 Julien Bombled
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
 ---
 title: "Lab 05 : Partage de fichiers"
 description: Exercice pratique - configurer des partages de fichiers avec les permissions NTFS et partage selon le modele AGDLP.
@@ -9,6 +24,10 @@ tags:
 ---
 
 # Lab 05 : Partage de fichiers
+
+<span class="level-intermediate">Intermediaire</span> · Temps estime : 45 minutes
+
+---
 
 !!! abstract "Objectifs du lab"
 
@@ -49,7 +68,7 @@ graph TD
     les employes (Accounts) ont un badge de service (Global Group), chaque badge de service
     est programme pour ouvrir certaines portes specifiques (Domain Local Group), et les portes
     definissent ce qu'on peut faire dans la piece (Permission NTFS). Si un employe change de
-    service, on change juste son badge — toutes les portes s'adaptent automatiquement.
+    service, on change juste son badge â€” toutes les portes s'adaptent automatiquement.
 
 ### Partie 1 : Preparer les groupes AD (modele AGDLP)
 
@@ -237,7 +256,7 @@ Creer les groupes globaux (GG) et locaux de domaine (DL) pour chaque service.
 !!! warning "Pieges frequents dans ce lab"
 
     1. **Imbrication AGDLP dans le mauvais sens** : l'utilisateur doit etre dans GG, et GG
-       dans DL — pas l'inverse. Mettre directement l'utilisateur dans DL fonctionne en apparence
+       dans DL â€” pas l'inverse. Mettre directement l'utilisateur dans DL fonctionne en apparence
        mais casse le modele AGDLP et complique la gestion future. Verifier avec
        `Get-ADGroupMember "DL_Direction_Modification"` que le membre est un groupe global, pas
        un utilisateur direct.
@@ -267,3 +286,4 @@ Conservez l'environnement pour les labs suivants.
 ## Prochaine etape
 
 :material-arrow-right: [Lab 06 : Hyper-V](lab-06-hyper-v.md)
+

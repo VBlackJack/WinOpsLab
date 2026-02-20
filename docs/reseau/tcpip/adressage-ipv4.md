@@ -1,3 +1,18 @@
+﻿<!--
+  Copyright 2026 Julien Bombled
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
 ---
 title: "Adressage IPv4"
 description: "Comprendre l'adressage IPv4 : classes, plages privees RFC 1918, notation CIDR, masques de sous-reseau et conversions binaire/decimal."
@@ -9,6 +24,10 @@ tags:
 ---
 
 # Adressage IPv4
+
+<span class="level-beginner">Debutant</span> · Temps estime : 25 minutes
+
+---
 
 ## Introduction
 
@@ -198,7 +217,7 @@ Pour determiner l'adresse reseau a partir d'une adresse IP et de son masque, on 
 ```
 Adresse IP :   192.168.1.10    = 11000000.10101000.00000001.00001010
 Masque :       255.255.255.0   = 11111111.11111111.11111111.00000000
-               ─────────────────────────────────────────────────────
+               â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 Adresse reseau: 192.168.1.0    = 11000000.10101000.00000001.00000000
 ```
 
@@ -359,3 +378,4 @@ Ethernet0       169.254.15.201
 - Pratiquer le calcul de sous-reseaux avec des exercices concrets : voir la page [Sous-reseaux](sous-reseaux.md)
 - Comprendre les fondamentaux d'IPv6 : voir la page [IPv6 Fondamentaux](ipv6-fondamentaux.md)
 - Configurer les interfaces reseau sur Windows Server : voir la page [Configuration des interfaces](configuration-interfaces.md)
+

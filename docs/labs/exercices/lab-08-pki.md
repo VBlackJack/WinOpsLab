@@ -1,3 +1,18 @@
+﻿<!--
+  Copyright 2026 Julien Bombled
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
 ---
 title: "Lab 08 : Infrastructure PKI"
 description: Exercice pratique - deployer une autorite de certification d'entreprise et emettre des certificats.
@@ -9,6 +24,10 @@ tags:
 ---
 
 # Lab 08 : Infrastructure PKI
+
+<span class="level-advanced">Avance</span> · Temps estime : 90 minutes
+
+---
 
 !!! abstract "Objectifs du lab"
 
@@ -48,7 +67,7 @@ graph TD
     la CA racine est le ministere de l'interieur (autorite ultime, rarement sollicitee directement),
     les modeles de certificats sont les formulaires standardises, et les certificats emis sont
     les cartes delivrees aux individus (serveurs). Quand un navigateur visite un site HTTPS
-    interne, il verifie la carte d'identite du serveur aupres du ministere de confiance —
+    interne, il verifie la carte d'identite du serveur aupres du ministere de confiance â€”
     si la CA n'est pas dans son registre de confiance, il affiche une alerte de securite.
 
 ### Partie 1 : Installer AD CS
@@ -258,3 +277,4 @@ Uninstall-WindowsFeature -Name AD-Certificate
 ## Prochaine etape
 
 :material-arrow-right: [Lab 09 : Automatisation PowerShell](lab-09-automatisation.md)
+

@@ -1,3 +1,18 @@
+﻿<!--
+  Copyright 2026 Julien Bombled
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
 ---
 title: "Analyseur de performances (perfmon)"
 description: Maitriser l'Analyseur de performances Windows Server 2022 - compteurs, alertes, collecte de donnees et diagnostic des goulots d'etranglement.
@@ -9,7 +24,7 @@ tags:
 
 # Analyseur de performances (perfmon)
 
-<span class="level-intermediate">Intermediaire</span> · Temps estime : 30 minutes
+<span class="level-intermediate">Intermediaire</span> Â· Temps estime : 30 minutes
 
 ## Presentation
 
@@ -309,3 +324,4 @@ Import-Counter -Path "C:\PerfLogs\baseline.blg" |
 - [Resource Monitor](resource-monitor.md) pour une vue synthetique en temps reel
 - [Ensembles de collecteurs de donnees](data-collector-sets.md) pour la collecte planifiee
 - [Observateur d'evenements](event-viewer.md) pour correler avec les journaux
+

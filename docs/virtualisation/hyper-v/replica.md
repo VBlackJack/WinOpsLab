@@ -1,3 +1,18 @@
+﻿<!--
+  Copyright 2026 Julien Bombled
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
 ---
 title: "Hyper-V Replica"
 description: "Replication de VMs Hyper-V pour la reprise d'activite : configuration, types de basculement et strategie de disaster recovery sur Windows Server 2022."
@@ -11,7 +26,7 @@ tags:
 
 # Hyper-V Replica
 
-<span class="level-intermediate">Intermediaire</span> · Temps estime : 35 minutes
+<span class="level-intermediate">Intermediaire</span> Â· Temps estime : 35 minutes
 
 Hyper-V Replica replique une machine virtuelle d'un hote principal vers un hote secondaire de maniere asynchrone. En cas de panne du site principal, la VM repliquee peut etre activee sur le site secondaire, assurant la continuite d'activite.
 
@@ -395,3 +410,4 @@ Start-VMInitialReplication -VMName "SRV-APP01"
 - Live Migration pour la mobilite sans interruption (voir la page [Live Migration](live-migration.md))
 - Microsoft : Hyper-V Replica deployment guide
 - Microsoft : Set up disaster recovery with Hyper-V Replica
+

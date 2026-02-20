@@ -1,3 +1,18 @@
+﻿<!--
+  Copyright 2026 Julien Bombled
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
 ---
 title: "Etendues et options DHCP"
 description: "Creer et configurer des etendues DHCP, definir les options de serveur, d'etendue et de reservation, gerer les exclusions et decouvrir les superscopes."
@@ -10,7 +25,7 @@ tags:
 
 # Etendues et options DHCP
 
-<span class="level-intermediate">Intermediaire</span> · Temps estime : 30 minutes
+<span class="level-intermediate">Intermediaire</span> Â· Temps estime : 30 minutes
 
 ---
 
@@ -520,3 +535,4 @@ Get-DhcpServerv4OptionValue -ComputerName $DhcpServer -ScopeId $ScopeId
 - [Reservations DHCP](reservations.md) -- attribuer une adresse fixe via les options de reservation
 - [Basculement DHCP](basculement-dhcp.md) -- repliquer les etendues entre deux serveurs
 - [Adressage IPv4](../../reseau/tcpip/adressage-ipv4.md) -- comprendre le calcul des sous-reseaux pour dimensionner les etendues
+

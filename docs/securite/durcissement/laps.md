@@ -1,3 +1,18 @@
+﻿<!--
+  Copyright 2026 Julien Bombled
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
 ---
 title: "LAPS - Local Administrator Password Solution"
 description: "Deploiement et gestion de LAPS et Windows LAPS pour la rotation automatique des mots de passe administrateur locaux sur Windows Server 2022."
@@ -11,7 +26,7 @@ tags:
 
 # LAPS - Local Administrator Password Solution
 
-<span class="level-advanced">Avance</span> · Temps estime : 40 minutes
+<span class="level-advanced">Avance</span> Â· Temps estime : 40 minutes
 
 LAPS permet de gerer automatiquement les mots de passe des comptes administrateur locaux de chaque machine du domaine. Chaque ordinateur recoit un mot de passe unique, stocke de maniere securisee dans Active Directory.
 
@@ -396,3 +411,4 @@ SRV-DEV02
 - Microsoft : Windows LAPS documentation officielle
 - Microsoft : Migration de LAPS Legacy vers Windows LAPS
 - Guide de protection des comptes privilegies (voir la page [Comptes privilegies](comptes-privilegies.md))
+

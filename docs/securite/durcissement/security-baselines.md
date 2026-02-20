@@ -1,3 +1,18 @@
+﻿<!--
+  Copyright 2026 Julien Bombled
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
 ---
 title: "Microsoft Security Baselines"
 description: "Utilisation du Security Compliance Toolkit pour appliquer les baselines de securite Microsoft sur Windows Server 2022 via GPO."
@@ -11,7 +26,7 @@ tags:
 
 # Microsoft Security Baselines
 
-<span class="level-advanced">Avance</span> · Temps estime : 40 minutes
+<span class="level-advanced">Avance</span> Â· Temps estime : 40 minutes
 
 Les Security Baselines de Microsoft fournissent des configurations de securite recommandees et testees pour Windows Server. Elles permettent d'etablir rapidement un socle de securite coherent a l'echelle de l'entreprise.
 
@@ -65,13 +80,13 @@ Le **Security Compliance Toolkit** est l'outil officiel de Microsoft pour gerer 
 
 # Typical extraction structure
 # C:\SCT\
-#   ├── Windows Server 2022 Security Baseline\
-#   │   ├── GP Reports\
-#   │   ├── GPOs\
-#   │   ├── Scripts\
-#   │   └── Documentation\
-#   ├── PolicyAnalyzer\
-#   └── LGPO\
+#   â”œâ”€â”€ Windows Server 2022 Security Baseline\
+#   â”‚   â”œâ”€â”€ GP Reports\
+#   â”‚   â”œâ”€â”€ GPOs\
+#   â”‚   â”œâ”€â”€ Scripts\
+#   â”‚   â””â”€â”€ Documentation\
+#   â”œâ”€â”€ PolicyAnalyzer\
+#   â””â”€â”€ LGPO\
 ```
 
 ---
@@ -389,3 +404,4 @@ PS ScriptBlock Logging: NON-CONFORME (valeur: )
 - CIS Benchmarks pour Windows Server 2022
 - ANSSI - Guide de durcissement de Windows Server
 - Documentation Microsoft : Security Baselines for Windows Server
+

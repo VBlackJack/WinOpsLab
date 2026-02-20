@@ -1,3 +1,18 @@
+﻿<!--
+  Copyright 2026 Julien Bombled
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
 ---
 title: Concepts GPO
 description: Comprendre les objets de strategie de groupe (GPO), leur ordre de traitement LSDOU, le stockage SYSVOL et les commandes essentielles.
@@ -10,13 +25,13 @@ tags:
 
 # Concepts des strategies de groupe (GPO)
 
-<span class="level-intermediate">Intermediaire</span> · Temps estime : 45 minutes
+<span class="level-intermediate">Intermediaire</span> Â· Temps estime : 45 minutes
 
 ## Qu'est-ce qu'un objet de strategie de groupe (GPO) ?
 
 !!! example "Analogie"
 
-    Imaginez une entreprise ou le directeur affiche des regles sur le tableau d'entree : « pas de telephone en reunion », « badge obligatoire ». Chaque employe qui passe devant le panneau recoit automatiquement les memes consignes. Une GPO fonctionne de la meme maniere : elle affiche des regles de configuration que chaque ordinateur ou utilisateur du domaine lit et applique automatiquement.
+    Imaginez une entreprise ou le directeur affiche des regles sur le tableau d'entree : Â« pas de telephone en reunion Â», Â« badge obligatoire Â». Chaque employe qui passe devant le panneau recoit automatiquement les memes consignes. Une GPO fonctionne de la meme maniere : elle affiche des regles de configuration que chaque ordinateur ou utilisateur du domaine lit et applique automatiquement.
 
 Un **Group Policy Object (GPO)** est un ensemble de parametres de configuration geres
 de facon centralisee dans Active Directory. Les GPO permettent aux administrateurs de
@@ -337,3 +352,17 @@ A la creation du domaine, deux GPO sont automatiquement creees :
 - [Modeles ADMX](modeles-admx.md) -- etendre les parametres disponibles
 - [Structure des OU](../adds/structure-ou.md) -- organiser les objets pour les GPO
 - [Sites et replication](../adds/sites-et-replication.md) -- impact sur la replication SYSVOL
+
+---
+
+## Quizz de validation
+
+??? question "Question 1 : Dans l'ordre LSDOU, qui gagne entre une GPO de Domaine et une GPO d'OU ?"
+    C'est la **GPO d'OU** qui gagne (la derniere appliquee l'emporte).
+
+??? question "Question 2 : Ou sont stockes les fichiers physiques des GPO (scripts, modeles) ?"
+    Dans le dossier partagé **SYSVOL** sur chaque controleur de domaine.
+
+??? question "Question 3 : A quelle frequence les postes clients actualisent-ils leurs GPO par defaut ?"
+    Toutes les **90 minutes** (avec un decalage aleatoire de 0 a 30 minutes).
+

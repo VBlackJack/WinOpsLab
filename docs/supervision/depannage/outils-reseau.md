@@ -1,3 +1,18 @@
+﻿<!--
+  Copyright 2026 Julien Bombled
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
 ---
 title: "Outils reseau de depannage"
 description: Maitriser les outils de diagnostic reseau sur Windows Server 2022 - ping, tracert, nslookup, netstat, Test-NetConnection, pathping et PortQry.
@@ -10,7 +25,7 @@ tags:
 
 # Outils reseau de depannage
 
-<span class="level-intermediate">Intermediaire</span> · Temps estime : 30 minutes
+<span class="level-intermediate">Intermediaire</span> Â· Temps estime : 30 minutes
 
 ## Vue d'ensemble des outils
 
@@ -503,3 +518,4 @@ Get-NetRoute | Select-Object DestinationPrefix, NextHop, InterfaceAlias, RouteMe
 - [Methodologie de depannage](methodologie.md) pour une approche structuree
 - [Outils systeme de depannage](outils-systeme.md) pour les outils de diagnostic Windows
 - [Configuration des interfaces reseau](../../reseau/tcpip/configuration-interfaces.md)
+

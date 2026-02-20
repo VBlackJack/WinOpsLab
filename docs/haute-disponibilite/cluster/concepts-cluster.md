@@ -1,3 +1,18 @@
+<!--
+  Copyright 2026 Julien Bombled
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
 ---
 title: "Concepts du clustering avec basculement"
 description: "Comprendre les fondamentaux du failover clustering sous Windows Server 2022 : noeuds, heartbeat, basculement, modes actif-passif et actif-actif."
@@ -20,11 +35,11 @@ L'objectif principal est d'assurer qu'une application ou un service reste access
 
 ## Architecture d'un cluster
 
+![Architecture Cluster](../../diagrams/cluster-architecture.drawio#Architecture_Cluster)
+
 !!! example "Analogie"
 
     Imaginez un hopital avec plusieurs medecins de garde. Si l'un d'eux tombe malade, un collegue prend immediatement le relais aupres des patients. Les patients (clients) ne changent pas de numero de telephone (IP virtuelle) : ils appellent toujours le meme standard, qui redirige vers le medecin disponible. C'est exactement le principe du clustering avec basculement.
-
-![](../../diagrams/cluster-architecture.drawio)
 
 ### Les noeuds
 

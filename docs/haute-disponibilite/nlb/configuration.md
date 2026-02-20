@@ -1,3 +1,18 @@
+﻿<!--
+  Copyright 2026 Julien Bombled
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
 ---
 title: "Configuration du NLB"
 description: "Configurer un cluster NLB sous Windows Server 2022 via PowerShell et NLB Manager : creation, ajout de noeuds, regles de port et tests."
@@ -11,7 +26,7 @@ tags:
 
 # Configuration du NLB
 
-<span class="level-advanced">Avance</span> · Temps estime : 45 minutes
+<span class="level-advanced">Avance</span> Â· Temps estime : 45 minutes
 
 ## Introduction
 
@@ -380,3 +395,4 @@ Get-NlbCluster -ClusterName "YOURNLB" | Get-NlbClusterDriverInfo
 
 - Concepts NLB : [Concepts NLB](concepts-nlb.md)
 - Documentation Microsoft : Network Load Balancing Deployment Guide
+

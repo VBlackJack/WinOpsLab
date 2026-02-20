@@ -1,3 +1,18 @@
+﻿<!--
+  Copyright 2026 Julien Bombled
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
 ---
 title: Resolution conditionnelle
 description: Redirecteurs conditionnels, transfert DNS et cas d'usage pour les environnements hybrides et multi-forets.
@@ -9,13 +24,13 @@ tags:
 
 # Resolution conditionnelle et redirecteurs
 
-<span class="level-advanced">Avance</span> · Temps estime : 25 minutes
+<span class="level-advanced">Avance</span> Â· Temps estime : 25 minutes
 
 ## Principe de la redirection DNS
 
 !!! example "Analogie"
 
-    Imaginez un standard telephonique d'entreprise. Quand quelqu'un appelle un numero interne, le standard repond directement. Mais quand on appelle un numero externe, le standard transfère l'appel vers l'operateur telephonique. Un redirecteur conditionnel, c'est comme une regle speciale : "Pour tous les appels vers la filiale de Lyon, transferer directement vers le standard de Lyon au lieu de passer par l'operateur."
+    Imaginez un standard telephonique d'entreprise. Quand quelqu'un appelle un numero interne, le standard repond directement. Mais quand on appelle un numero externe, le standard transfÃ¨re l'appel vers l'operateur telephonique. Un redirecteur conditionnel, c'est comme une regle speciale : "Pour tous les appels vers la filiale de Lyon, transferer directement vers le standard de Lyon au lieu de passer par l'operateur."
 
 Quand un serveur DNS recoit une requete pour un domaine dont il n'est **pas autoritaire**, il doit trouver la reponse ailleurs. Deux mecanismes existent :
 
@@ -388,3 +403,4 @@ srv-dc01.partner.com           A      3600  Answer     10.10.0.1
 - [Zones integrees AD](zones-integrees-ad.md) -- partitions de replication et zones
 - [Depannage DNS](depannage-dns.md) -- diagnostiquer les problemes de resolution inter-domaines
 - [Sites et replication AD](../adds/sites-et-replication.md) -- topologie multi-sites
+

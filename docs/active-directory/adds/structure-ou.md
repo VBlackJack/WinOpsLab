@@ -1,3 +1,18 @@
+﻿<!--
+  Copyright 2026 Julien Bombled
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
 ---
 title: Structure des OU
 description: Concevoir et gerer les unites d'organisation dans Active Directory.
@@ -9,7 +24,7 @@ tags:
 
 # Structure des unites d'organisation (OU)
 
-<span class="level-intermediate">Intermediaire</span> · Temps estime : 15 minutes
+<span class="level-intermediate">Intermediaire</span> Â· Temps estime : 15 minutes
 
 ## Qu'est-ce qu'une OU ?
 
@@ -35,7 +50,7 @@ Une **OU** (Organizational Unit / Unite d'Organisation) est un conteneur dans Ac
 
 ```mermaid
 graph TD
-    ROOT["🏢 lab.local"] --> OU_USERS["OU=Utilisateurs"]
+    ROOT["ðŸ¢ lab.local"] --> OU_USERS["OU=Utilisateurs"]
     ROOT --> OU_PC["OU=Ordinateurs"]
     ROOT --> OU_SRV["OU=Serveurs"]
     ROOT --> OU_GRP["OU=Groupes"]
@@ -63,45 +78,47 @@ graph TD
     style OU_SVC fill:#795548,color:#fff
 ```
 
+![Hierarchie AD DS - Forest lab.local, Domaine, OUs et roles FSMO](../../diagrams/ad-ds-forest.drawio)
+
 ### Par departement (recommande pour les PME)
 
 ```
 lab.local
-├── OU=Utilisateurs
-│   ├── OU=Direction
-│   ├── OU=Comptabilite
-│   ├── OU=IT
-│   ├── OU=Commercial
-│   └── OU=RH
-├── OU=Ordinateurs
-│   ├── OU=Postes
-│   ├── OU=Portables
-│   └── OU=Kiosques
-├── OU=Serveurs
-│   ├── OU=Controleurs-Domaine
-│   └── OU=Serveurs-Membres
-├── OU=Groupes
-│   ├── OU=Groupes-Securite
-│   └── OU=Groupes-Distribution
-└── OU=Comptes-Service
+â”œâ”€â”€ OU=Utilisateurs
+â”‚   â”œâ”€â”€ OU=Direction
+â”‚   â”œâ”€â”€ OU=Comptabilite
+â”‚   â”œâ”€â”€ OU=IT
+â”‚   â”œâ”€â”€ OU=Commercial
+â”‚   â””â”€â”€ OU=RH
+â”œâ”€â”€ OU=Ordinateurs
+â”‚   â”œâ”€â”€ OU=Postes
+â”‚   â”œâ”€â”€ OU=Portables
+â”‚   â””â”€â”€ OU=Kiosques
+â”œâ”€â”€ OU=Serveurs
+â”‚   â”œâ”€â”€ OU=Controleurs-Domaine
+â”‚   â””â”€â”€ OU=Serveurs-Membres
+â”œâ”€â”€ OU=Groupes
+â”‚   â”œâ”€â”€ OU=Groupes-Securite
+â”‚   â””â”€â”€ OU=Groupes-Distribution
+â””â”€â”€ OU=Comptes-Service
 ```
 
 ### Par site geographique (pour les grandes organisations)
 
 ```
 lab.local
-├── OU=Paris
-│   ├── OU=Utilisateurs
-│   ├── OU=Ordinateurs
-│   └── OU=Groupes
-├── OU=Lyon
-│   ├── OU=Utilisateurs
-│   ├── OU=Ordinateurs
-│   └── OU=Groupes
-└── OU=Global
-    ├── OU=Serveurs
-    ├── OU=Comptes-Service
-    └── OU=Groupes-Globaux
+â”œâ”€â”€ OU=Paris
+â”‚   â”œâ”€â”€ OU=Utilisateurs
+â”‚   â”œâ”€â”€ OU=Ordinateurs
+â”‚   â””â”€â”€ OU=Groupes
+â”œâ”€â”€ OU=Lyon
+â”‚   â”œâ”€â”€ OU=Utilisateurs
+â”‚   â”œâ”€â”€ OU=Ordinateurs
+â”‚   â””â”€â”€ OU=Groupes
+â””â”€â”€ OU=Global
+    â”œâ”€â”€ OU=Serveurs
+    â”œâ”€â”€ OU=Comptes-Service
+    â””â”€â”€ OU=Groupes-Globaux
 ```
 
 ## Creer des OU
@@ -283,3 +300,4 @@ L'un des avantages majeurs des OU est la delegation :
 
 - [Utilisateurs et groupes](utilisateurs-et-groupes.md) - peupler les OU
 - [GPO - Concepts](../gpo/concepts-gpo.md) - appliquer des strategies aux OU
+

@@ -1,3 +1,18 @@
+﻿<!--
+  Copyright 2026 Julien Bombled
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
 ---
 title: "Corbeille Active Directory"
 description: "Activer et utiliser la corbeille Active Directory sous Windows Server 2022 : niveaux fonctionnels, restauration d'objets supprimes, tombstone et recycled."
@@ -11,7 +26,7 @@ tags:
 
 # Corbeille Active Directory
 
-<span class="level-advanced">Avance</span> · Temps estime : 35 minutes
+<span class="level-advanced">Avance</span> Â· Temps estime : 35 minutes
 
 ## Introduction
 
@@ -331,15 +346,15 @@ Get-ADOrganizationalUnit -Filter * -Properties ProtectedFromAccidentalDeletion |
 
 !!! danger "Erreurs courantes"
 
-    **Restaurer les objets enfants avant le conteneur** — Si l'OU a ete supprimee avec son contenu, il faut restaurer l'OU en premier, puis les objets qu'elle contenait. Inverser cet ordre fait echouer la restauration car les objets enfants n'ont plus de conteneur valide.
+    **Restaurer les objets enfants avant le conteneur** â€” Si l'OU a ete supprimee avec son contenu, il faut restaurer l'OU en premier, puis les objets qu'elle contenait. Inverser cet ordre fait echouer la restauration car les objets enfants n'ont plus de conteneur valide.
 
-    **La corbeille AD n'est pas encore activee** — Si la corbeille n'a pas ete activee avant la suppression, les objets passent directement en etat tombstone et perdent la plupart de leurs attributs. Sans corbeille, la seule option est une restauration authoritative depuis une sauvegarde — bien plus complexe.
+    **La corbeille AD n'est pas encore activee** â€” Si la corbeille n'a pas ete activee avant la suppression, les objets passent directement en etat tombstone et perdent la plupart de leurs attributs. Sans corbeille, la seule option est une restauration authoritative depuis une sauvegarde â€” bien plus complexe.
 
-    **Elever le niveau fonctionnel sans verifier tous les DC** — L'elevation du niveau fonctionnel de la foret echoue si un DC execute une version de Windows Server anterieure au niveau cible. Verifiez tous les DC avec `Get-ADDomainController -Filter *` avant de proceder.
+    **Elever le niveau fonctionnel sans verifier tous les DC** â€” L'elevation du niveau fonctionnel de la foret echoue si un DC execute une version de Windows Server anterieure au niveau cible. Verifiez tous les DC avec `Get-ADDomainController -Filter *` avant de proceder.
 
-    **Confondre la duree de vie "Deleted" et "Recycled"** — La periode de 180 jours pendant laquelle tous les attributs sont conserves correspond a l'etat "Deleted". Apres, l'objet passe en etat "Recycled" et perd la plupart de ses attributs (comme un tombstone classique). Ne vous fiez pas a la duree de vie du tombstone pour estimer la fenetre de restauration complete.
+    **Confondre la duree de vie "Deleted" et "Recycled"** â€” La periode de 180 jours pendant laquelle tous les attributs sont conserves correspond a l'etat "Deleted". Apres, l'objet passe en etat "Recycled" et perd la plupart de ses attributs (comme un tombstone classique). Ne vous fiez pas a la duree de vie du tombstone pour estimer la fenetre de restauration complete.
 
-    **Negliger la protection contre la suppression accidentelle** — La corbeille AD est un filet de securite, pas une excuse pour ne pas activer `ProtectedFromAccidentalDeletion` sur les OU critiques. Une suppression protegee echoue immediatement et evite d'avoir a recourir a la corbeille.
+    **Negliger la protection contre la suppression accidentelle** â€” La corbeille AD est un filet de securite, pas une excuse pour ne pas activer `ProtectedFromAccidentalDeletion` sur les OU critiques. Une suppression protegee echoue immediatement et evite d'avoir a recourir a la corbeille.
 
 ## Points cles a retenir
 
@@ -355,3 +370,4 @@ Get-ADOrganizationalUnit -Filter * -Properties ProtectedFromAccidentalDeletion |
 - Restauration systeme : [Restauration systeme](restauration-systeme.md)
 - Windows Server Backup : [Windows Server Backup](windows-server-backup.md)
 - Documentation Microsoft : Active Directory Recycle Bin Step-by-Step Guide
+

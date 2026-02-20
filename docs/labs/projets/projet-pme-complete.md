@@ -1,3 +1,18 @@
+﻿<!--
+  Copyright 2026 Julien Bombled
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
 ---
 title: "Projet : Infrastructure PME complete"
 description: Projet de synthese - deployer une infrastructure Windows Server complete pour une PME avec AD, DNS, DHCP, fichiers et GPO.
@@ -8,6 +23,10 @@ tags:
 ---
 
 # Projet : Infrastructure PME complete
+
+<span class="level-advanced">Avance</span> · Temps estime : 240 minutes
+
+---
 
 !!! abstract "Objectifs du projet"
 
@@ -26,7 +45,7 @@ tags:
     d'acces, le serveur de fichiers est l'armoire commune avec des tiroirs par service, les GPO
     sont le reglement interieur affiche dans chaque bureau, et la PKI est le service de
     reprographie qui certifie l'authenticite des documents. Chaque element doit etre en place
-    avant le suivant — on ne pose pas les meubles avant les murs.
+    avant le suivant â€” on ne pose pas les meubles avant les murs.
 
 ## Contexte
 
@@ -220,3 +239,4 @@ graph TD
 
 - [Projet : Migration AD](projet-migration-ad.md) pour un scenario de migration
 - [Projet : Plan de reprise d'activite](projet-plan-reprise.md) pour la continuite
+

@@ -1,3 +1,18 @@
+﻿<!--
+  Copyright 2026 Julien Bombled
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
 ---
 title: "Azure Monitor pour serveurs on-premises"
 description: Surveiller des serveurs Windows on-premises avec Azure Monitor - agents, Log Analytics, metriques, alertes et tableaux de bord.
@@ -10,7 +25,7 @@ tags:
 
 # Azure Monitor pour serveurs on-premises
 
-<span class="level-intermediate">Intermediaire</span> · Temps estime : 30 minutes
+<span class="level-intermediate">Intermediaire</span> Â· Temps estime : 30 minutes
 
 ## Presentation
 
@@ -350,3 +365,4 @@ Epingler des requetes et graphiques sur un tableau de bord Azure partage :
 - [Azure Arc](azure-arc.md) pour inscrire les serveurs on-premises dans Azure
 - [Azure Backup](azure-backup.md) pour la sauvegarde cloud
 - [Analyseur de performances](../../supervision/surveillance/performance-monitor.md) pour la surveillance locale
+

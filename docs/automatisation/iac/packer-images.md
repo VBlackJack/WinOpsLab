@@ -1,3 +1,18 @@
+﻿<!--
+  Copyright 2026 Julien Bombled
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
 ---
 title: "Packer pour les images Windows Server"
 description: "Utiliser HashiCorp Packer pour construire des images Windows Server personnalisees (golden images) : provisioners, configuration et cas d'usage."
@@ -11,7 +26,7 @@ tags:
 
 # Packer pour les images Windows Server
 
-<span class="level-advanced">Avance</span> · Temps estime : 45 minutes
+<span class="level-advanced">Avance</span> Â· Temps estime : 45 minutes
 
 ## Introduction
 
@@ -19,7 +34,7 @@ tags:
 
 !!! example "Analogie"
 
-    Une golden image Packer, c'est comme un moule de boulangerie. On prepare le moule une seule fois avec la bonne forme, les bons ingredients, les bons reglages de four. Ensuite, chaque gateau qui en sort est identique — meme taille, meme cuisson, meme qualite. Si on veut ameliorer la recette, on modifie le moule et on relance la production. Comparez ca a cuire chaque gateau manuellement : chacun sera un peu different et le premier sera rarement le meilleur.
+    Une golden image Packer, c'est comme un moule de boulangerie. On prepare le moule une seule fois avec la bonne forme, les bons ingredients, les bons reglages de four. Ensuite, chaque gateau qui en sort est identique â€” meme taille, meme cuisson, meme qualite. Si on veut ameliorer la recette, on modifie le moule et on relance la production. Comparez ca a cuire chaque gateau manuellement : chacun sera un peu different et le premier sera rarement le meilleur.
 
 ## Pourquoi des golden images ?
 
@@ -414,7 +429,7 @@ flowchart LR
 
 !!! example "Scenario pratique"
 
-    **Contexte :** Nathalie est responsable infrastructure dans une entreprise utilisant Hyper-V. Chaque trimestre, l'equipe securite exige que tous les nouveaux serveurs partent d'une image a jour (Patch Tuesday applique) avec SMBv1 desactive et la transcription PowerShell activee. Actuellement, ces operations sont faites a la main lors de chaque provisionnement — certains serveurs manquent des etapes.
+    **Contexte :** Nathalie est responsable infrastructure dans une entreprise utilisant Hyper-V. Chaque trimestre, l'equipe securite exige que tous les nouveaux serveurs partent d'une image a jour (Patch Tuesday applique) avec SMBv1 desactive et la transcription PowerShell activee. Actuellement, ces operations sont faites a la main lors de chaque provisionnement â€” certains serveurs manquent des etapes.
 
     **Probleme :** Sans image standardisee, la conformite depend de la rigueur de chaque technicien. Le dernier audit a releve 3 serveurs avec SMBv1 encore actif.
 
@@ -457,15 +472,15 @@ flowchart LR
 
 !!! danger "Erreurs courantes"
 
-    **Timeout WinRM** — Si Packer ne peut pas se connecter au serveur en construction via WinRM dans le delai imparti (`winrm_timeout`), le build echoue. Verifiez que le fichier `autounattend.xml` configure bien WinRM et que le pare-feu de l'hote autorise le trafic.
+    **Timeout WinRM** â€” Si Packer ne peut pas se connecter au serveur en construction via WinRM dans le delai imparti (`winrm_timeout`), le build echoue. Verifiez que le fichier `autounattend.xml` configure bien WinRM et que le pare-feu de l'hote autorise le trafic.
 
-    **Sysprep non execute ou incomplet** — Une image non generalisee avec Sysprep produira des conflits de SID, de nom de machine et de licences lors du deploiement. Le Sysprep doit s'executer et le VM doit atteindre l'etat `IMAGE_STATE_GENERALIZE_RESEAL_TO_OOBE` avant que Packer finalise l'image.
+    **Sysprep non execute ou incomplet** â€” Une image non generalisee avec Sysprep produira des conflits de SID, de nom de machine et de licences lors du deploiement. Le Sysprep doit s'executer et le VM doit atteindre l'etat `IMAGE_STATE_GENERALIZE_RESEAL_TO_OOBE` avant que Packer finalise l'image.
 
-    **Secrets dans `variables.pkrvars.hcl` commites dans Git** — Les fichiers `.pkrvars.hcl` contenant `client_secret` ou des mots de passe ne doivent jamais etre commites. Ajoutez-les au `.gitignore` et passez les secrets via des variables d'environnement (`PKR_VAR_client_secret`).
+    **Secrets dans `variables.pkrvars.hcl` commites dans Git** â€” Les fichiers `.pkrvars.hcl` contenant `client_secret` ou des mots de passe ne doivent jamais etre commites. Ajoutez-les au `.gitignore` et passez les secrets via des variables d'environnement (`PKR_VAR_client_secret`).
 
-    **Image non mise a jour apres Patch Tuesday** — Une golden image avec des vulnerabilites connues est pire qu'une installation fraiche car elle donne un faux sentiment de securite. Automatisez la reconstruction mensuelle et versionnez les images avec la date (`2026.02`).
+    **Image non mise a jour apres Patch Tuesday** â€” Une golden image avec des vulnerabilites connues est pire qu'une installation fraiche car elle donne un faux sentiment de securite. Automatisez la reconstruction mensuelle et versionnez les images avec la date (`2026.02`).
 
-    **Packer et Hyper-V : switch reseau manquant** — Le build Hyper-V necessite un switch reseau nomme dans la configuration. Si le switch `Default Switch` n'existe pas ou a un nom different, le build echoue. Verifiez le nom exact avec `Get-VMSwitch`.
+    **Packer et Hyper-V : switch reseau manquant** â€” Le build Hyper-V necessite un switch reseau nomme dans la configuration. Si le switch `Default Switch` n'existe pas ou a un nom different, le build echoue. Verifiez le nom exact avec `Get-VMSwitch`.
 
 ## Points cles a retenir
 
@@ -481,3 +496,4 @@ flowchart LR
 - Templates ARM et Bicep : [ARM et Bicep](templates-arm-bicep.md)
 - DSC pour la configuration post-deploiement : [Concepts DSC](../dsc/concepts-dsc.md)
 - Documentation HashiCorp : Packer Documentation
+

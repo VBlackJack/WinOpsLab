@@ -1,3 +1,18 @@
+﻿<!--
+  Copyright 2026 Julien Bombled
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
 ---
 title: "Pare-feu Windows - Concepts"
 description: "Comprendre le Pare-feu Windows avec securite avancee (WFAS) : concepts fondamentaux, comportement par defaut et inspection avec etat."
@@ -9,6 +24,10 @@ tags:
 ---
 
 # Pare-feu Windows avec securite avancee (WFAS)
+
+<span class="level-beginner">Debutant</span> · Temps estime : 20 minutes
+
+---
 
 ## Introduction
 
@@ -108,10 +127,10 @@ sequenceDiagram
     FW->>FW: Cree une entree dans la table d'etats
     FW->>S: SYN (autorise)
     S->>FW: SYN-ACK
-    FW->>FW: Trafic de retour associe → autorise
+    FW->>FW: Trafic de retour associe â†’ autorise
     FW->>C: SYN-ACK
     C->>FW: ACK + donnees
-    FW->>FW: Connexion etablie → autorise
+    FW->>FW: Connexion etablie â†’ autorise
     FW->>S: ACK + donnees
 ```
 
@@ -349,3 +368,4 @@ Dans un environnement Active Directory, le WFAS peut etre gere de facon centrali
 - Creer et gerer des regles : voir la page [Regles entrantes et sortantes](regles-entrantes-sortantes.md)
 - Comprendre les profils reseau : voir la page [Profils reseau](profils-reseau.md)
 - Gerer le pare-feu via PowerShell : voir la page [Gestion PowerShell](gestion-powershell.md)
+

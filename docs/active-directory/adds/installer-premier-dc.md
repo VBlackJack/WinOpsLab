@@ -1,3 +1,19 @@
+<!--
+  Copyright 2026 Julien Bombled
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+
 ---
 title: Installer le premier controleur de domaine
 description: Deployer le premier controleur de domaine et creer une nouvelle foret Active Directory.
@@ -5,6 +21,7 @@ tags:
   - active-directory
   - adds
   - intermediaire
+  - powershell
 ---
 
 # Installer le premier controleur de domaine
@@ -122,97 +139,36 @@ True    No             Success        {Active Directory Domain Services, Group P
 
 Le serveur redemarrera automatiquement apres la promotion.
 
-## Etape 3 : Verification post-promotion
+## Etape 3 : Verification post-promotion (Auto-Validation)
+
+!!! success "Testez votre travail !"
+    Copiez ce bloc de code dans une console PowerShell sur votre nouveau DC pour verifier instantanement votre installation.
 
 ```powershell
-# Verify AD DS is running
-Get-Service -Name "NTDS" | Select-Object Name, Status
+# --- Script de Validation WinOpsLab ---
+$ValidationResults = [Ordered]@{}
 
-# Verify DNS is running
-Get-Service -Name "DNS" | Select-Object Name, Status
+# 1. Verification des services AD
+$Services = Get-Service -Name NTDS, DNS, ADWS -ErrorAction SilentlyContinue
+$ValidationResults["Services AD"] = if (($Services | Where-Object Status -ne 'Running').Count -eq 0) { "OK" } else { "ERREUR" }
 
-# Verify domain information
-Get-ADDomain | Select-Object DNSRoot, NetBIOSName, DomainMode, PDCEmulator
+# 2. Verification du Domaine
+$Domain = Get-ADDomain -ErrorAction SilentlyContinue
+$ValidationResults["Domaine"] = if ($Domain.Name -eq 'lab.local') { "OK ($($Domain.Name))" } else { "ERREUR" }
 
-# Verify forest information
-Get-ADForest | Select-Object Name, ForestMode, SchemaMaster, DomainNamingMaster
+# 3. Verification du Role FSMO (PDC)
+$PDC = (Get-ADDomain).PDCEmulator
+$ValidationResults["Role PDC"] = if ($PDC -eq "$env:COMPUTERNAME.lab.local") { "OK" } else { "ATTENTION ($PDC)" }
 
-# List domain controllers
-Get-ADDomainController -Filter * | Select-Object Name, IPv4Address, IsGlobalCatalog
+# 4. Verification Partage SYSVOL
+$Share = Get-SmbShare -Name SYSVOL -ErrorAction SilentlyContinue
+$ValidationResults["SYSVOL"] = if ($Share) { "OK" } else { "MANQUANT" }
 
-# Verify FSMO roles
-netdom query fsmo
-
-# Verify DNS zones
-Get-DnsServerZone
-
-# Verify SYSVOL share
-Get-SmbShare | Where-Object Name -in "SYSVOL", "NETLOGON"
-
-# Test DNS resolution
-Resolve-DnsName -Name "lab.local" -Type SOA
-Resolve-DnsName -Name "_ldap._tcp.dc._msdcs.lab.local" -Type SRV
+# Affichage du rapport
+$ValidationResults | Format-Table -AutoSize
 ```
 
-Resultat :
-
-```text
-Name Status
----- ------
-NTDS Running
-
-Name Status
----- ------
-DNS  Running
-
-DNSRoot    NetBIOSName DomainMode        PDCEmulator
--------    ----------- ----------        -----------
-lab.local  LAB         Windows2016Domain DC-01.lab.local
-
-Name      ForestMode        SchemaMaster    DomainNamingMaster
-----      ----------        ------------    ------------------
-lab.local Windows2016Forest DC-01.lab.local DC-01.lab.local
-
-Name  IPv4Address IsGlobalCatalog
-----  ----------- ---------------
-DC-01 10.0.0.10              True
-
-Schema master               DC-01.lab.local
-Domain naming master        DC-01.lab.local
-PDC                         DC-01.lab.local
-RID pool manager            DC-01.lab.local
-Infrastructure master       DC-01.lab.local
-The command completed successfully.
-
-ZoneName                            ZoneType   IsAutoCreated  IsDsIntegrated
---------                            --------   -------------  --------------
-lab.local                           Primary    False          True
-_msdcs.lab.local                    Primary    False          True
-0.0.10.in-addr.arpa                 Primary    False          True
-
-Name    ScopeName Path                              Description
-----    --------- ----                              -----------
-SYSVOL  *         C:\Windows\SYSVOL\sysvol          Logon server share
-NETLOGON *        C:\Windows\SYSVOL\sysvol\lab.local\SCRIPTS Logon server share
-
-Name     : lab.local
-Type     : SOA
-TTL      : 3600
-Section  : Answer
-PrimaryServer : DC-01.lab.local
-
-Name     : _ldap._tcp.dc._msdcs.lab.local
-Type     : SRV
-Target   : DC-01.lab.local
-Port     : 389
-Priority : 0
-Weight   : 100
-```
-
-!!! tip "Test DNS SRV"
-
-    La resolution de `_ldap._tcp.dc._msdcs.lab.local` en enregistrement SRV
-    confirme que DNS et AD fonctionnent correctement ensemble.
+Si tout est vert, bravo ! Vous avez installe votre premier DC.
 
 ## Etape 4 : Ajouter un second controleur de domaine
 
@@ -236,88 +192,33 @@ Install-ADDSDomainController `
     -Force:$true
 ```
 
-## Ports reseau requis
+## Challenge "Break/Fix" : Dépannage
 
-Les ports suivants doivent etre ouverts entre les DC et les clients :
+!!! failure "Le cas pratique"
 
-| Port | Protocole | Service |
-|------|-----------|---------|
-| 53 | TCP/UDP | DNS |
-| 88 | TCP/UDP | Kerberos |
-| 135 | TCP | RPC Endpoint Mapper |
-| 389 | TCP/UDP | LDAP |
-| 445 | TCP | SMB (SYSVOL, Netlogon) |
-| 464 | TCP/UDP | Kerberos Password Change |
-| 636 | TCP | LDAPS |
-| 3268 | TCP | Global Catalog |
-| 3269 | TCP | Global Catalog SSL |
-| 49152-65535 | TCP | RPC Dynamic Ports |
-
-## Points cles a retenir
-
-- Le premier DC cree la foret et le domaine racine
-- Le role DNS doit etre installe avec AD DS
-- Le mot de passe DSRM est critique et doit etre conserve en securite
-- Toujours deployer au moins 2 DC pour la redondance
-- Verifier les enregistrements DNS SRV apres la promotion
-
-!!! example "Scenario pratique"
-
-    **Contexte :** Marc, technicien reseau, vient d'installer le role AD DS sur `DC-01` (10.0.0.10) et lance la promotion avec `Install-ADDSForest`. Apres le redemarrage, il constate que les postes clients ne parviennent pas a joindre le domaine `lab.local`. Le message d'erreur indique « The specified domain either does not exist or could not be contacted ».
+    **Contexte :** Vous venez d'installer `DC-01` (10.0.0.10). Vous tentez de joindre une station de travail (`PC-01`) au domaine `lab.local`.
+    
+    **Symptôme :** La commande échoue avec l'erreur :
+    > "L'Active Directory Domain Controller (AD DC) pour le domaine "lab.local" n'a pas pu etre contacte."
 
     **Diagnostic :**
-
+    Sur `PC-01`, vous executez :
     ```powershell
-    # On a client workstation, check DNS configuration
-    Get-DnsClientServerAddress -InterfaceAlias "Ethernet" | Select-Object ServerAddresses
-
-    # Try to resolve the domain
-    Resolve-DnsName -Name "lab.local" -Type SOA
+    Resolve-DnsName -Name "lab.local"
     ```
+    Resultat : *DNS name does not exist*.
 
-    Resultat :
+    ??? tip "Solution (Cliquez pour reveler)"
+        
+        Le probleme est purement **DNS**.
+        
+        Les postes clients doivent absolument utiliser l'adresse IP du controleur de domaine (`10.0.0.10`) comme serveur DNS primaire pour resoudre les enregistrements SRV du domaine.
+        
+        **Correction :** Changez le serveur DNS sur la carte reseau de `PC-01` pour pointer vers `10.0.0.10`.
 
-    ```text
-    ServerAddresses
-    ---------------
-    {10.0.0.1}
+## Ports reseau requis
 
-    Resolve-DnsName : DNS name does not exist
-    ```
-
-    Le probleme : les postes clients pointent vers le routeur (`10.0.0.1`) au lieu du DC (`10.0.0.10`) pour le DNS.
-
-    **Solution :**
-
-    ```powershell
-    # On each client, set DNS to point to the DC
-    Set-DnsClientServerAddress -InterfaceAlias "Ethernet" -ServerAddresses "10.0.0.10"
-
-    # Verify DNS resolution works now
-    Resolve-DnsName -Name "lab.local" -Type SOA
-    ```
-
-    Resultat :
-
-    ```text
-    Name       Type TTL  Section PrimaryServer
-    ----       ---- ---  ------- -------------
-    lab.local  SOA  3600 Answer  DC-01.lab.local
-    ```
-
-    Idealement, configurez le DHCP pour distribuer `10.0.0.10` comme serveur DNS primaire a tous les postes du reseau.
-
-!!! danger "Erreurs courantes"
-
-    1. **Oublier de configurer l'IP statique** : un DC avec une adresse DHCP risque de changer d'IP, rendant le DNS et l'authentification inaccessibles pour tous les clients.
-
-    2. **DNS du serveur ne pointe pas vers lui-meme** : avant la promotion, le DNS du futur DC doit pointer vers `127.0.0.1` ou sa propre IP statique. Sinon, les enregistrements SRV ne seront pas enregistres correctement.
-
-    3. **Perdre le mot de passe DSRM** : le mot de passe SafeModeAdministratorPassword est le seul moyen d'acceder au DC en mode restauration. Sans lui, la recuperation apres un sinistre devient extremement complexe.
-
-    4. **Ne pas verifier les enregistrements DNS SRV** : apres la promotion, verifiez toujours que `_ldap._tcp.dc._msdcs.lab.local` est resolu. Sans ces enregistrements, les clients ne trouvent pas le DC.
-
-    5. **Utiliser un nom de domaine en `.local` en production** : le suffixe `.local` entre en conflit avec le protocole mDNS/Bonjour. Preferez `ad.monentreprise.com` ou `corp.monentreprise.com` pour la production.
+Voir le [Memento des Ports AD](../../ressources/memento-ports-ad.md) pour la liste complete.
 
 ## Pour aller plus loin
 

@@ -1,3 +1,18 @@
+﻿<!--
+  Copyright 2026 Julien Bombled
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
 ---
 title: "Docker sur Windows Server"
 description: "Installation et utilisation de Docker sur Windows Server 2022 : configuration, images, execution de conteneurs et creation de Dockerfiles."
@@ -11,7 +26,7 @@ tags:
 
 # Docker sur Windows Server
 
-<span class="level-intermediate">Intermediaire</span> · Temps estime : 35 minutes
+<span class="level-intermediate">Intermediaire</span> Â· Temps estime : 35 minutes
 
 Docker est le runtime de conteneurs le plus utilise. Sur Windows Server 2022, Docker permet de construire, distribuer et executer des applications conteneurisees avec les images Windows et Linux (via WSL2 ou des conteneurs Linux en mode isolation Hyper-V).
 
@@ -55,7 +70,7 @@ graph TD
 
 !!! example "Analogie"
 
-    Docker, c'est comme un systeme de livraison standardise avec des boites en carton identiques. Peu importe ce qu'il y a dedans (une application .NET, un serveur web, une API), la boite a toujours la meme forme et les memes etiquettes. Le transporteur (Docker Engine) sait comment manipuler n'importe quelle boite sans avoir besoin de savoir ce qu'elle contient. Chaque boite contient tout ce dont l'application a besoin pour fonctionner — si ca tourne dans la boite de test, ca tournera de la meme facon en production.
+    Docker, c'est comme un systeme de livraison standardise avec des boites en carton identiques. Peu importe ce qu'il y a dedans (une application .NET, un serveur web, une API), la boite a toujours la meme forme et les memes etiquettes. Le transporteur (Docker Engine) sait comment manipuler n'importe quelle boite sans avoir besoin de savoir ce qu'elle contient. Chaque boite contient tout ce dont l'application a besoin pour fonctionner â€” si ca tourne dans la boite de test, ca tournera de la meme facon en production.
 
 ## Installation de Docker
 
@@ -416,8 +431,8 @@ Resultat :
 
 ```text
 [+] Running 2/2
- ✔ Container web  Started    0.8s
- ✔ Container api  Started    1.2s
+ âœ” Container web  Started    0.8s
+ âœ” Container api  Started    1.2s
 
 NAME    IMAGE                                    COMMAND           SERVICE  CREATED         STATUS
 web     mcr.microsoft.com/windows/servercore...  "C:\\ServiceMoni..."  web      2 minutes ago   Up 2 minutes
@@ -542,15 +557,15 @@ Get-EventLog -LogName Application -Source Docker -Newest 20
 
 !!! danger "Erreurs courantes"
 
-    **Image Windows incompatible avec l'hote** — Une image construite sur Windows Server 2019 (`ltsc2019`) peut ne pas fonctionner en mode process isolation sur un hote Windows Server 2022 (`ltsc2022`). Utilisez toujours le tag correspondant a votre version d'hote (`ltsc2022`) ou l'isolation Hyper-V.
+    **Image Windows incompatible avec l'hote** â€” Une image construite sur Windows Server 2019 (`ltsc2019`) peut ne pas fonctionner en mode process isolation sur un hote Windows Server 2022 (`ltsc2022`). Utilisez toujours le tag correspondant a votre version d'hote (`ltsc2022`) ou l'isolation Hyper-V.
 
-    **Donnees perdues au `docker rm`** — Tout ce qui est ecrit dans le systeme de fichiers du conteneur est detruit a la suppression. Montez un volume (`-v`) pour tout ce qui doit persister : logs, uploads, bases SQLite.
+    **Donnees perdues au `docker rm`** â€” Tout ce qui est ecrit dans le systeme de fichiers du conteneur est detruit a la suppression. Montez un volume (`-v`) pour tout ce qui doit persister : logs, uploads, bases SQLite.
 
-    **Service Docker ne redemarre pas apres reboot** — Si `StartType` du service Docker n'est pas `Automatic`, Docker ne redemarrera pas apres un reboot du serveur. Verifiez avec `Get-Service docker` et corrigez avec `Set-Service docker -StartupType Automatic`.
+    **Service Docker ne redemarre pas apres reboot** â€” Si `StartType` du service Docker n'est pas `Automatic`, Docker ne redemarrera pas apres un reboot du serveur. Verifiez avec `Get-Service docker` et corrigez avec `Set-Service docker -StartupType Automatic`.
 
-    **`docker system prune -a` en production** — Cette commande supprime toutes les images non utilisees par un conteneur actif, y compris les images d'une version precedente que vous vouliez garder comme rollback. En production, soyez selectif et utilisez `docker image prune` avec des filtres.
+    **`docker system prune -a` en production** â€” Cette commande supprime toutes les images non utilisees par un conteneur actif, y compris les images d'une version precedente que vous vouliez garder comme rollback. En production, soyez selectif et utilisez `docker image prune` avec des filtres.
 
-    **Construire sans `.dockerignore`** — Sans `.dockerignore`, `docker build` inclut dans le contexte tous les fichiers du repertoire (node_modules, `.git`, secrets...), ralentissant considerablement le build et risquant d'inclure des donnees sensibles dans l'image.
+    **Construire sans `.dockerignore`** â€” Sans `.dockerignore`, `docker build` inclut dans le contexte tous les fichiers du repertoire (node_modules, `.git`, secrets...), ralentissant considerablement le build et risquant d'inclure des donnees sensibles dans l'image.
 
 ## Points cles a retenir
 
@@ -569,3 +584,4 @@ Get-EventLog -LogName Application -Source Docker -Newest 20
 - Docker Hub et Microsoft Container Registry
 - Microsoft : Docker on Windows Server documentation
 - Docker : Dockerfile reference
+

@@ -1,3 +1,18 @@
+﻿<!--
+  Copyright 2026 Julien Bombled
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
 ---
 title: Storage Spaces Direct (S2D)
 description: Comprendre Storage Spaces Direct - architecture hyper-convergee, prerequis, modes de deploiement et vue d'ensemble sous Windows Server 2022.
@@ -10,7 +25,7 @@ tags:
 
 # Storage Spaces Direct (S2D)
 
-<span class="level-intermediate">Intermediaire</span> · Temps estime : 30 minutes
+<span class="level-intermediate">Intermediaire</span> Â· Temps estime : 30 minutes
 
 !!! warning "Edition requise"
 
@@ -467,3 +482,4 @@ Node3-Disk3    Healthy      OK                Auto-Select HDD      2048.00
 - [Concepts de Storage Spaces](concepts.md)
 - [Creation d'un pool de stockage](creation-pool.md)
 - [iSCSI](../disques/iscsi.md)
+

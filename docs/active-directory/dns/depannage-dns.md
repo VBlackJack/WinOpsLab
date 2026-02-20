@@ -1,3 +1,18 @@
+<!--
+  Copyright 2026 Julien Bombled
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
 ---
 title: Depannage DNS
 description: Methodologie de diagnostic DNS, outils, validation des enregistrements SRV et resolution des problemes courants.
@@ -5,662 +20,159 @@ tags:
   - active-directory
   - dns
   - avance
+  - powershell
 ---
 
 # Depannage DNS
 
 <span class="level-advanced">Avance</span> · Temps estime : 40 minutes
 
+## Memento des Commandes de Survie
+
+Avant de plonger dans les theories, voici les commandes indispensables pour survivre a un probleme DNS.
+
+| Action | Commande PowerShell (Recommande) | Ancienne commande (CMD) |
+|--------|----------------------------------|-------------------------|
+| **Vider le cache client** | `Clear-DnsClientCache` | `ipconfig /flushdns` |
+| **Tester la resolution** | `Resolve-DnsName google.fr` | `nslookup google.fr` |
+| **Forcer l'enregistrement** | `Register-DnsClient` | `ipconfig /registerdns` |
+| **Voir les serveurs DNS** | `Get-DnsClientServerAddress` | `ipconfig /all` |
+| **Tester un port (TCP)** | `Test-NetConnection 10.0.0.1 -Port 53` | *N/A (telnet)* |
+
+---
+
 ## Methodologie de diagnostic
 
-!!! example "Analogie"
-
-    Le depannage DNS ressemble a la recherche d'une panne dans un systeme de distribution du courrier. On commence par verifier si le facteur peut physiquement acceder a la boite aux lettres (connectivite reseau), puis si l'adresse est correcte sur l'enveloppe (configuration DNS du client), ensuite si le bureau de poste est ouvert (service DNS), et enfin si le destinataire est bien repertorie dans l'annuaire (enregistrement DNS).
-
-Face a un probleme de resolution DNS dans un environnement Active Directory, suivez cette approche methodique :
+Le depannage DNS doit suivre une logique implacable, du client vers le serveur, puis vers l'exterieur.
 
 ```mermaid
 graph TD
-    A[Probleme de resolution DNS] --> B{Le client peut-il<br/>pinguer le DC par IP ?}
-    B -->|Non| C[Probleme reseau<br/>Verifier IP, passerelle, pare-feu]
-    B -->|Oui| D{Le client pointe-t-il<br/>vers le bon DNS ?}
-    D -->|Non| E[Corriger la config DNS<br/>du client]
-    D -->|Oui| F{nslookup fonctionne-t-il<br/>depuis le client ?}
-    F -->|Non| G{Le service DNS<br/>est-il demarre ?}
-    G -->|Non| H[Demarrer le service DNS]
-    G -->|Oui| I{La zone est-elle<br/>chargee ?}
-    I -->|Non| J[Verifier l'etat de la zone<br/>et la replication AD]
-    I -->|Oui| K{L'enregistrement<br/>existe-t-il ?}
-    K -->|Non| L[Creer l'enregistrement<br/>ou verifier les mises a jour dynamiques]
-    K -->|Oui| M[Verifier le cache DNS<br/>client et serveur]
-    F -->|Oui| N[DNS fonctionne<br/>Verifier le service applicatif]
+    A[Probleme de resolution DNS] --> B{Ping 8.8.8.8 OK ?}
+    B -- Non --> C[Probleme RESEAU<br/>(Cable, Routeur, IP)]
+    B -- Oui --> D{Resolve-DnsName<br/>google.fr OK ?}
+    D -- Oui --> E[Probleme specifique<br/>au domaine local]
+    D -- Non --> F{Serveur DNS client<br/>= DC local ?}
+    F -- Non --> G[Mauvaise Config IP<br/>Client pointe vers 8.8.8.8 ?]
+    F -- Oui --> H{Service DNS du DC<br/>demarre ?}
+    H -- Non --> I[Demarrer Service DNS]
+    H -- Oui --> J[Verifier Forwarders<br/>sur le DC]
+    
+    E --> K{Enregistrements SRV<br/>presents ?}
+    K -- Non --> L[Redemarrer Netlogon]
+    K -- Oui --> M[Verifier Replication AD]
+
+    style C fill:#f44336,color:#fff
+    style G fill:#ff9800,color:#fff
+    style I fill:#4caf50,color:#fff
+    style L fill:#2196f3,color:#fff
 ```
 
-## Outils de diagnostic
+## Outil d'Auto-Diagnostic (Script)
 
-### nslookup
-
-L'outil classique de requete DNS, disponible sur tous les systemes Windows :
+Ne perdez plus de temps a taper 10 commandes. Copiez ce script sur un contrôleur de domaine pour auditer la sante de votre DNS en 2 secondes.
 
 ```powershell
-# Basic query
-nslookup srv-dc01.lab.local
-
-# Query a specific DNS server
-nslookup srv-dc01.lab.local 192.168.1.10
-
-# Interactive mode - useful for multiple queries
-nslookup
-> server 192.168.1.10
-> set type=SRV
-> _ldap._tcp.lab.local
-> set type=A
-> srv-dc01.lab.local
-> exit
-
-# Query a specific record type
-nslookup -type=MX lab.local
-nslookup -type=SOA lab.local
-nslookup -type=NS lab.local
-
-# Reverse lookup
-nslookup 192.168.1.10
-
-# Enable debug output for detailed response analysis
-nslookup -debug srv-dc01.lab.local
-```
-
-Resultat :
-
-```text
-PS> nslookup srv-dc01.lab.local
-Server:   DC-01.lab.local
-Address:  10.0.0.10
-
-Name:     srv-dc01.lab.local
-Address:  10.0.0.10
-
-PS> nslookup -type=NS lab.local
-Server:   DC-01.lab.local
-Address:  10.0.0.10
-
-lab.local
-        primary name server = dc-01.lab.local
-        responsible mail addr = hostmaster.lab.local
-        serial  = 285
-        refresh = 900 (15 mins)
-        retry   = 600 (10 mins)
-        expire  = 86400 (1 day)
-        default TTL = 3600 (1 hour)
-```
-
-!!! tip "nslookup ignore le cache client"
-
-    `nslookup` interroge directement le serveur DNS et ne consulte pas le cache
-    du client Windows. Si `nslookup` fonctionne mais que `ping` par nom echoue,
-    le probleme vient probablement du cache DNS local.
-
-### Resolve-DnsName (PowerShell)
-
-La cmdlet PowerShell moderne, plus flexible et puissante que nslookup :
-
-```powershell
-# Basic resolution
-Resolve-DnsName -Name "srv-dc01.lab.local"
-
-# Specify record type
-Resolve-DnsName -Name "lab.local" -Type MX
-Resolve-DnsName -Name "lab.local" -Type SOA
-Resolve-DnsName -Name "lab.local" -Type NS
-
-# Query a specific DNS server
-Resolve-DnsName -Name "srv-dc01.lab.local" -Server "192.168.1.10"
-
-# DNS only (skip LLMNR and NetBIOS)
-Resolve-DnsName -Name "srv-dc01.lab.local" -DnsOnly
-
-# TCP instead of UDP (useful for large responses)
-Resolve-DnsName -Name "lab.local" -Type ANY -TcpOnly
-
-# Reverse lookup
-Resolve-DnsName -Name "192.168.1.10" -Type PTR
-
-# Check SRV records for AD services
-Resolve-DnsName -Name "_ldap._tcp.lab.local" -Type SRV
-Resolve-DnsName -Name "_kerberos._tcp.lab.local" -Type SRV
-Resolve-DnsName -Name "_gc._tcp.lab.local" -Type SRV
-```
-
-### dcdiag /test:dns
-
-L'outil de diagnostic Active Directory inclut un test DNS complet qui verifie l'ensemble de la configuration DNS necessaire au bon fonctionnement d'AD :
-
-```powershell
-# Full DNS test on the local DC
-dcdiag /test:dns /v
-
-# DNS test targeting a specific DC
-dcdiag /test:dns /s:SRV-DC01 /v
-
-# Test specific DNS sub-checks
-dcdiag /test:dns /DnsBasic /s:SRV-DC01
-dcdiag /test:dns /DnsForwarders /s:SRV-DC01
-dcdiag /test:dns /DnsDelegation /s:SRV-DC01
-dcdiag /test:dns /DnsDynamicUpdate /s:SRV-DC01
-dcdiag /test:dns /DnsRecordRegistration /s:SRV-DC01
-
-# DNS test on all DCs in the domain
-dcdiag /test:dns /v /e
-```
-
-Resultat :
-
-```text
-Domain Controller Diagnosis
-
-Performing initial setup:
-   Trying to find home server...
-   Home Server = DC-01
-   * Identified AD Forest.
-   Done gathering initial info.
-
-Doing initial required tests
-   Testing server: Default-First-Site-Name\DC-01
-      Starting test: Connectivity
-         ......................... DC-01 passed test Connectivity
-
-Doing primary tests
-   Testing server: Default-First-Site-Name\DC-01
-      Starting test: DNS
-         DNS Tests are running and not hung. Please wait a few minutes...
-         ......................... DC-01 passed test DNS
-
-         Summary of DNS test results:
-                                          Auth Basc Forw Del  Dyn  RReg Ext
-         _________________________________________________________________
-         Domain: lab.local
-           DC-01                          PASS PASS PASS PASS PASS PASS n/a
-```
-
-Les sous-tests DNS de dcdiag :
-
-| Sous-test | Verification |
-|-----------|-------------|
-| **DnsBasic** | Connectivite DNS et configuration de base |
-| **DnsForwarders** | Redirecteurs et resolution externe |
-| **DnsDelegation** | Delegation DNS correcte |
-| **DnsDynamicUpdate** | Mises a jour dynamiques fonctionnelles |
-| **DnsRecordRegistration** | Enregistrements SRV et A du DC |
-| **DnsResolveExtName** | Resolution de noms externes |
-| **DnsAll** | Tous les sous-tests |
-
-### Autres outils utiles
-
-```powershell
-# Test DNS resolution AND connectivity
-Test-Connection -ComputerName "srv-dc01.lab.local" -Count 2
-
-# View the client DNS configuration
-Get-DnsClientServerAddress | Format-Table InterfaceAlias, ServerAddresses
-
-# View DNS suffix search list
-Get-DnsClient | Select-Object InterfaceAlias, ConnectionSpecificSuffix, UseSuffixWhenRegistering
-
-# Test port 53 connectivity to a DNS server
-Test-NetConnection -ComputerName "192.168.1.10" -Port 53
-
-# Check the DNS server service status
-Get-Service -Name DNS -ComputerName "SRV-DC01"
-
-# View DNS server event log
-Get-WinEvent -LogName "DNS Server" -ComputerName "SRV-DC01" -MaxEvents 20
-
-# Check DNS server statistics
-Get-DnsServerStatistics -ComputerName "SRV-DC01"
-```
-
-Resultat :
-
-```text
-PS> Test-NetConnection -ComputerName "10.0.0.10" -Port 53
-
-ComputerName     : 10.0.0.10
-RemoteAddress    : 10.0.0.10
-RemotePort       : 53
-InterfaceAlias   : Ethernet
-TcpTestSucceeded : True
-
-PS> Get-Service -Name DNS -ComputerName "DC-01"
-
-Status   Name     DisplayName
-------   ----     -----------
-Running  DNS      DNS Server
-
-PS> Get-DnsClientServerAddress | Format-Table InterfaceAlias, ServerAddresses
-
-InterfaceAlias  ServerAddresses
---------------  ---------------
-Ethernet        {10.0.0.10, 10.0.0.11}
-Loopback        {}
-```
-
-## Gestion du cache DNS
-
-### Cache client
-
-Chaque poste Windows conserve un cache DNS local pour accelerer les resolutions repetees :
-
-```powershell
-# View the DNS client cache
-Get-DnsClientCache
-
-# View cache entries for a specific name
-Get-DnsClientCache | Where-Object { $_.Entry -like "*srv-dc01*" }
-
-# Flush the entire DNS client cache
-Clear-DnsClientCache
-
-# Register the client's DNS records (force dynamic update)
-Register-DnsClient
-```
-
-### Cache serveur
-
-Le serveur DNS conserve egalement un cache des requetes resolues pour d'autres domaines :
-
-```powershell
-# View the server-side DNS cache
-Show-DnsServerCache -ComputerName "SRV-DC01"
-
-# Clear the server-side DNS cache
-Clear-DnsServerCache -ComputerName "SRV-DC01" -Force
-
-# View cache settings (max TTL, etc.)
-Get-DnsServerCache -ComputerName "SRV-DC01"
-
-# Set maximum cache TTL (example: 1 day)
-Set-DnsServerCache -MaxTtl 1.00:00:00 -ComputerName "SRV-DC01"
-```
-
-!!! warning "Vider le cache resout souvent les problemes de resolution"
-
-    Quand un enregistrement DNS a ete modifie mais que la resolution retourne
-    l'ancienne valeur, videz le cache client (`Clear-DnsClientCache`) puis le
-    cache serveur (`Clear-DnsServerCache`) si necessaire. Le TTL controle
-    la duree de vie des entrees en cache.
-
-## Validation des enregistrements SRV
-
-Les enregistrements SRV sont la pierre angulaire de la localisation des services AD. Leur absence ou leur erreur provoque des dysfonctionnements graves.
-
-### Verification rapide
-
-```powershell
-# Verify all critical SRV records for the domain
-$domain = "lab.local"
-$srvRecords = @(
-    "_ldap._tcp.$domain",
-    "_kerberos._tcp.$domain",
-    "_gc._tcp.$domain",
-    "_kpasswd._tcp.$domain",
-    "_ldap._tcp.dc._msdcs.$domain"
-)
-
-foreach ($record in $srvRecords) {
-    Write-Host "`n--- $record ---" -ForegroundColor Cyan
-    try {
-        Resolve-DnsName -Name $record -Type SRV -DnsOnly -ErrorAction Stop |
-            Format-Table Name, Type, NameTarget, Port, Priority -AutoSize
-    }
-    catch {
-        Write-Host "  ERREUR : Enregistrement non trouve !" -ForegroundColor Red
-    }
+# --- Script d'Audit DNS WinOpsLab ---
+$DomainName = (Get-ADDomain).DNSRoot
+$Validation = [Ordered]@{}
+
+Write-Host "Audit DNS pour le domaine : $DomainName" -ForegroundColor Cyan
+
+# 1. Service DNS
+$Service = Get-Service -Name DNS -ErrorAction SilentlyContinue
+$Validation["Service DNS Actif"] = if ($Service.Status -eq 'Running') { "OK" } else { "ARRETE" }
+
+# 2. Resolution Locale (A)
+try {
+    $SelfPing = Resolve-DnsName -Name $env:COMPUTERNAME -Type A -ErrorAction Stop
+    $Validation["Resolution Locale (A)"] = "OK ($($SelfPing.IPAddress))"
+} catch {
+    $Validation["Resolution Locale (A)"] = "ECHEC"
 }
+
+# 3. Enregistrements SRV (Critique AD)
+try {
+    $SRV = Resolve-DnsName -Name "_ldap._tcp.dc._msdcs.$DomainName" -Type SRV -ErrorAction Stop
+    $Validation["Enregistrements SRV (AD)"] = "OK ($($SRV.Count) trouves)"
+} catch {
+    $Validation["Enregistrements SRV (AD)"] = "MANQUANTS (Critique!)"
+}
+
+# 4. Resolution Externe (Forwarders)
+try {
+    $Ext = Resolve-DnsName -Name "google.com" -Type A -ErrorAction Stop
+    $Validation["Resolution Internet"] = "OK"
+} catch {
+    $Validation["Resolution Internet"] = "ECHEC (Verifier Forwarders)"
+}
+
+# 5. Scavenging (Nettoyage)
+$Scavenge = Get-DnsServerScavenging
+$Validation["Nettoyage Auto (Scavenging)"] = if ($Scavenge.ScavengingState) { "ACTIF" } else { "INACTIF (Risque de pollution)" }
+
+$Validation | Format-Table -AutoSize
 ```
 
-### Verification via le fichier Netlogon.dns
+---
 
-Chaque DC genere un fichier contenant les enregistrements SRV qu'il doit enregistrer :
+## Challenge "Break/Fix" : Panne Internet Totale
 
-```powershell
-# View the expected SRV records for a DC
-Get-Content "C:\Windows\System32\config\netlogon.dns" | Select-Object -First 30
+!!! failure "Le cas pratique"
 
-# Compare with what is actually registered in DNS
-$expectedRecords = Get-Content "C:\Windows\System32\config\netlogon.dns" |
-    Where-Object { $_ -match "^_" }
-Write-Host "Number of SRV records expected: $($expectedRecords.Count)"
-```
+    **Contexte :** Vous gerez le lab `WinOpsLab`. Tout fonctionnait hier. Ce matin, plus aucun serveur ne peut acceder a Internet pour telecharger des mises a jour. Le reseau local fonctionne parfaitement (ping entre serveurs OK).
 
-### Re-enregistrer les SRV manquants
+    **Symptôme :**
+    Sur `DC-01` :
+    - `Ping 8.8.8.8` -> Reponse : OK (Donc Internet physique fonctionne).
+    - `Resolve-DnsName google.fr` -> Erreur : *DNS name does not exist*.
 
-Si des enregistrements SRV sont absents, forcez leur re-enregistrement :
+    **Diagnostic guide :**
+    
+    1.  Le serveur DNS local ne sait pas resoudre les noms publics.
+    2.  Il n'est pas autoritaire pour `google.fr`, donc il doit transmettre la requete.
+    3.  A qui transmet-il la requete ? Aux **Redirecteurs (Forwarders)** ou aux **Racines**.
 
-```powershell
-# Restart the Netlogon service (re-registers all SRV records)
-Restart-Service -Name Netlogon
+    ??? tip "Solution (Cliquez pour reveler)"
+        
+        Le probleme vient probablement des **Redirecteurs**.
 
-# Or force re-registration via nltest
-nltest /dsregdns
+        **Verification :**
+        ```powershell
+        Get-DnsServerForwarder
+        ```
+        *Si la liste est vide ou contient des IP invalides, c'est la cause.*
 
-# Verify the registration was successful
-Resolve-DnsName -Name "_ldap._tcp.lab.local" -Type SRV -DnsOnly
-```
-
-Resultat :
-
-```text
-PS> nltest /dsregdns
-The command completed successfully
-
-PS> Resolve-DnsName -Name "_ldap._tcp.lab.local" -Type SRV -DnsOnly
-
-Name                                    Type   TTL   Section    NameTarget              Priority Weight Port
-----                                    ----   ---   -------    ----------              -------- ------ ----
-_ldap._tcp.lab.local                    SRV    600   Answer     DC-01.lab.local         0        100    389
-_ldap._tcp.lab.local                    SRV    600   Answer     SRV-DC01.lab.local      0        100    389
-```
-
-!!! danger "Enregistrements SRV manquants"
-
-    Si les enregistrements SRV ne se re-enregistrent pas apres un redemarrage de
-    Netlogon, verifiez :
-
-    - Que la zone DNS autorise les mises a jour dynamiques
-    - Que le DC pointe vers lui-meme (ou un autre DC) comme serveur DNS
-    - Que le service DNS est operationnel
-    - Que la replication AD fonctionne correctement
+        **Correction :**
+        Ajouter les DNS de Google ou Cloudflare comme redirecteurs :
+        ```powershell
+        Set-DnsServerForwarder -IPAddress "1.1.1.1", "8.8.8.8"
+        
+        # Vider le cache pour tester immediatement
+        Clear-DnsServerCache
+        Resolve-DnsName google.fr
+        ```
 
 ## Problemes courants et solutions
 
-### Probleme 1 : Le client ne peut pas joindre le domaine
+### 1. "Le domaine n'existe pas" (Jonction impossible)
+*   **Cause :** Le client pointe vers sa Box ou `8.8.8.8` au lieu du DC.
+*   **Fix :** `Set-DnsClientServerAddress -InterfaceAlias "Ethernet" -ServerAddresses "10.0.0.10"`
 
-**Symptome** : le message "Le domaine specifie n'existe pas ou n'est pas joignable" apparait lors de la jonction.
-
-**Diagnostic** :
-
-```powershell
-# Check DNS configuration on the client
-Get-DnsClientServerAddress -InterfaceAlias "Ethernet"
-
-# Try to resolve the domain
-Resolve-DnsName -Name "lab.local" -Type A -DnsOnly
-
-# Check SRV records
-Resolve-DnsName -Name "_ldap._tcp.lab.local" -Type SRV -DnsOnly
-```
-
-**Solutions** :
-
-- Verifier que le client utilise un serveur DNS du domaine (pas un DNS externe)
-- Verifier que le suffixe DNS est correctement configure
-- S'assurer que les enregistrements SRV existent dans la zone
-
-### Probleme 2 : Replication AD en echec
-
-**Symptome** : `repadmin /replsummary` montre des erreurs de replication avec des messages DNS.
-
-**Diagnostic** :
-
-```powershell
-# Check replication status
-repadmin /replsummary
-
-# Test DNS between DCs
-Resolve-DnsName -Name "srv-dc02.lab.local" -Server "SRV-DC01" -DnsOnly
-Resolve-DnsName -Name "srv-dc01.lab.local" -Server "SRV-DC02" -DnsOnly
-
-# Verify each DC can resolve the other's SRV records
-Resolve-DnsName -Name "_ldap._tcp.lab.local" -Type SRV -Server "SRV-DC01"
-Resolve-DnsName -Name "_ldap._tcp.lab.local" -Type SRV -Server "SRV-DC02"
-```
-
-**Solutions** :
-
-- Verifier que chaque DC pointe vers un serveur DNS qui connait la zone AD
-- Verifier que les enregistrements A de chaque DC sont presents
-- Forcer le re-enregistrement DNS : `nltest /dsregdns` sur chaque DC
-
-### Probleme 3 : Resolution lente ou intermittente
-
-**Symptome** : les requetes DNS prennent plusieurs secondes ou echouent de maniere aleatoire.
-
-**Diagnostic** :
-
-```powershell
-# Measure DNS resolution time
-Measure-Command { Resolve-DnsName -Name "srv-dc01.lab.local" -DnsOnly }
-
-# Check if the DNS server is overloaded
-Get-DnsServerStatistics -ComputerName "SRV-DC01" |
-    Select-Object -ExpandProperty QueryStatistics
-
-# Check the DNS server event log for errors
-Get-WinEvent -LogName "DNS Server" -ComputerName "SRV-DC01" -MaxEvents 50 |
-    Where-Object { $_.LevelDisplayName -eq "Error" -or $_.LevelDisplayName -eq "Warning" }
-```
-
-**Solutions** :
-
-- Verifier les redirecteurs (le serveur tente peut-etre des redirecteurs inaccessibles)
-- Augmenter le nombre de serveurs DNS
-- Verifier la charge du serveur (CPU, memoire, reseau)
-- Vider le cache DNS si des enregistrements obsoletes causent des erreurs
-
-### Probleme 4 : Enregistrements DNS en doublon ou obsoletes
-
-**Symptome** : une adresse IP est associee a plusieurs noms, ou un nom pointe vers une ancienne adresse.
-
-**Diagnostic** :
-
-```powershell
-# Find duplicate A records for the same name
-Get-DnsServerResourceRecord -ZoneName "lab.local" -Name "srv-app01" -RRType A -ComputerName "SRV-DC01"
-
-# Find all records pointing to a specific IP
-Get-DnsServerResourceRecord -ZoneName "lab.local" -RRType A -ComputerName "SRV-DC01" |
-    Where-Object { $_.RecordData.IPv4Address -eq "192.168.1.50" }
-
-# Check scavenging status
-Get-DnsServerScavenging -ComputerName "SRV-DC01"
-Get-DnsServerZoneAging -Name "lab.local" -ComputerName "SRV-DC01"
-```
-
-**Solutions** :
-
-- Supprimer les enregistrements obsoletes manuellement
-- Activer le [scavenging](enregistrements.md#nettoyage-automatique-scavenging) sur le serveur et la zone
-- Verifier que les clients DHCP enregistrent correctement leurs noms
-
-### Probleme 5 : La zone DNS ne se charge pas
-
-**Symptome** : la zone apparait avec une icone d'erreur dans DNS Manager ou `Get-DnsServerZone` retourne une erreur.
-
-**Diagnostic** :
-
-```powershell
-# Check the zone status
-Get-DnsServerZone -Name "lab.local" -ComputerName "SRV-DC01"
-
-# Check DNS server events
-Get-WinEvent -LogName "DNS Server" -ComputerName "SRV-DC01" -MaxEvents 20
-
-# For AD-integrated zones, check AD replication
-repadmin /replsummary
-dcdiag /test:replications /s:SRV-DC01
-```
-
-**Solutions** :
-
-- Pour une zone integree AD : verifier la replication AD et la partition DomainDnsZones
-- Pour une zone fichier : verifier les permissions sur le fichier de zone dans `%SystemRoot%\System32\dns\`
-- Redemarrer le service DNS : `Restart-Service DNS`
-
-## Script de diagnostic complet
-
-Ce script effectue une verification complete de l'etat DNS d'un environnement AD :
-
-```powershell
-# Comprehensive DNS health check script
-param(
-    [string]$DomainName = (Get-ADDomain).DNSRoot,
-    [string]$DCName = $env:COMPUTERNAME
-)
-
-Write-Host "=== DNS Health Check - $DomainName ===" -ForegroundColor Green
-Write-Host "Target DC: $DCName`n"
-
-# 1. DNS service status
-Write-Host "--- DNS Service Status ---" -ForegroundColor Cyan
-$dnsService = Get-Service -Name DNS -ComputerName $DCName
-Write-Host "  Service: $($dnsService.Status)"
-
-# 2. Zone status
-Write-Host "`n--- Zone Status ---" -ForegroundColor Cyan
-Get-DnsServerZone -ComputerName $DCName |
-    Where-Object { $_.IsAutoCreated -eq $false } |
-    Format-Table ZoneName, ZoneType, IsDsIntegrated, DynamicUpdate -AutoSize
-
-# 3. Critical SRV records
-Write-Host "--- SRV Record Validation ---" -ForegroundColor Cyan
-$srvTests = @(
-    @{ Name = "LDAP"; Query = "_ldap._tcp.$DomainName" },
-    @{ Name = "Kerberos"; Query = "_kerberos._tcp.$DomainName" },
-    @{ Name = "GC"; Query = "_gc._tcp.$DomainName" },
-    @{ Name = "PDC"; Query = "_ldap._tcp.pdc._msdcs.$DomainName" }
-)
-
-foreach ($test in $srvTests) {
-    try {
-        $result = Resolve-DnsName -Name $test.Query -Type SRV -DnsOnly -ErrorAction Stop
-        Write-Host "  [OK] $($test.Name): $($result.Count) record(s)" -ForegroundColor Green
-    }
-    catch {
-        Write-Host "  [FAIL] $($test.Name): No records found" -ForegroundColor Red
-    }
-}
-
-# 4. Forwarders
-Write-Host "`n--- Forwarders ---" -ForegroundColor Cyan
-$forwarders = Get-DnsServerForwarder -ComputerName $DCName
-if ($forwarders.IPAddress) {
-    foreach ($fw in $forwarders.IPAddress) {
-        $reachable = Test-NetConnection -ComputerName $fw -Port 53 -WarningAction SilentlyContinue
-        $status = if ($reachable.TcpTestSucceeded) { "[OK]" } else { "[FAIL]" }
-        $color = if ($reachable.TcpTestSucceeded) { "Green" } else { "Red" }
-        Write-Host "  $status $fw" -ForegroundColor $color
-    }
-} else {
-    Write-Host "  No forwarders configured (using Root Hints)"
-}
-
-# 5. Scavenging status
-Write-Host "`n--- Scavenging Status ---" -ForegroundColor Cyan
-$scavenging = Get-DnsServerScavenging -ComputerName $DCName
-Write-Host "  Enabled: $($scavenging.ScavengingState)"
-Write-Host "  Interval: $($scavenging.ScavengingInterval)"
-
-# 6. Recent DNS errors
-Write-Host "`n--- Recent DNS Errors (last 24h) ---" -ForegroundColor Cyan
-$errors = Get-WinEvent -LogName "DNS Server" -ComputerName $DCName -MaxEvents 100 |
-    Where-Object { $_.LevelDisplayName -eq "Error" -and $_.TimeCreated -gt (Get-Date).AddDays(-1) }
-if ($errors) {
-    Write-Host "  $($errors.Count) error(s) found:" -ForegroundColor Yellow
-    $errors | Select-Object -First 5 | ForEach-Object {
-        Write-Host "    [$($_.TimeCreated)] $($_.Message.Substring(0, [Math]::Min(100, $_.Message.Length)))" -ForegroundColor Yellow
-    }
-} else {
-    Write-Host "  No errors in the last 24 hours" -ForegroundColor Green
-}
-
-Write-Host "`n=== Check Complete ===" -ForegroundColor Green
-```
-
-## Commandes de reference rapide
-
-| Action | Commande |
-|--------|----------|
-| Tester la resolution | `Resolve-DnsName -Name "nom" -Type A` |
-| Requete vers un serveur specifique | `Resolve-DnsName -Name "nom" -Server "IP"` |
-| Vider le cache client | `Clear-DnsClientCache` |
-| Vider le cache serveur | `Clear-DnsServerCache -ComputerName "DC"` |
-| Forcer l'enregistrement DNS | `Register-DnsClient` |
-| Re-enregistrer les SRV du DC | `nltest /dsregdns` |
-| Test DNS complet du DC | `dcdiag /test:dns /v` |
-| Verifier le service DNS | `Get-Service DNS -ComputerName "DC"` |
-| Voir les evenements DNS | `Get-WinEvent -LogName "DNS Server"` |
-| Voir la config DNS du client | `Get-DnsClientServerAddress` |
-
-!!! example "Scenario pratique"
-
-    **Situation** : Lundi matin, Pierre, technicien de support, recoit de nombreux appels : les utilisateurs du site de Paris ne peuvent plus se connecter au domaine. Les sessions existantes fonctionnent encore, mais les nouvelles connexions echouent avec "Aucun serveur d'authentification disponible".
-
-    **Diagnostic** :
-
+### 2. Enregistrements SRV manquants
+*   **Cause :** Le DC a demarre avant le service DNS, ou la zone n'accepte pas les mises a jour dynamiques.
+*   **Fix :** 
     ```powershell
-    # Etape 1 : Depuis un poste client, verifier la config DNS
-    Get-DnsClientServerAddress -InterfaceAlias "Ethernet"
+    # Redemarrer le service qui gere l'enregistrement
+    Restart-Service Netlogon
+    # Ou forcer via commande
+    nltest /dsregdns
     ```
 
-    Resultat : les postes pointent vers `10.0.0.10` (DC-01) et `10.0.0.11` (SRV-DC01).
-
-    ```powershell
-    # Etape 2 : Tester la resolution des SRV records
-    Resolve-DnsName -Name "_ldap._tcp.lab.local" -Type SRV -DnsOnly
-    ```
-
-    Resultat : erreur "DNS name does not exist". Les enregistrements SRV sont absents.
-
-    ```powershell
-    # Etape 3 : Verifier le service DNS sur les DC
-    Get-Service -Name DNS -ComputerName "DC-01"
-    Get-Service -Name DNS -ComputerName "SRV-DC01"
-    ```
-
-    Resultat : le service DNS est arrete sur les deux DC suite a une mise a jour Windows qui a echoue durant le week-end.
-
-    **Solution** :
-
-    ```powershell
-    # Redemarrer le service DNS sur les deux DC
-    Start-Service -Name DNS -ComputerName "DC-01"
-    Start-Service -Name DNS -ComputerName "SRV-DC01"
-
-    # Forcer le re-enregistrement des SRV
-    Invoke-Command -ComputerName "DC-01","SRV-DC01" -ScriptBlock {
-        Restart-Service -Name Netlogon
-    }
-
-    # Verifier que les SRV sont de nouveau presents
-    Resolve-DnsName -Name "_ldap._tcp.lab.local" -Type SRV -DnsOnly
-
-    # Valider avec dcdiag
-    dcdiag /test:dns /DnsRecordRegistration /s:DC-01
-    ```
-
-    Les utilisateurs peuvent a nouveau ouvrir de nouvelles sessions. Pierre programme une surveillance automatique du service DNS pour detecter ce type de panne plus rapidement.
-
-!!! danger "Erreurs courantes"
-
-    - **Oublier de vider le cache client apres une modification DNS** : un enregistrement modifie sur le serveur peut rester en cache sur le client pendant la duree du TTL. Utilisez `Clear-DnsClientCache` sur le poste pour forcer la mise a jour immediate.
-    - **Diagnostiquer avec ping au lieu de nslookup ou Resolve-DnsName** : `ping` utilise le cache DNS local et la resolution NetBIOS, ce qui peut fausser le diagnostic. Utilisez `Resolve-DnsName -DnsOnly` pour tester exclusivement la resolution DNS.
-    - **Configurer les postes du domaine avec des DNS publics en premier** : si le DNS principal d'un poste est `8.8.8.8`, il ne trouvera jamais les enregistrements SRV de `lab.local`. Le DNS primaire doit toujours etre un DC du domaine.
-    - **Ne pas verifier les deux sens de la resolution entre DC** : lors d'un probleme de replication, il faut verifier que chaque DC peut resoudre le nom de l'autre. Un seul sens fonctionnel ne suffit pas.
-    - **Ignorer les journaux d'evenements DNS** : les erreurs recurrentes dans le journal "DNS Server" sont souvent le premier signe d'un probleme sous-jacent (zone corrompue, replication en echec, espace disque insuffisant).
-
-## Points cles a retenir
-
-- Suivez une methodologie systematique : reseau > configuration client > service DNS > zone > enregistrement
-- `Resolve-DnsName` est preferable a `nslookup` pour le diagnostic en PowerShell
-- `dcdiag /test:dns` verifie l'ensemble de la configuration DNS requise par AD
-- Les enregistrements SRV sont critiques : utilisez `nltest /dsregdns` pour les re-enregistrer
-- Videz le cache client ET serveur quand un changement DNS n'est pas pris en compte
-- Consultez toujours le journal d'evenements DNS pour les erreurs recurrentes
+### 3. Pollution DNS (Vieux enregistrements)
+*   **Cause :** Le "Scavenging" (nettoyage) n'est pas active. Les vieilles IP de PC disparus restent dans la zone.
+*   **Fix :** Activer le Scavenging sur le Serveur ET sur la Zone. (Voir section *Concepts DNS*).
 
 ## Pour aller plus loin
 
-- [Concepts DNS](concepts-dns.md) -- revoir les fondamentaux du DNS
-- [Enregistrements DNS](enregistrements.md) -- comprendre les types d'enregistrements et le scavenging
-- [Resolution conditionnelle](resolution-conditionnelle.md) -- diagnostiquer les redirecteurs
-- [Depannage GPO](../gpo/gpresult-et-depannage.md) -- de nombreux problemes GPO sont lies au DNS
-- [Methodologie de depannage generale](../../supervision/depannage/methodologie.md) -- approche structuree du diagnostic
+- [Concepts DNS](concepts-dns.md) -- Comprendre la recursivite.
+- [Memento Ports AD](../../ressources/memento-ports-ad.md) -- Verifier que le port 53 est ouvert.

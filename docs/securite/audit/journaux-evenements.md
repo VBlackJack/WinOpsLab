@@ -1,3 +1,18 @@
+﻿<!--
+  Copyright 2026 Julien Bombled
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
 ---
 title: "Journaux d'evenements"
 description: "Analyse des journaux Windows Server 2022 : Security, System, Application, Event IDs critiques et requetes PowerShell pour la detection d'incidents."
@@ -11,7 +26,7 @@ tags:
 
 # Journaux d'evenements
 
-<span class="level-advanced">Avance</span> · Temps estime : 45 minutes
+<span class="level-advanced">Avance</span> Â· Temps estime : 45 minutes
 
 Les journaux d'evenements Windows sont la source principale d'information pour la detection d'incidents, l'investigation forensique et la conformite. Maitriser les Event IDs critiques et les requetes PowerShell associees est indispensable pour tout administrateur securite.
 
@@ -424,3 +439,4 @@ WinRM is already set up for remote management on this computer.
 - Politique d'audit (voir la page [Politique d'audit](politique-audit.md))
 - Microsoft : Windows Security Event Log reference
 - MITRE ATT&CK : correlations Event ID / techniques d'attaque
+

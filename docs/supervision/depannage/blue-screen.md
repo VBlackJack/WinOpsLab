@@ -1,3 +1,18 @@
+﻿<!--
+  Copyright 2026 Julien Bombled
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
 ---
 title: "Analyse des ecrans bleus (BSOD)"
 description: Comprendre et analyser les ecrans bleus sur Windows Server 2022 - codes d'arret, memory dumps, WinDbg et causes courantes.
@@ -9,7 +24,7 @@ tags:
 
 # Analyse des ecrans bleus (BSOD)
 
-<span class="level-advanced">Avance</span> · Temps estime : 35 minutes
+<span class="level-advanced">Avance</span> Â· Temps estime : 35 minutes
 
 ## Presentation
 
@@ -399,3 +414,4 @@ wusa /uninstall /kb:5012345 /quiet /norestart
 - [Methodologie de depannage](methodologie.md) pour une approche structuree
 - [Outils systeme](outils-systeme.md) pour SFC, DISM et les outils de diagnostic
 - [Moniteur de fiabilite](outils-systeme.md#moniteur-de-fiabilite-reliability-monitor) pour l'historique des incidents
+

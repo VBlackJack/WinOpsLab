@@ -1,3 +1,18 @@
+﻿<!--
+  Copyright 2026 Julien Bombled
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
 ---
 title: "Configuration des interfaces reseau"
 description: "Configurer les interfaces reseau sous Windows Server 2022 via PowerShell, netsh et l'interface graphique."
@@ -9,6 +24,10 @@ tags:
 ---
 
 # Configuration des interfaces reseau
+
+<span class="level-beginner">Debutant</span> · Temps estime : 20 minutes
+
+---
 
 ## Introduction
 
@@ -605,3 +624,4 @@ DNSServer            : 192.168.1.1, 192.168.1.2
 - Decoupage en sous-reseaux : voir la page [Sous-reseaux](sous-reseaux.md)
 - Configurer IPv6 : voir la page [IPv6 Fondamentaux](ipv6-fondamentaux.md)
 - Gestion du pare-feu : voir la section [Pare-feu Windows](../pare-feu/wfas-concepts.md)
+

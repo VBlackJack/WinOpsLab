@@ -1,3 +1,18 @@
+﻿<!--
+  Copyright 2026 Julien Bombled
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
 ---
 title: "IPv6 - Fondamentaux"
 description: "Comprendre les fondamentaux d'IPv6 : format d'adresse, types (unicast, multicast, link-local), double pile et statut sous Windows Server 2022."
@@ -9,6 +24,10 @@ tags:
 ---
 
 # IPv6 - Fondamentaux
+
+<span class="level-intermediate">Intermediaire</span> · Temps estime : 25 minutes
+
+---
 
 ## Introduction
 
@@ -38,7 +57,7 @@ Une adresse IPv6 est composee de **128 bits**, representee en **notation hexadec
 
 ```
 2001:0db8:85a3:0000:0000:8a2e:0370:7334
-     ↓
+     â†“
 2001:db8:85a3:0:0:8a2e:370:7334
 ```
 
@@ -46,7 +65,7 @@ Une adresse IPv6 est composee de **128 bits**, representee en **notation hexadec
 
 ```
 2001:db8:85a3:0:0:8a2e:370:7334
-     ↓
+     â†“
 2001:db8:85a3::8a2e:370:7334
 ```
 
@@ -406,3 +425,4 @@ Plusieurs mecanismes facilitent la coexistence et la migration d'IPv4 vers IPv6 
 - Reviser les fondamentaux IPv4 : voir la page [Adressage IPv4](adressage-ipv4.md)
 - Configurer les interfaces reseau : voir la page [Configuration des interfaces](configuration-interfaces.md)
 - Comprendre le subnetting : voir la page [Sous-reseaux](sous-reseaux.md)
+

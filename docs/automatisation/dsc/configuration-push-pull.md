@@ -1,3 +1,18 @@
+﻿<!--
+  Copyright 2026 Julien Bombled
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
 ---
 title: "Configuration Push et Pull"
 description: "Comprendre et configurer les modes Push et Pull de DSC : application directe, serveur Pull, configurations partielles et bonnes pratiques."
@@ -11,7 +26,7 @@ tags:
 
 # Configuration Push et Pull
 
-<span class="level-advanced">Avance</span> · Temps estime : 50 minutes
+<span class="level-advanced">Avance</span> Â· Temps estime : 50 minutes
 
 ## Introduction
 
@@ -406,15 +421,15 @@ ResourcesInDesiredState :
 
 !!! danger "Erreurs courantes"
 
-    **Checksum manquant sur le Pull Server** — Chaque fichier `.mof` publie sur le Pull Server doit avoir un fichier `.mof.checksum` correspondant genere par `New-DscChecksum`. Sans checksum, le noeud refuse de telecharger la configuration.
+    **Checksum manquant sur le Pull Server** â€” Chaque fichier `.mof` publie sur le Pull Server doit avoir un fichier `.mof.checksum` correspondant genere par `New-DscChecksum`. Sans checksum, le noeud refuse de telecharger la configuration.
 
-    **Certificat SSL non valide sur le Pull Server** — Si le certificat est auto-signe ou expire, les noeuds rejettent la connexion. En dev/test uniquement, utilisez `AllowUnsecureConnection = $true` ; en production, deployez un certificat valide.
+    **Certificat SSL non valide sur le Pull Server** â€” Si le certificat est auto-signe ou expire, les noeuds rejettent la connexion. En dev/test uniquement, utilisez `AllowUnsecureConnection = $true` ; en production, deployez un certificat valide.
 
-    **ConfigurationID en double** — Si deux noeuds partagent le meme ConfigurationID (GUID), ils tenteront tous deux de recuperer la meme configuration. Chaque noeud doit avoir un GUID unique.
+    **ConfigurationID en double** â€” Si deux noeuds partagent le meme ConfigurationID (GUID), ils tenteront tous deux de recuperer la meme configuration. Chaque noeud doit avoir un GUID unique.
 
-    **Modules DSC non publies sur le Pull Server** — Si une configuration utilise un module communautaire (ex. `NetworkingDsc`) qui n'est pas dans le dossier modules du Pull Server, le noeud ne pourra pas appliquer la configuration. Publiez les modules en meme temps que les configurations.
+    **Modules DSC non publies sur le Pull Server** â€” Si une configuration utilise un module communautaire (ex. `NetworkingDsc`) qui n'est pas dans le dossier modules du Pull Server, le noeud ne pourra pas appliquer la configuration. Publiez les modules en meme temps que les configurations.
 
-    **Configurations partielles en conflit** — Si deux equipes configurent la meme ressource (ex. le meme service) dans des configurations partielles differentes, DSC echoue avec une erreur de conflit. Etablissez des conventions claires de responsabilite.
+    **Configurations partielles en conflit** â€” Si deux equipes configurent la meme ressource (ex. le meme service) dans des configurations partielles differentes, DSC echoue avec une erreur de conflit. Etablissez des conventions claires de responsabilite.
 
 ## Points cles a retenir
 
@@ -431,3 +446,4 @@ ResourcesInDesiredState :
 - Concepts DSC : [Concepts DSC](concepts-dsc.md)
 - Ressources DSC : [Ressources DSC](ressources-dsc.md)
 - Documentation Microsoft : Setting Up a Pull Server
+

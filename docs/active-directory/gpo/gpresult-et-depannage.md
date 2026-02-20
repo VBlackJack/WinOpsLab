@@ -1,3 +1,18 @@
+﻿<!--
+  Copyright 2026 Julien Bombled
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
 ---
 title: GPResult et depannage
 description: Diagnostiquer et depanner les strategies de groupe avec gpresult, RSoP, Group Policy Modeling, les journaux d'evenements et les outils de depannage.
@@ -12,7 +27,7 @@ tags:
 
 # GPResult et depannage des GPO
 
-<span class="level-advanced">Intermediaire-Avance</span> · Temps estime : 50 minutes
+<span class="level-advanced">Intermediaire-Avance</span> Â· Temps estime : 50 minutes
 
 ## gpresult : l'outil de diagnostic principal
 
@@ -581,3 +596,4 @@ Utilisez cette liste pour diagnostiquer systematiquement un probleme GPO :
 - [Modeles ADMX](modeles-admx.md) -- diagnostiquer les modeles manquants
 - [Depannage general](../../supervision/depannage/methodologie.md) -- methodologie de depannage Windows
 - [Journaux d'evenements](../../securite/audit/journaux-evenements.md) -- approfondir l'Event Viewer
+

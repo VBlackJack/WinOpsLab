@@ -1,3 +1,18 @@
+﻿<!--
+  Copyright 2026 Julien Bombled
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
 ---
 title: Comprendre les roles
 description: Comprendre la difference entre roles, services de role et fonctionnalites dans Windows Server.
@@ -9,7 +24,7 @@ tags:
 
 # Comprendre les roles et fonctionnalites
 
-<span class="level-beginner">Debutant</span> · Temps estime : 15 minutes
+<span class="level-beginner">Debutant</span> Â· Temps estime : 15 minutes
 
 ## Roles vs fonctionnalites
 
@@ -127,7 +142,7 @@ NET-Framework-45-Core
 
 !!! example "Analogie"
 
-    Les dependances entre roles fonctionnent comme les ingredients d'une recette de cuisine. Pour faire un gateau (AD DS), il vous faut de la farine (.NET Framework) et des oeufs (RSAT). Vous ne pouvez pas faire le gateau sans ces ingredients de base — Windows Server les ajoute automatiquement a votre panier quand vous lancez la recette.
+    Les dependances entre roles fonctionnent comme les ingredients d'une recette de cuisine. Pour faire un gateau (AD DS), il vous faut de la farine (.NET Framework) et des oeufs (RSAT). Vous ne pouvez pas faire le gateau sans ces ingredients de base â€” Windows Server les ajoute automatiquement a votre panier quand vous lancez la recette.
 
 !!! example "Scenario pratique"
 
@@ -191,3 +206,4 @@ NET-Framework-45-Core
 
 - [Ajout et suppression de roles](ajout-suppression.md) - installer des roles en pratique
 - [Server Manager](../console/server-manager.md) - l'outil graphique pour gerer les roles
+

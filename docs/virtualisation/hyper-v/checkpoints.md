@@ -1,3 +1,18 @@
+﻿<!--
+  Copyright 2026 Julien Bombled
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
 ---
 title: "Checkpoints"
 description: "Checkpoints Hyper-V : standard vs production, creation, application, suppression et cas d'usage sur Windows Server 2022."
@@ -11,7 +26,7 @@ tags:
 
 # Checkpoints
 
-<span class="level-intermediate">Intermediaire</span> · Temps estime : 25 minutes
+<span class="level-intermediate">Intermediaire</span> Â· Temps estime : 25 minutes
 
 Les checkpoints (anciennement appeles snapshots) capturent l'etat d'une machine virtuelle a un instant donne. Ils permettent de revenir rapidement a un etat anterieur, ce qui est particulierement utile avant des modifications risquees.
 
@@ -360,3 +375,4 @@ SRV-TEST  Installation .NET             2026-01-10 11:00:00         41
 - Stockage virtuel et formats VHDX (voir la page [Stockage virtuel](stockage-virtuel.md))
 - Live Migration (voir la page [Live Migration](live-migration.md))
 - Microsoft : Hyper-V checkpoints overview
+

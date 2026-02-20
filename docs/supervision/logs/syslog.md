@@ -1,3 +1,18 @@
+﻿<!--
+  Copyright 2026 Julien Bombled
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
 ---
 title: "Syslog sur Windows"
 description: Integrer Windows Server 2022 avec des serveurs Syslog - transfert d'evenements, outils tiers et integration avec les SIEM.
@@ -9,7 +24,7 @@ tags:
 
 # Syslog sur Windows
 
-<span class="level-intermediate">Intermediaire</span> · Temps estime : 20 minutes
+<span class="level-intermediate">Intermediaire</span> Â· Temps estime : 20 minutes
 
 ## Presentation
 
@@ -338,9 +353,9 @@ Cette architecture offre :
 
     **Utiliser UDP en production.** Le protocole UDP n'accuse pas reception. En cas de congestion reseau ou de redemarrage du serveur Syslog, des evenements sont perdus sans aucune indication. Utiliser TCP ou TLS/TCP.
 
-    **Confondre les niveaux de verbosité dans les queries WinEvent.** `Level=1` correspond a "Critical", `Level=2` a "Error", `Level=3` a "Warning". Filtrer trop large (par exemple inclure Level=4 "Information") peut saturer le canal reseau avec des dizaines de milliers d'evenements par heure.
+    **Confondre les niveaux de verbositÃ© dans les queries WinEvent.** `Level=1` correspond a "Critical", `Level=2` a "Error", `Level=3` a "Warning". Filtrer trop large (par exemple inclure Level=4 "Information") peut saturer le canal reseau avec des dizaines de milliers d'evenements par heure.
 
-    **Envoyer les logs de securite depuis chaque DC individuellement.** Pour les environnements avec plusieurs controleurs de domaine, il est plus efficace de combiner WEF (les DC envoient vers un collecteur WEC) puis NXLog sur le collecteur WEC transfère vers le SIEM. Cela evite de multiplier les configurations NXLog.
+    **Envoyer les logs de securite depuis chaque DC individuellement.** Pour les environnements avec plusieurs controleurs de domaine, il est plus efficace de combiner WEF (les DC envoient vers un collecteur WEC) puis NXLog sur le collecteur WEC transfÃ¨re vers le SIEM. Cela evite de multiplier les configurations NXLog.
 
     **Ne pas conserver la passphrase ou les credentials du compte de service NXLog.** Si le compte de service utilise pour lire les journaux Security perd ses droits (changement de mot de passe, expiration), NXLog s'arrete silencieusement de lire les evenements de securite.
 
@@ -358,3 +373,4 @@ Cette architecture offre :
 - [Windows Event Forwarding (WEF/WEC)](wef-wec.md) pour la centralisation native Windows
 - [Observateur d'evenements](../surveillance/event-viewer.md) pour configurer les filtres d'evenements
 - [Politique d'audit](../../securite/audit/politique-audit.md) pour generer les evenements de securite
+

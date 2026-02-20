@@ -1,3 +1,18 @@
+﻿<!--
+  Copyright 2026 Julien Bombled
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
 ---
 title: "Gestion des taches planifiees via PowerShell"
 description: "Creer, modifier et gerer les taches planifiees Windows Server 2022 avec PowerShell : New-ScheduledTask, Register-ScheduledTask, Get/Set/Unregister."
@@ -10,7 +25,7 @@ tags:
 
 # Gestion des taches planifiees via PowerShell
 
-<span class="level-advanced">Avance</span> · Temps estime : 45 minutes
+<span class="level-advanced">Avance</span> Â· Temps estime : 45 minutes
 
 ## Introduction
 
@@ -18,7 +33,7 @@ La gestion des taches planifiees via PowerShell offre un controle complet et scr
 
 !!! example "Analogie"
 
-    Creer une tache planifiee avec PowerShell, c'est comme remplir un formulaire d'embauche en plusieurs etapes : d'abord on definit les horaires de travail (Trigger), puis la fiche de poste (Action), puis le reglement interieur (Settings), puis le profil du candidat (Principal) — et seulement une fois tout cela pret, on signe le contrat et on enregistre le tout (Register-ScheduledTask).
+    Creer une tache planifiee avec PowerShell, c'est comme remplir un formulaire d'embauche en plusieurs etapes : d'abord on definit les horaires de travail (Trigger), puis la fiche de poste (Action), puis le reglement interieur (Settings), puis le profil du candidat (Principal) â€” et seulement une fois tout cela pret, on signe le contrat et on enregistre le tout (Register-ScheduledTask).
 
 ## Cmdlets principales
 
@@ -441,15 +456,15 @@ TaskPath                          TaskName          State
 
 !!! danger "Erreurs courantes"
 
-    **`Register-ScheduledTask` echoue silencieusement** — Omettez `-Force` lors de la creation initiale pour obtenir une erreur claire si la tache existe deja. Utilisez `-Force` uniquement lors d'une mise a jour intentionnelle.
+    **`Register-ScheduledTask` echoue silencieusement** â€” Omettez `-Force` lors de la creation initiale pour obtenir une erreur claire si la tache existe deja. Utilisez `-Force` uniquement lors d'une mise a jour intentionnelle.
 
-    **`Get-ScheduledTaskInfo` retourne `LastTaskResult = 2147942401`** — Ce code d'erreur signifie "fichier introuvable" (0x80070002). Le chemin du script dans l'action est incorrect ou le fichier n'existe pas sur le serveur cible. Verifiez que le script est deploye avant la tache.
+    **`Get-ScheduledTaskInfo` retourne `LastTaskResult = 2147942401`** â€” Ce code d'erreur signifie "fichier introuvable" (0x80070002). Le chemin du script dans l'action est incorrect ou le fichier n'existe pas sur le serveur cible. Verifiez que le script est deploye avant la tache.
 
-    **`RepetitionDuration` non definie pour les taches repetitives** — Sans `-RepetitionDuration`, la repetition s'arrete apres le premier cycle. Specifiez une duree suffisante (ex. `-RepetitionDuration (New-TimeSpan -Days 365)`) ou la valeur maximale possible.
+    **`RepetitionDuration` non definie pour les taches repetitives** â€” Sans `-RepetitionDuration`, la repetition s'arrete apres le premier cycle. Specifiez une duree suffisante (ex. `-RepetitionDuration (New-TimeSpan -Days 365)`) ou la valeur maximale possible.
 
-    **Trigger de type `AtStartup` sans delai** — Une tache au demarrage qui s'execute immediatement peut echouer si les services reseau ou autres dependances ne sont pas encore prets. Ajoutez `$trigger.Delay = "PT3M"` pour un delai de 3 minutes.
+    **Trigger de type `AtStartup` sans delai** â€” Une tache au demarrage qui s'execute immediatement peut echouer si les services reseau ou autres dependances ne sont pas encore prets. Ajoutez `$trigger.Delay = "PT3M"` pour un delai de 3 minutes.
 
-    **Chemin de tache (`TaskPath`) sans barres obliques** — Le `TaskPath` doit commencer et se terminer par `\` (ex. `\CustomTasks\`). Un chemin mal formate cree la tache a la racine ou provoque une erreur selon la version de Windows.
+    **Chemin de tache (`TaskPath`) sans barres obliques** â€” Le `TaskPath` doit commencer et se terminer par `\` (ex. `\CustomTasks\`). Un chemin mal formate cree la tache a la racine ou provoque une erreur selon la version de Windows.
 
 ## Points cles a retenir
 
@@ -465,3 +480,4 @@ TaskPath                          TaskName          State
 - Task Scheduler GUI : [Task Scheduler](task-scheduler.md)
 - PowerShell Remoting : [Remoting](../powershell-avance/remoting.md)
 - Documentation Microsoft : ScheduledTasks Module
+

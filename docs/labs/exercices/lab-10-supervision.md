@@ -1,3 +1,18 @@
+﻿<!--
+  Copyright 2026 Julien Bombled
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
 ---
 title: "Lab 10 : Supervision"
 description: Exercice pratique - mettre en place la supervision avec perfmon, collecteurs de donnees et transfert d'evenements.
@@ -8,6 +23,10 @@ tags:
 ---
 
 # Lab 10 : Supervision
+
+<span class="level-advanced">Avance</span> · Temps estime : 60 minutes
+
+---
 
 !!! abstract "Objectifs du lab"
 
@@ -39,7 +58,7 @@ Avant la mise en production de l'infrastructure, le responsable demande de mettr
     les alertes sont les voyants lumineux qui s'allument quand un seuil est depasse, et le
     transfert d'evenements (WEF) est le boitier noir qui centralise les journaux de toute la
     flotte dans un seul endroit. Sans tableau de bord, on ne decouvre les problemes qu'au moment
-    de la panne — toujours trop tard.
+    de la panne â€” toujours trop tard.
 
 ### Partie 1 : Creer un ensemble de collecteurs de donnees
 
@@ -316,3 +335,4 @@ wecutil ds "Lab-CriticalEvents"
 ## Prochaine etape
 
 :material-arrow-right: [Projet de synthese : Infrastructure PME complete](../projets/projet-pme-complete.md)
+

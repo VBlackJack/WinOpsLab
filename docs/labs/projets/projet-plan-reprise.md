@@ -1,3 +1,18 @@
+﻿<!--
+  Copyright 2026 Julien Bombled
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
 ---
 title: "Projet : Plan de reprise d'activite"
 description: Projet de synthese - elaborer un plan de reprise d'activite (PRA) avec strategie de sauvegarde, basculement et documentation.
@@ -9,6 +24,10 @@ tags:
 ---
 
 # Projet : Plan de reprise d'activite (PRA)
+
+<span class="level-advanced">Avance</span> · Temps estime : 180 minutes
+
+---
 
 !!! abstract "Objectifs du projet"
 
@@ -29,7 +48,7 @@ La direction de TechNova exige un plan de reprise d'activite formalise. Vous dev
     Un PRA, c'est comme le plan d'evacuation d'un immeuble : tout le monde sait qu'il existe,
     mais sa vraie valeur n'est visible que lors d'un exercice ou d'un sinistre reel. La regle
     3-2-1 des sauvegardes est analogue a ne jamais mettre tous ses oeufs dans le meme panier
-    — une copie uniquement sur le meme serveur ne protege pas d'un incendie ou d'un ransomware.
+    â€” une copie uniquement sur le meme serveur ne protege pas d'un incendie ou d'un ransomware.
     Le RTO, c'est le temps que vos employes peuvent rester bloques devant une porte fermee
     avant que l'entreprise perde de l'argent.
 
@@ -309,7 +328,7 @@ Le document PRA doit contenir :
        not valid". Utiliser un disque ou volume different (`D:` ou `E:`).
 
     5. **RTO et RPO definis sans validation de la direction** : dans l'evaluation, les RTO/RPO
-       doivent etre approuves par la direction fictive de TechNova — pas seulement determines
+       doivent etre approuves par la direction fictive de TechNova â€” pas seulement determines
        techniquement. Un RPO de 0h pour Active Directory implique une replication temps-reel
        ou un second DC en temps reel, ce qui doit etre documente comme une decision metier,
        pas uniquement technique.
@@ -319,3 +338,4 @@ Le document PRA doit contenir :
 - [Projet : Infrastructure PME complete](projet-pme-complete.md)
 - [Projet : Migration AD](projet-migration-ad.md)
 - [Strategie de sauvegarde](../../haute-disponibilite/backup/strategie-sauvegarde.md)
+

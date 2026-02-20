@@ -1,3 +1,18 @@
+﻿<!--
+  Copyright 2026 Julien Bombled
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
 ---
 title: "NPS / RADIUS"
 description: "Deployer NPS comme serveur RADIUS sous Windows Server 2022 : politiques d'authentification, politiques de demande de connexion et integration VPN/Wi-Fi."
@@ -10,6 +25,10 @@ tags:
 ---
 
 # NPS (Network Policy Server) / RADIUS
+
+<span class="level-intermediate">Intermediaire</span> · Temps estime : 30 minutes
+
+---
 
 ## Introduction
 
@@ -497,3 +516,4 @@ Enabled     : True
 - Configurer un serveur VPN avec NPS : voir la page [Serveur VPN (RRAS)](vpn-server.md)
 - Deployer Always On VPN avec NPS : voir la page [Always On VPN](always-on-vpn.md)
 - Comprendre DirectAccess : voir la page [DirectAccess](directaccess.md)
+

@@ -1,3 +1,18 @@
+﻿<!--
+  Copyright 2026 Julien Bombled
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
 ---
 title: Comptes ordinateurs
 description: Gestion des comptes ordinateurs et jonction au domaine Active Directory.
@@ -9,7 +24,7 @@ tags:
 
 # Comptes ordinateurs
 
-<span class="level-intermediate">Intermediaire</span> · Temps estime : 15 minutes
+<span class="level-intermediate">Intermediaire</span> Â· Temps estime : 15 minutes
 
 !!! example "Analogie"
 
@@ -199,7 +214,7 @@ Disabled: PC-STOCK-02 - Last logon: 10/03/2024 14:17:00
 
 !!! example "Scenario pratique"
 
-    **Contexte :** Nadia, technicienne de support, recoit un appel d'un utilisateur dont le poste `PC-COMPTA-03` affiche l'erreur « The trust relationship between this workstation and the primary domain failed » apres un long conge. Le poste n'a pas communique avec le DC depuis plus de 60 jours et le mot de passe du compte machine a expire.
+    **Contexte :** Nadia, technicienne de support, recoit un appel d'un utilisateur dont le poste `PC-COMPTA-03` affiche l'erreur Â« The trust relationship between this workstation and the primary domain failed Â» apres un long conge. Le poste n'a pas communique avec le DC depuis plus de 60 jours et le mot de passe du compte machine a expire.
 
     **Diagnostic :**
 
@@ -251,3 +266,4 @@ Disabled: PC-STOCK-02 - Last logon: 10/03/2024 14:17:00
 
 - [Structure des OU](structure-ou.md) - ou placer les comptes ordinateurs
 - [GPO - Concepts](../gpo/concepts-gpo.md) - appliquer des strategies aux ordinateurs
+

@@ -1,3 +1,18 @@
+﻿<!--
+  Copyright 2026 Julien Bombled
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
 ---
 title: "Stockage virtuel"
 description: "Disques virtuels Hyper-V : VHD vs VHDX, disques dynamiques, fixes et de differenciation, disques pass-through."
@@ -11,7 +26,7 @@ tags:
 
 # Stockage virtuel
 
-<span class="level-intermediate">Intermediaire</span> · Temps estime : 25 minutes
+<span class="level-intermediate">Intermediaire</span> Â· Temps estime : 25 minutes
 
 Le stockage virtuel Hyper-V s'appuie principalement sur des fichiers de disques virtuels (VHD/VHDX). Le choix du format et du type de disque impacte directement les performances, la flexibilite et l'utilisation de l'espace disque.
 
@@ -363,3 +378,4 @@ SRV-SQL01 D:\VMs\SRV-SQL01-Data.vhdx              Fixed   500.00    500.00      
 - Checkpoints et leur impact sur le stockage (voir la page [Checkpoints](checkpoints.md))
 - Creation de VMs (voir la page [Creer une VM](creer-vm.md))
 - Microsoft : Hyper-V virtual hard disk format overview
+

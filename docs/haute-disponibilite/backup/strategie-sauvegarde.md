@@ -1,3 +1,18 @@
+﻿<!--
+  Copyright 2026 Julien Bombled
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
 ---
 title: "Strategie de sauvegarde"
 description: "Definir une strategie de sauvegarde efficace sous Windows Server 2022 : regle 3-2-1, RPO/RTO, types de sauvegarde et planification."
@@ -10,7 +25,7 @@ tags:
 
 # Strategie de sauvegarde
 
-<span class="level-advanced">Avance</span> · Temps estime : 35 minutes
+<span class="level-advanced">Avance</span> Â· Temps estime : 35 minutes
 
 ## Introduction
 
@@ -179,7 +194,7 @@ Set-WBPolicy -Policy $policy
 Resultat :
 
 ```text
-(Set-WBPolicy ne produit pas de sortie en cas de succes — la politique est enregistree)
+(Set-WBPolicy ne produit pas de sortie en cas de succes â€” la politique est enregistree)
 
 # Verifier la planification enregistree :
 Get-WBPolicy
@@ -273,15 +288,15 @@ Chaque test de restauration doit etre documente :
 
 !!! danger "Erreurs courantes"
 
-    **Sauvegarde et donnees sur le meme disque physique** — Sauvegarder sur une partition differente du meme disque ne protege pas contre une panne materielle. Le disque de sauvegarde doit etre physiquement distinct.
+    **Sauvegarde et donnees sur le meme disque physique** â€” Sauvegarder sur une partition differente du meme disque ne protege pas contre une panne materielle. Le disque de sauvegarde doit etre physiquement distinct.
 
-    **Ne jamais tester la restauration** — Une sauvegarde non testee peut etre corrompue, incomplete ou incompatible avec le nouveau materiel. Les tests de restauration doivent etre planifies et documentes, pas optionnels.
+    **Ne jamais tester la restauration** â€” Une sauvegarde non testee peut etre corrompue, incomplete ou incompatible avec le nouveau materiel. Les tests de restauration doivent etre planifies et documentes, pas optionnels.
 
-    **RPO et RTO definis sans consulter les metiers** — Un RPO de 24h pour une base de donnees de transactions financieres peut etre inacceptable pour le directeur financier. Impliquez les responsables metiers dans la definition de ces objectifs.
+    **RPO et RTO definis sans consulter les metiers** â€” Un RPO de 24h pour une base de donnees de transactions financieres peut etre inacceptable pour le directeur financier. Impliquez les responsables metiers dans la definition de ces objectifs.
 
-    **Schema GFS non respecte** — Sans rotation structuree (quotidien/hebdomadaire/mensuel), les sauvegardes les plus anciennes sont ecrasees trop tot. Une suppression accidentelle decouverte 45 jours apres ne peut pas etre recuperee si la rotation ne conserve que 7 jours.
+    **Schema GFS non respecte** â€” Sans rotation structuree (quotidien/hebdomadaire/mensuel), les sauvegardes les plus anciennes sont ecrasees trop tot. Une suppression accidentelle decouverte 45 jours apres ne peut pas etre recuperee si la rotation ne conserve que 7 jours.
 
-    **Copie hors site oubliee** — Avoir deux disques dans la meme piece n'est pas une vraie redondance. Un incendie, une inondation ou un vol peut tout emporter. La copie hors site (cloud ou site distant) n'est pas optionnelle.
+    **Copie hors site oubliee** â€” Avoir deux disques dans la meme piece n'est pas une vraie redondance. Un incendie, une inondation ou un vol peut tout emporter. La copie hors site (cloud ou site distant) n'est pas optionnelle.
 
 ## Points cles a retenir
 
@@ -297,3 +312,4 @@ Chaque test de restauration doit etre documente :
 - Windows Server Backup : [Windows Server Backup](windows-server-backup.md)
 - Restauration systeme : [Restauration systeme](restauration-systeme.md)
 - Documentation Microsoft : Planning Backup and Recovery
+

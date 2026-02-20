@@ -1,3 +1,18 @@
+﻿<!--
+  Copyright 2026 Julien Bombled
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
 ---
 title: "Lab 09 : Automatisation PowerShell"
 description: Exercice pratique - ecrire des scripts PowerShell pour automatiser les taches d'administration courantes.
@@ -9,6 +24,10 @@ tags:
 ---
 
 # Lab 09 : Automatisation PowerShell
+
+<span class="level-intermediate">Intermediaire</span> · Temps estime : 60 minutes
+
+---
 
 !!! abstract "Objectifs du lab"
 
@@ -36,7 +55,7 @@ L'equipe RH fournit regulierement des listes de nouveaux employes. Le service in
     Ecrire un script PowerShell pour creer des utilisateurs, c'est comme programmer un robot
     en cuisine : la premiere fois, cela prend plus de temps que de le faire a la main, mais
     la dixieme iteration, c'est instantane et sans erreur. Un script mal ecrit sans gestion
-    d'erreurs, c'est un robot qui continue de travailler meme quand le bol est casse —
+    d'erreurs, c'est un robot qui continue de travailler meme quand le bol est casse â€”
     d'ou l'importance du `try/catch`. La tache planifiee est le chef qui donne le signal
     au robot chaque lundi matin sans avoir a y penser.
 
@@ -309,7 +328,7 @@ L'equipe RH fournit regulierement des listes de nouveaux employes. Le service in
 
     1. **Encodage du fichier CSV** : un CSV contenant des caracteres accentues (Prenom, Titre)
        genere sous Windows avec Notepad peut etre en ANSI. `Import-Csv` sans `-Encoding`
-       produit des noms corrompus ("AliceÃ" au lieu de "Alice"). Toujours sauvegarder le CSV
+       produit des noms corrompus ("AliceÃƒ" au lieu de "Alice"). Toujours sauvegarder le CSV
        en UTF-8 et utiliser `Import-Csv -Encoding UTF8`.
 
     2. **SamAccountName trop long** : Active Directory limite le `SamAccountName` a 20 caracteres.
@@ -350,3 +369,4 @@ Import-Csv "C:\Scripts\new-users.csv" | ForEach-Object {
 ## Prochaine etape
 
 :material-arrow-right: [Lab 10 : Supervision](lab-10-supervision.md)
+

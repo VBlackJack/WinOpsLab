@@ -1,3 +1,18 @@
+﻿<!--
+  Copyright 2026 Julien Bombled
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
 ---
 title: "Lab 04 : Strategies de groupe (GPO)"
 description: Exercice pratique - creer et appliquer des GPO pour les politiques de mot de passe et les restrictions de bureau.
@@ -9,6 +24,10 @@ tags:
 ---
 
 # Lab 04 : Strategies de groupe (GPO)
+
+<span class="level-intermediate">Intermediaire</span> · Temps estime : 45 minutes
+
+---
 
 !!! abstract "Objectifs du lab"
 
@@ -37,7 +56,7 @@ Le responsable securite demande de mettre en place des politiques de mot de pass
     Les GPO ressemblent au reglement interieur d'une entreprise : une note de service collee
     a l'entree du batiment (domaine) s'applique a tout le monde, celle affichee dans la salle
     de reunion comptabilite (OU) ne concerne que les comptables. Le filtrage de securite,
-    c'est la mention "ne s'applique pas au personnel IT" au bas du document — certains sont
+    c'est la mention "ne s'applique pas au personnel IT" au bas du document â€” certains sont
     expressement exemptes du reglement general.
 
 ### Partie 1 : Preparer la structure OU et les utilisateurs
@@ -268,3 +287,4 @@ Conservez l'environnement pour les labs suivants.
 ## Prochaine etape
 
 :material-arrow-right: [Lab 05 : Partage de fichiers](lab-05-partage-fichiers.md)
+

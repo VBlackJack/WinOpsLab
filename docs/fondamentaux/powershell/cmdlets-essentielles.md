@@ -1,3 +1,18 @@
+﻿<!--
+  Copyright 2026 Julien Bombled
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
 ---
 title: Cmdlets essentielles
 description: Les cmdlets PowerShell incontournables pour l'administration Windows Server.
@@ -9,13 +24,13 @@ tags:
 
 # Cmdlets essentielles
 
-<span class="level-beginner">Debutant</span> · Temps estime : 25 minutes
+<span class="level-beginner">Debutant</span> Â· Temps estime : 25 minutes
 
 ## Informations systeme
 
 !!! example "Analogie"
 
-    Les cmdlets PowerShell sont comme la boite a outils d'un technicien de maintenance. Chaque outil a un usage precis : le multimetre pour mesurer (`Get-`), le tournevis pour ajuster (`Set-`), la cle a molette pour assembler (`New-`). Un bon technicien connait ses outils de base par coeur — c'est exactement ce que cette page vous apprend.
+    Les cmdlets PowerShell sont comme la boite a outils d'un technicien de maintenance. Chaque outil a un usage precis : le multimetre pour mesurer (`Get-`), le tournevis pour ajuster (`Set-`), la cle a molette pour assembler (`New-`). Un bon technicien connait ses outils de base par coeur â€” c'est exactement ce que cette page vous apprend.
 
 ```powershell
 # OS information
@@ -544,3 +559,4 @@ TotalMilliseconds : 47.8923
 
 - [Pipeline et objets](pipeline-et-objets.md) - combiner les cmdlets
 - [Aide et decouverte](aide-et-decouverte.md) - explorer les cmdlets par soi-meme
+

@@ -1,3 +1,18 @@
+﻿<!--
+  Copyright 2026 Julien Bombled
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
 ---
 title: "NIC Teaming"
 description: "Configurer le NIC Teaming sous Windows Server 2022 : modes (Switch Independent, LACP), repartition de charge, basculement et configuration PowerShell."
@@ -9,6 +24,10 @@ tags:
 ---
 
 # NIC Teaming
+
+<span class="level-intermediate">Intermediaire</span> · Temps estime : 25 minutes
+
+---
 
 ## Introduction
 
@@ -134,9 +153,9 @@ Le mode de repartition determine comment le trafic sortant est distribue entre l
 ```mermaid
 graph TD
     A["Trafic sortant"] --> B{"Mode de repartition ?"}
-    B -->|Address Hash| C["Hash MAC/IP/Port<br/>→ Un flux par NIC"]
-    B -->|Hyper-V Port| D["Un port VM<br/>→ Un NIC dedie"]
-    B -->|Dynamic| E["Hash + Hyper-V Port<br/>→ Repartition optimale"]
+    B -->|Address Hash| C["Hash MAC/IP/Port<br/>â†’ Un flux par NIC"]
+    B -->|Hyper-V Port| D["Un port VM<br/>â†’ Un NIC dedie"]
+    B -->|Dynamic| E["Hash + Hyper-V Port<br/>â†’ Repartition optimale"]
 ```
 
 ---
@@ -451,3 +470,4 @@ Get-VMSwitchTeam -Name "SET-Production"
 - Configurer le routage : voir la page [Routage](routage.md)
 - Gerer les adresses IP a grande echelle : voir la page [IPAM](ipam.md)
 - Configurer les interfaces reseau : voir la page [Configuration des interfaces](../tcpip/configuration-interfaces.md)
+

@@ -1,3 +1,18 @@
+﻿<!--
+  Copyright 2026 Julien Bombled
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
 ---
 title: "Conteneurs Windows"
 description: "Conteneurs Windows Server : isolation de processus vs isolation Hyper-V, images de base, cycle de vie des conteneurs et cas d'usage."
@@ -10,7 +25,7 @@ tags:
 
 # Conteneurs Windows
 
-<span class="level-intermediate">Intermediaire</span> · Temps estime : 30 minutes
+<span class="level-intermediate">Intermediaire</span> Â· Temps estime : 30 minutes
 
 Les conteneurs Windows permettent d'executer des applications dans des environnements isoles et legers, sans la surcharge d'une machine virtuelle complete. Windows Server 2022 supporte les conteneurs nativement avec deux modes d'isolation.
 
@@ -18,7 +33,7 @@ Les conteneurs Windows permettent d'executer des applications dans des environne
 
 !!! example "Analogie"
 
-    Un conteneur, c'est comme une chambre dans un hotel. Chaque chambre est isolee, avec sa propre cle, sa propre decoration et ses propres affaires — mais elles partagent toutes le meme batiment, le meme ascenseur, la meme electricite. Si vous avez besoin d'un isolement total (une maison entiere), vous prenez une VM — mais cela coute plus cher et prend plus de temps a preparer. Le conteneur, c'est la chambre d'hotel : rapide a preparer, efficace pour l'usage prevu, et des dizaines peuvent coexister dans le meme immeuble.
+    Un conteneur, c'est comme une chambre dans un hotel. Chaque chambre est isolee, avec sa propre cle, sa propre decoration et ses propres affaires â€” mais elles partagent toutes le meme batiment, le meme ascenseur, la meme electricite. Si vous avez besoin d'un isolement total (une maison entiere), vous prenez une VM â€” mais cela coute plus cher et prend plus de temps a preparer. Le conteneur, c'est la chambre d'hotel : rapide a preparer, efficace pour l'usage prevu, et des dizaines peuvent coexister dans le meme immeuble.
 
 ## Qu'est-ce qu'un conteneur ?
 
@@ -330,19 +345,19 @@ docker stats --no-stream
     legacy-app    0.05%   412MiB / 16GiB      2.51%
     ```
 
-    Les deux applications coexistent sur le meme hote, completement isolees, en consommant ensemble moins de 600 Mo de RAM — soit bien moins qu'une VM supplementaire.
+    Les deux applications coexistent sur le meme hote, completement isolees, en consommant ensemble moins de 600 Mo de RAM â€” soit bien moins qu'une VM supplementaire.
 
 !!! danger "Erreurs courantes"
 
-    **Incompatibilite de version du noyau** — En mode Process Isolation, la version du noyau Windows de l'image doit correspondre a celle de l'hote (meme build ou version compatible). Si vous tirez une image `ltsc2019` sur un hote `ltsc2022` en mode process, le conteneur peut refuser de demarrer. Utilisez Hyper-V Isolation pour contourner cette contrainte.
+    **Incompatibilite de version du noyau** â€” En mode Process Isolation, la version du noyau Windows de l'image doit correspondre a celle de l'hote (meme build ou version compatible). Si vous tirez une image `ltsc2019` sur un hote `ltsc2022` en mode process, le conteneur peut refuser de demarrer. Utilisez Hyper-V Isolation pour contourner cette contrainte.
 
-    **Donnees dans le conteneur sans volume** — Toutes les donnees ecrites dans le systeme de fichiers d'un conteneur sont perdues a sa suppression. Pour toute donnee persistante (logs, bases de donnees, uploads), montez toujours un volume ou un bind mount.
+    **Donnees dans le conteneur sans volume** â€” Toutes les donnees ecrites dans le systeme de fichiers d'un conteneur sont perdues a sa suppression. Pour toute donnee persistante (logs, bases de donnees, uploads), montez toujours un volume ou un bind mount.
 
-    **Port deja utilise sur l'hote** — Si le port hote est deja occupe (par IIS, un autre conteneur ou un service), le `docker run` echoue avec "port already in use". Verifiez avec `netstat -ano | findstr :8080` avant de lancer.
+    **Port deja utilise sur l'hote** â€” Si le port hote est deja occupe (par IIS, un autre conteneur ou un service), le `docker run` echoue avec "port already in use". Verifiez avec `netstat -ano | findstr :8080` avant de lancer.
 
-    **Conteneur arrete vs conteneur supprime** — `docker stop` arrete le conteneur mais le conserve. `docker rm` le supprime definitivement. `docker ps` ne montre que les conteneurs en cours d'execution. Utilisez `docker ps -a` pour voir tous les conteneurs, y compris les arretes.
+    **Conteneur arrete vs conteneur supprime** â€” `docker stop` arrete le conteneur mais le conserve. `docker rm` le supprime definitivement. `docker ps` ne montre que les conteneurs en cours d'execution. Utilisez `docker ps -a` pour voir tous les conteneurs, y compris les arretes.
 
-    **Image trop volumineuse** — Windows Server Core pese pres de 3 Go et l'image complète Windows depasse 6 Go. Pour les nouvelles applications, privilegiez Nano Server (277 Mo). La taille de l'image impacte directement le temps de deploiement et l'espace disque du registre.
+    **Image trop volumineuse** â€” Windows Server Core pese pres de 3 Go et l'image complÃ¨te Windows depasse 6 Go. Pour les nouvelles applications, privilegiez Nano Server (277 Mo). La taille de l'image impacte directement le temps de deploiement et l'espace disque du registre.
 
 ## Points cles a retenir
 
@@ -361,3 +376,4 @@ docker stats --no-stream
 - Docker sur Windows Server (voir la page [Docker sur Windows](docker-sur-windows.md))
 - Microsoft : Windows container documentation
 - Microsoft : Container base images
+

@@ -1,3 +1,18 @@
+<!--
+  Copyright 2026 Julien Bombled
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
 ---
 title: Filtrage et heritage des GPO
 description: Maitriser l'heritage, le blocage, l'application forcee, le filtrage de securite, le filtrage WMI et le traitement en boucle (loopback) des GPO.
@@ -46,6 +61,21 @@ Dans cet exemple, un utilisateur dans l'OU **Comptabilite** recoit :
 - `Default Domain Policy` (heritee du domaine)
 - `CFG - Desktop Settings` (heritee de l'OU Siege)
 - `CFG - Accounting Apps` (liee directement a son OU)
+
+---
+
+## Ordre d'application (LSDOU)
+
+![Ordre d'application des GPO](../../diagrams/gpo-processing.drawio#GPO_LSDOU)
+
+Les objets de strategie de groupe s'appliquent dans un ordre precis, connu sous l'acronyme **LSDOU**.
+
+1.  **L**ocal Policy
+2.  **S**ite GPO
+3.  **D**omain GPO
+4.  **O**U GPO (Organizational Unit)
+
+La règle est simple : **la dernière appliquée l'emporte**. Ainsi, une GPO liée à l'OU écrase les paramètres contradictoires d'une GPO liée au Domaine.
 
 ---
 

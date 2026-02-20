@@ -1,3 +1,18 @@
+﻿<!--
+  Copyright 2026 Julien Bombled
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
 ---
 title: "Lab 01 : Installation de Windows Server"
 description: Exercice pratique - installer et configurer un premier serveur Windows Server 2022.
@@ -8,6 +23,10 @@ tags:
 ---
 
 # Lab 01 : Installation de Windows Server
+
+<span class="level-beginner">Debutant</span> · Temps estime : 90 minutes
+
+---
 
 !!! abstract "Objectifs du lab"
 
@@ -195,3 +214,4 @@ Remove-Item "G:\VMs\SRV-GUI.vhdx", "G:\VMs\SRV-CORE.vhdx" -ErrorAction SilentlyC
 ## Prochaine etape
 
 :material-arrow-right: [Lab 02 : Premier domaine AD DS](lab-02-ad-ds-premier-domaine.md)
+

@@ -1,3 +1,18 @@
+﻿<!--
+  Copyright 2026 Julien Bombled
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
 ---
 title: "Task Scheduler (Planificateur de taches)"
 description: "Utiliser le Planificateur de taches Windows Server 2022 : triggers, actions, conditions, historique et taches d'administration courantes."
@@ -10,7 +25,7 @@ tags:
 
 # Task Scheduler (Planificateur de taches)
 
-<span class="level-advanced">Avance</span> · Temps estime : 40 minutes
+<span class="level-advanced">Avance</span> Â· Temps estime : 40 minutes
 
 ## Introduction
 
@@ -268,15 +283,15 @@ ObjectClass : msDS-GroupManagedServiceAccount
 
 !!! danger "Erreurs courantes"
 
-    **Tache qui ne s'execute pas quand personne n'est connecte** — L'option **Run whether user is logged on or not** n'est pas cochee. Sur un serveur, cette option est indispensable. Son activation demande la saisie du mot de passe du compte de service.
+    **Tache qui ne s'execute pas quand personne n'est connecte** â€” L'option **Run whether user is logged on or not** n'est pas cochee. Sur un serveur, cette option est indispensable. Son activation demande la saisie du mot de passe du compte de service.
 
-    **Script PowerShell bloque par la politique d'execution** — Sans `-ExecutionPolicy Bypass` dans les arguments de la tache, le script peut etre bloque si la politique systeme est `Restricted` ou `AllSigned`. Ajoutez toujours `-ExecutionPolicy Bypass -NoProfile`.
+    **Script PowerShell bloque par la politique d'execution** â€” Sans `-ExecutionPolicy Bypass` dans les arguments de la tache, le script peut etre bloque si la politique systeme est `Restricted` ou `AllSigned`. Ajoutez toujours `-ExecutionPolicy Bypass -NoProfile`.
 
-    **Executions paralleles non voulues** — Si la tache prend plus de temps que prevu (sauvegarde lente, reseau lent), une nouvelle instance peut demarrer avant la fin de la precedente. Configurez **Do not start a new instance** et definissez un timeout avec **Stop the task if it runs longer than**.
+    **Executions paralleles non voulues** â€” Si la tache prend plus de temps que prevu (sauvegarde lente, reseau lent), une nouvelle instance peut demarrer avant la fin de la precedente. Configurez **Do not start a new instance** et definissez un timeout avec **Stop the task if it runs longer than**.
 
-    **Historique desactive** — Par defaut, l'historique des taches est desactive sur Windows Server. Sans lui, il est impossible de savoir si une tache s'est bien executee ou a echoue. Activez-le des la mise en production (`wevtutil set-log ... /enabled:true`).
+    **Historique desactive** â€” Par defaut, l'historique des taches est desactive sur Windows Server. Sans lui, il est impossible de savoir si une tache s'est bien executee ou a echoue. Activez-le des la mise en production (`wevtutil set-log ... /enabled:true`).
 
-    **Compte SYSTEM sans acces reseau** — Le compte SYSTEM a des droits complets en local, mais il ne peut pas acceder aux partages reseau avec son identite. Pour les taches necessitant un acces reseau, utilisez le compte **Network Service** ou un compte de service dedie.
+    **Compte SYSTEM sans acces reseau** â€” Le compte SYSTEM a des droits complets en local, mais il ne peut pas acceder aux partages reseau avec son identite. Pour les taches necessitant un acces reseau, utilisez le compte **Network Service** ou un compte de service dedie.
 
 ## Points cles a retenir
 
@@ -291,3 +306,4 @@ ObjectClass : msDS-GroupManagedServiceAccount
 
 - Gestion via PowerShell : [Gestion PowerShell](gestion-powershell.md)
 - Documentation Microsoft : Task Scheduler Overview
+

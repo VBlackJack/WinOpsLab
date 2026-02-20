@@ -1,0 +1,33 @@
+# Auto-detect text files and normalize line endings
+* text=auto
+
+# Documentation
+*.md text
+*.yml text
+*.yaml text
+*.css text
+*.html text
+
+# Scripts
+*.py text
+*.ps1 text
+*.sh text eol=lf
+
+# Ruby
+Vagrantfile text
+
+# Binary files
+*.drawio binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+
+# Git metadata
+.gitignore export-ignore
+.gitattributes export-ignore
+.editorconfig export-ignore
+CLAUDE.md export-ignore
+GEMINI.md export-ignore

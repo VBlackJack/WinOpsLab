@@ -76,9 +76,41 @@ Test-NetConnection -ComputerName "DC-01" -Port 389
 Test-NetConnection -ComputerName "DC-01" -Port 88
 ```
 
+Resultat :
+
+```text
+ComputerName     : DC-01
+RemoteAddress    : 10.0.0.10
+RemotePort       : 389
+TcpTestSucceeded : True
+
+ComputerName     : DC-01
+RemoteAddress    : 10.0.0.10
+RemotePort       : 88
+TcpTestSucceeded : True
+```
+
 ### Lister les ports en ecoute sur le DC
 
 ```powershell
 # Afficher les ports d'ecoute locaux lies aux processus
 Get-NetTCPConnection -State Listen | Sort-Object LocalPort | Select-Object LocalPort, OwningProcess
+```
+
+Resultat (extrait) :
+
+```text
+LocalPort OwningProcess
+--------- -------------
+       53          2584
+       88          1028
+      135           964
+      389          1028
+      445             4
+      464          1028
+      636          1028
+     3268          1028
+     3269          1028
+     5985             4
+     9389          3612
 ```

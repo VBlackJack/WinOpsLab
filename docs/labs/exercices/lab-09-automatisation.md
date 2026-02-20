@@ -36,6 +36,32 @@ tags:
     - [ ] Mettre en place une tache planifiee pour l'automatisation
     - [ ] Creer un script de surveillance avec alertes email
 
+```mermaid
+flowchart LR
+    CSV["Fichier CSV<br/>(donnees employes)"]
+    SCRIPT["Script PowerShell<br/>(Import-Csv)"]
+    VALID["Validation<br/>donnees"]
+    CREATE["Creation comptes<br/>(New-ADUser)"]
+    LOG["Journalisation<br/>resultats"]
+
+    TASK["Tache planifiee"]
+    TRIGGER["Declencheur<br/>(hebdomadaire)"]
+    EXEC["Execution<br/>automatique"]
+
+    CSV --> SCRIPT --> VALID --> CREATE --> LOG
+
+    TASK --> TRIGGER --> EXEC --> SCRIPT
+
+    style CSV fill:#4CAF50,color:#fff,stroke:#2E7D32
+    style SCRIPT fill:#2196F3,color:#fff,stroke:#1565C0
+    style VALID fill:#FF9800,color:#000,stroke:#E65100
+    style CREATE fill:#9C27B0,color:#fff,stroke:#6A1B9A
+    style LOG fill:#607D8B,color:#fff,stroke:#37474F
+    style TASK fill:#F44336,color:#fff,stroke:#B71C1C
+    style TRIGGER fill:#FF5722,color:#fff,stroke:#BF360C
+    style EXEC fill:#FF7043,color:#fff,stroke:#D84315
+```
+
 ## Scenario
 
 L'equipe RH fournit regulierement des listes de nouveaux employes. Le service informatique a besoin d'automatiser la creation des comptes AD et de generer des rapports d'inventaire hebdomadaires.

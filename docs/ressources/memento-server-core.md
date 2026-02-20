@@ -48,6 +48,26 @@ sconfig
 
 ---
 
+```mermaid
+flowchart TD
+    START["Ecran noir Server Core"] --> CMD["Ctrl+Alt+Suppr > PowerShell"]
+    CMD --> SCONFIG{"sconfig ?"}
+    SCONFIG -- "Config de base" --> SC["sconfig<br/>Menu interactif"]
+    SC --> SC1["1. Nom du serveur"]
+    SC --> SC2["2. Joindre le domaine"]
+    SC --> SC6["6. IP statique + DNS"]
+    SC --> SC7["7. Activer RDP"]
+    SC --> SC11["11. Windows Update"]
+    SCONFIG -- "Config avancee" --> PS["PowerShell"]
+    PS --> PS1["Get-NetAdapter"]
+    PS --> PS2["Install-WindowsFeature"]
+    PS --> PS3["Enable-PSRemoting"]
+
+    style START fill:#f44336,color:#fff
+    style SC fill:#2e7d32,color:#fff
+    style PS fill:#1565c0,color:#fff
+```
+
 ## Commandes PowerShell essentielles
 
 ### Reseau

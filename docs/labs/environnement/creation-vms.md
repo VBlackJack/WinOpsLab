@@ -30,6 +30,32 @@ tags:
 
 Ce guide fournit les scripts PowerShell pour creer automatiquement toutes les machines virtuelles du lab. L'approche par script garantit la coherence et permet de reconstruire rapidement l'environnement.
 
+```mermaid
+flowchart TD
+    PLAN(["Planifier les<br/>ressources"])
+    SWITCH["Creer les switches<br/>virtuels (LabSwitch)"]
+    VM["New-VM<br/>Generation 2"]
+    ISO["Attacher l'ISO /<br/>VHDX template"]
+    CFG["Configurer :<br/>CPU, RAM, Boot"]
+    START["Start-VM"]
+    CHECK["Checkpoint<br/>(sauvegarde d'etat)"]
+
+    PLAN --> SWITCH
+    SWITCH --> VM
+    VM --> ISO
+    ISO --> CFG
+    CFG --> START
+    START --> CHECK
+
+    style PLAN fill:#1565c0,color:#fff,stroke:#0d47a1
+    style SWITCH fill:#42a5f5,color:#fff,stroke:#1e88e5
+    style VM fill:#7e57c2,color:#fff,stroke:#5e35b1
+    style ISO fill:#ab47bc,color:#fff,stroke:#8e24aa
+    style CFG fill:#ffa726,color:#fff,stroke:#fb8c00
+    style START fill:#66bb6a,color:#fff,stroke:#43a047
+    style CHECK fill:#2e7d32,color:#fff,stroke:#1b5e20
+```
+
 ## Prerequis
 
 - Hyper-V active sur la machine hote

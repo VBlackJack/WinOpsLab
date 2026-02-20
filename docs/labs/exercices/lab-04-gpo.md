@@ -37,6 +37,36 @@ tags:
     - [ ] Tester l'application avec gpresult
     - [ ] Comprendre l'heritage et le filtrage
 
+```mermaid
+graph TD
+    D["Domaine<br/>winopslab.local"]
+    OU_U["OU Utilisateurs"]
+    OU_DIR["OU Direction"]
+    OU_COMPTA["OU Comptabilite"]
+    OU_IT["OU Informatique"]
+    GPO1["GPO_Domain_PasswordPolicy"]
+    GPO2["GPO_Users_DesktopRestrictions"]
+    FILTRE["Filtrage securite :<br/>GG_Informatique = Refuser"]
+
+    D -->|Heritage| OU_U
+    OU_U -->|Heritage| OU_DIR
+    OU_U -->|Heritage| OU_COMPTA
+    OU_U -->|Heritage| OU_IT
+
+    GPO1 -.->|Liee au domaine| D
+    GPO2 -.->|Liee a l'OU| OU_U
+    FILTRE -.-> GPO2
+
+    style D fill:#1565C0,color:#fff,stroke:#0D47A1
+    style OU_U fill:#2196F3,color:#fff,stroke:#1565C0
+    style OU_DIR fill:#64B5F6,color:#000,stroke:#2196F3
+    style OU_COMPTA fill:#64B5F6,color:#000,stroke:#2196F3
+    style OU_IT fill:#64B5F6,color:#000,stroke:#2196F3
+    style GPO1 fill:#FF9800,color:#000,stroke:#E65100
+    style GPO2 fill:#FF9800,color:#000,stroke:#E65100
+    style FILTRE fill:#F44336,color:#fff,stroke:#B71C1C
+```
+
 ## Scenario
 
 Le responsable securite demande de mettre en place des politiques de mot de passe renforcees et de restreindre certaines fonctionnalites du bureau pour les utilisateurs standards.

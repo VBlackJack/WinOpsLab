@@ -38,6 +38,35 @@ tags:
 
 La **Microsoft Management Console** (MMC) est un framework qui heberge des outils d'administration appeles **snap-ins**. Chaque snap-in fournit une interface graphique pour gerer un aspect specifique du serveur.
 
+```mermaid
+graph LR
+    MMC["<b>Console MMC</b><br/>mmc.exe"]
+    MMC --> S1["dsa.msc<br/>Active Directory"]
+    MMC --> S2["dnsmgmt.msc<br/>DNS"]
+    MMC --> S3["dhcpmgmt.msc<br/>DHCP"]
+    MMC --> S4["gpmc.msc<br/>GPO"]
+    MMC --> S5["services.msc<br/>Services"]
+    S1 --> LOCAL["Serveur local"]
+    S1 --> R1["DC-01<br/>(distant)"]
+    S2 --> R1
+    S2 --> R2["DC-02<br/>(distant)"]
+    S3 --> R1
+    S4 --> R1
+    S5 --> LOCAL
+    S5 --> R3["SRV-01<br/>(distant)"]
+
+    style MMC fill:#1565c0,color:#fff,stroke:#0d47a1
+    style S1 fill:#42a5f5,color:#fff,stroke:#1e88e5
+    style S2 fill:#42a5f5,color:#fff,stroke:#1e88e5
+    style S3 fill:#42a5f5,color:#fff,stroke:#1e88e5
+    style S4 fill:#42a5f5,color:#fff,stroke:#1e88e5
+    style S5 fill:#42a5f5,color:#fff,stroke:#1e88e5
+    style LOCAL fill:#66bb6a,color:#fff,stroke:#43a047
+    style R1 fill:#ffa726,color:#fff,stroke:#fb8c00
+    style R2 fill:#ffa726,color:#fff,stroke:#fb8c00
+    style R3 fill:#ffa726,color:#fff,stroke:#fb8c00
+```
+
 ## Lancer la MMC
 
 ```powershell

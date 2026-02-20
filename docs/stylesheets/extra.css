@@ -44,3 +44,23 @@
   background-color: #fce4ec;
   color: #c62828;
 }
+
+/* Dark mode support */
+[data-md-color-scheme="slate"] .md-typeset .level-intermediate {
+  background-color: rgba(230, 81, 0, 0.15);
+  color: #ffb74d;
+}
+
+[data-md-color-scheme="slate"] .md-typeset .level-advanced {
+  background-color: rgba(198, 40, 40, 0.15);
+  color: #ef9a9a;
+}
+
+/* Card grid hover effect */
+.md-typeset .grid.cards > ul > li {
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+
+.md-typeset .grid.cards > ul > li:hover {
+  transform: translateY(-2px);
+}

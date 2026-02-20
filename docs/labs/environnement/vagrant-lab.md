@@ -33,6 +33,36 @@ tags:
 
 Pour accelerer la mise en place de vos labs, nous fournissons une configuration **Vagrant**. Cela permet de deployer `DC-01` et `SRV-01` en une seule commande, plutot que de creer les VMs manuellement.
 
+```mermaid
+flowchart TD
+    VF(["Definir le<br/>Vagrantfile"])
+    UP["vagrant up"]
+    DL{"Premiere<br/>execution ?"}
+    BOX["Telecharger la box<br/>Windows Server 2022"]
+    CREATE["Creer les VMs<br/>dans Hyper-V"]
+    NET["Configurer le<br/>reseau virtuel"]
+    START["Demarrer les VMs"]
+    READY(["DC-01 et SRV-01<br/>prets !"])
+
+    VF --> UP
+    UP --> DL
+    DL -- "Oui" --> BOX
+    DL -- "Non" --> CREATE
+    BOX --> CREATE
+    CREATE --> NET
+    NET --> START
+    START --> READY
+
+    style VF fill:#1565c0,color:#fff,stroke:#0d47a1
+    style UP fill:#42a5f5,color:#fff,stroke:#1e88e5
+    style DL fill:#ffa726,color:#fff,stroke:#fb8c00
+    style BOX fill:#ef5350,color:#fff,stroke:#e53935
+    style CREATE fill:#7e57c2,color:#fff,stroke:#5e35b1
+    style NET fill:#ab47bc,color:#fff,stroke:#8e24aa
+    style START fill:#66bb6a,color:#fff,stroke:#43a047
+    style READY fill:#2e7d32,color:#fff,stroke:#1b5e20
+```
+
 ## Prerequis
 
 1.  **Hyper-V** active sur votre machine Windows 10/11.

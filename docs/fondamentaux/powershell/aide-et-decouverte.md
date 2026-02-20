@@ -34,6 +34,26 @@ tags:
 
 PowerShell dispose d'un systeme d'aide complet qui vous permet d'apprendre n'importe quelle cmdlet sans quitter la console.
 
+```mermaid
+flowchart LR
+    Q(["Cmdlet<br/>inconnue ?"])
+    CMD["<b>Get-Command</b><br/>Trouver la cmdlet"]
+    HELP["<b>Get-Help</b><br/>Syntaxe et exemples"]
+    MEMBER["<b>Get-Member</b><br/>Proprietes de l'objet"]
+    USE["Pipeline vers<br/>Format / Export /<br/>Where / Select"]
+
+    Q --> CMD
+    CMD --> HELP
+    HELP --> MEMBER
+    MEMBER --> USE
+
+    style Q fill:#ffa726,color:#fff,stroke:#fb8c00
+    style CMD fill:#1565c0,color:#fff,stroke:#0d47a1
+    style HELP fill:#42a5f5,color:#fff,stroke:#1e88e5
+    style MEMBER fill:#7e57c2,color:#fff,stroke:#5e35b1
+    style USE fill:#66bb6a,color:#fff,stroke:#43a047
+```
+
 ### Mettre a jour l'aide
 
 La premiere fois, telechargez les fichiers d'aide complets :

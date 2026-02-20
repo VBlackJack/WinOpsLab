@@ -37,6 +37,27 @@ tags:
     - [ ] Creer une etendue DHCP avec options
     - [ ] Tester la resolution DNS et l'attribution DHCP depuis CLI-W11
 
+```mermaid
+sequenceDiagram
+    participant C as Client (CLI-W11)
+    participant DNS as Serveur DNS (SRV-DC01)
+    participant DHCP as Serveur DHCP (SRV-DC01)
+
+    rect rgb(220, 240, 255)
+        Note over C,DNS: Resolution DNS
+        C->>DNS: Requete DNS (SRV-DC01.winopslab.local ?)
+        DNS-->>C: Reponse DNS (192.168.10.10)
+    end
+
+    rect rgb(220, 255, 220)
+        Note over C,DHCP: Attribution DHCP (DORA)
+        C->>DHCP: 1. Discover (broadcast)
+        DHCP-->>C: 2. Offer (192.168.10.1xx)
+        C->>DHCP: 3. Request (accepte l'offre)
+        DHCP-->>C: 4. Acknowledge (bail confirme)
+    end
+```
+
 ## Scenario
 
 Le domaine winopslab.local est en place. Vous devez maintenant configurer les services DNS et DHCP pour que les postes clients obtiennent automatiquement leur configuration reseau et resolvent les noms du domaine.

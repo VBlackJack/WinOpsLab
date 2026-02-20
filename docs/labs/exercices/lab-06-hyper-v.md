@@ -37,6 +37,38 @@ tags:
     - [ ] Utiliser les checkpoints pour sauvegarder et restaurer un etat
     - [ ] Gerer les VMs en PowerShell
 
+```mermaid
+graph TD
+    HOST["Hote physique<br/>SRV-CORE01"]
+    HV["Role Hyper-V"]
+    EXT["vSwitch External<br/>(Reseau physique)"]
+    INT["vSwitch Internal<br/>(Hote + VMs)"]
+    PRIV["vSwitch Private<br/>(VMs uniquement)"]
+    VM1["VM-TEST01"]
+    VM2["VM-TEST02"]
+    NET["Reseau physique"]
+
+    HOST --> HV
+    HV --> EXT
+    HV --> INT
+    HV --> PRIV
+
+    EXT --- VM1
+    INT --- VM1
+    INT --- VM2
+    PRIV --- VM2
+    EXT ---|Acces externe| NET
+
+    style HOST fill:#1565C0,color:#fff,stroke:#0D47A1
+    style HV fill:#7B1FA2,color:#fff,stroke:#4A148C
+    style EXT fill:#2E7D32,color:#fff,stroke:#1B5E20
+    style INT fill:#F57F17,color:#000,stroke:#E65100
+    style PRIV fill:#D32F2F,color:#fff,stroke:#B71C1C
+    style VM1 fill:#42A5F5,color:#000,stroke:#1E88E5
+    style VM2 fill:#42A5F5,color:#000,stroke:#1E88E5
+    style NET fill:#78909C,color:#fff,stroke:#455A64
+```
+
 ## Scenario
 
 L'equipe de developpement a besoin d'un environnement de test virtualise. Vous devez installer Hyper-V sur un serveur existant, creer les commutateurs reseau et deployer une VM de test.

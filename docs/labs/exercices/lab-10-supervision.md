@@ -36,6 +36,42 @@ tags:
     - [ ] Creer des vues personnalisees dans l'Observateur d'evenements
     - [ ] Generer un rapport de diagnostic systeme
 
+```mermaid
+graph LR
+    SRV1["SRV-DC01"]
+    SRV2["SRV-FILE01"]
+    SRV3["SRV-WEB01"]
+
+    DCS["Data Collector Sets<br/>(PerfMon)"]
+    BL["Baseline<br/>performance"]
+    ALERT["Alertes<br/>(seuils depasses)"]
+
+    WEF["Transfert WEF<br/>(WinRM)"]
+    WEC["Collecteur WEC<br/>(SRV-DC01)"]
+    VIEW["Vues personnalisees<br/>(Observateur)"]
+
+    SRV1 --> DCS
+    SRV2 --> DCS
+    SRV3 --> DCS
+    DCS --> BL
+    DCS --> ALERT
+
+    SRV1 --> WEF
+    SRV2 --> WEF
+    SRV3 --> WEF
+    WEF --> WEC --> VIEW
+
+    style SRV1 fill:#1565C0,color:#fff,stroke:#0D47A1
+    style SRV2 fill:#1565C0,color:#fff,stroke:#0D47A1
+    style SRV3 fill:#1565C0,color:#fff,stroke:#0D47A1
+    style DCS fill:#2E7D32,color:#fff,stroke:#1B5E20
+    style BL fill:#4CAF50,color:#fff,stroke:#2E7D32
+    style ALERT fill:#F44336,color:#fff,stroke:#B71C1C
+    style WEF fill:#FF9800,color:#000,stroke:#E65100
+    style WEC fill:#FF6F00,color:#fff,stroke:#E65100
+    style VIEW fill:#7B1FA2,color:#fff,stroke:#4A148C
+```
+
 ## Scenario
 
 Avant la mise en production de l'infrastructure, le responsable demande de mettre en place une supervision de base : collecte des metriques de performance, alertes automatiques et centralisation des journaux d'evenements.

@@ -34,6 +34,39 @@ tags:
 
 PowerShell est le shell et langage de script de Microsoft pour l'administration systeme. Contrairement a `cmd.exe`, PowerShell manipule des **objets .NET** plutot que du texte brut, ce qui le rend bien plus puissant.
 
+```mermaid
+flowchart TD
+    LAUNCH(["Lancer PowerShell<br/>(Administrateur)"])
+    CHECK["Verifier la politique<br/>Get-ExecutionPolicy"]
+    DECIDE{"Politique =<br/>Restricted ?"}
+    SET["Set-ExecutionPolicy<br/>RemoteSigned"]
+    READY["Pret a executer<br/>des scripts .ps1"]
+    VERB["Structure <b>Verbe-Nom</b>"]
+    EX1["Get-Service"]
+    EX2["Set-TimeZone"]
+    EX3["New-Item"]
+
+    LAUNCH --> CHECK
+    CHECK --> DECIDE
+    DECIDE -- "Oui" --> SET
+    DECIDE -- "Non" --> READY
+    SET --> READY
+    READY --> VERB
+    VERB --> EX1
+    VERB --> EX2
+    VERB --> EX3
+
+    style LAUNCH fill:#1565c0,color:#fff,stroke:#0d47a1
+    style CHECK fill:#42a5f5,color:#fff,stroke:#1e88e5
+    style DECIDE fill:#ffa726,color:#fff,stroke:#fb8c00
+    style SET fill:#ef5350,color:#fff,stroke:#e53935
+    style READY fill:#66bb6a,color:#fff,stroke:#43a047
+    style VERB fill:#7e57c2,color:#fff,stroke:#5e35b1
+    style EX1 fill:#ab47bc,color:#fff,stroke:#8e24aa
+    style EX2 fill:#ab47bc,color:#fff,stroke:#8e24aa
+    style EX3 fill:#ab47bc,color:#fff,stroke:#8e24aa
+```
+
 | Caracteristique | cmd.exe | PowerShell |
 |-----------------|---------|------------|
 | Type de donnees | Texte | Objets .NET |

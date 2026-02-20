@@ -22,6 +22,9 @@ CLAUDE.md
 # Other AI
 GEMINI.md
 
+# Vagrant
+.vagrant/
+
 # OS
 Thumbs.db
 Desktop.ini

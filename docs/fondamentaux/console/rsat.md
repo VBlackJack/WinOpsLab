@@ -37,6 +37,36 @@ tags:
 
 Les **RSAT** (Remote Server Administration Tools) permettent d'installer les consoles d'administration (MMC snap-ins) sur un poste **Windows 10 ou 11** pour gerer des serveurs a distance, sans avoir besoin de se connecter en RDP.
 
+```mermaid
+flowchart TD
+    START(["Installer RSAT"])
+    DOMAIN{"Poste joint<br/>au domaine ?"}
+    YES_INSTALL["Installer via<br/>Parametres / DISM /<br/>PowerShell"]
+    NO_TRUST["Configurer<br/>TrustedHosts"]
+    NO_DNS["Configurer le DNS<br/>vers le DC"]
+    NO_CRED["Preparer les<br/>identifiants du domaine"]
+    CONNECT["Connexion aux<br/>serveurs distants"]
+    MANAGE["Gestion centralisee<br/>AD, DNS, DHCP, GPO..."]
+
+    START --> DOMAIN
+    DOMAIN -- "Oui" --> YES_INSTALL
+    DOMAIN -- "Non" --> NO_TRUST
+    NO_TRUST --> NO_DNS
+    NO_DNS --> NO_CRED
+    NO_CRED --> YES_INSTALL
+    YES_INSTALL --> CONNECT
+    CONNECT --> MANAGE
+
+    style START fill:#1565c0,color:#fff,stroke:#0d47a1
+    style DOMAIN fill:#ffa726,color:#fff,stroke:#fb8c00
+    style YES_INSTALL fill:#42a5f5,color:#fff,stroke:#1e88e5
+    style NO_TRUST fill:#ef5350,color:#fff,stroke:#e53935
+    style NO_DNS fill:#ef5350,color:#fff,stroke:#e53935
+    style NO_CRED fill:#ef5350,color:#fff,stroke:#e53935
+    style CONNECT fill:#66bb6a,color:#fff,stroke:#43a047
+    style MANAGE fill:#2e7d32,color:#fff,stroke:#1b5e20
+```
+
 !!! tip "Bonne pratique"
 
     Installez RSAT sur votre poste de travail plutot que de vous connecter en RDP

@@ -344,6 +344,7 @@ nav:
           - automatisation/iac/index.md
           - automatisation/iac/templates-arm-bicep.md
           - automatisation/iac/packer-images.md
+          - automatisation/iac/ansible-windows.md
   - Supervision:
       - supervision/index.md
       - Surveillance systeme:

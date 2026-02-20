@@ -1,0 +1,54 @@
+# Copyright 2026 Julien Bombled
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+---
+- name: Configure hostname
+  ansible.builtin.include_tasks: hostname.yml
+  tags: [hostname]
+
+- name: Configure network
+  ansible.builtin.include_tasks: network.yml
+  tags: [network]
+
+- name: Configure regional settings
+  ansible.builtin.include_tasks: regional.yml
+  tags: [regional]
+
+- name: Configure Windows Update
+  ansible.builtin.include_tasks: updates.yml
+  tags: [updates]
+
+- name: Configure security hardening
+  ansible.builtin.include_tasks: security.yml
+  tags: [security]
+
+- name: Configure WinRM
+  ansible.builtin.include_tasks: winrm.yml
+  tags: [winrm]
+
+- name: Configure RDP
+  ansible.builtin.include_tasks: rdp.yml
+  tags: [rdp]
+
+- name: Configure PowerShell
+  ansible.builtin.include_tasks: powershell.yml
+  tags: [powershell]
+
+- name: Install Windows features
+  ansible.builtin.include_tasks: features.yml
+  tags: [features]
+
+- name: Configure performance settings
+  ansible.builtin.include_tasks: performance.yml
+  tags: [performance]

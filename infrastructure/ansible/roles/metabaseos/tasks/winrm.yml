@@ -1,0 +1,62 @@
+# Copyright 2026 Julien Bombled
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+---
+- name: Generate self-signed certificate for WinRM HTTPS
+  ansible.windows.win_powershell:
+    script: |
+      $hostname = $env:COMPUTERNAME
+      $existing = Get-ChildItem Cert:\LocalMachine\My |
+          Where-Object { $_.Subject -eq "CN=$hostname" -and $_.NotAfter -gt (Get-Date) }
+      if (-not $existing) {
+          $cert = New-SelfSignedCertificate `
+              -DnsName $hostname `
+              -CertStoreLocation Cert:\LocalMachine\My `
+              -NotAfter (Get-Date).AddDays({{ metabaseos_winrm_cert_validity_days }})
+          $Ansible.Changed = $true
+          $Ansible.Result = $cert.Thumbprint
+      } else {
+          $Ansible.Changed = $false
+          $Ansible.Result = $existing[0].Thumbprint
+      }
+  register: winrm_cert
+  when: metabaseos_winrm_https_enabled
+
+- name: Create WinRM HTTPS listener
+  ansible.windows.win_powershell:
+    script: |
+      $thumbprint = "{{ winrm_cert.result | default('') }}"
+      $existing = Get-WSManInstance -ResourceURI winrm/config/Listener `
+          -SelectorSet @{Address="*"; Transport="HTTPS"} -ErrorAction SilentlyContinue
+      if (-not $existing) {
+          New-WSManInstance -ResourceURI winrm/config/Listener `
+              -SelectorSet @{Address="*"; Transport="HTTPS"} `
+              -ValueSet @{CertificateThumbprint=$thumbprint}
+          $Ansible.Changed = $true
+      } else {
+          $Ansible.Changed = $false
+      }
+  when: metabaseos_winrm_https_enabled and winrm_cert.result is defined
+
+- name: Tune WinRM max memory per shell
+  ansible.windows.win_powershell:
+    script: |
+      Set-Item WSMan:\localhost\Shell\MaxMemoryPerShellMB {{ metabaseos_winrm_max_memory_mb }}
+  notify: Restart WinRM
+
+- name: Tune WinRM max timeout
+  ansible.windows.win_powershell:
+    script: |
+      Set-Item WSMan:\localhost\MaxTimeoutms {{ metabaseos_winrm_max_timeout_ms }}
+  notify: Restart WinRM

@@ -1,0 +1,30 @@
+# Copyright 2026 Julien Bombled
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+---
+- name: Set DNS client server addresses
+  ansible.windows.win_powershell:
+    script: |
+      $adapters = Get-NetAdapter | Where-Object { $_.Status -eq 'Up' }
+      foreach ($adapter in $adapters) {
+          Set-DnsClientServerAddress -InterfaceIndex $adapter.ifIndex `
+              -ServerAddresses @({{ metabaseos_dns_servers | map('quote') | join(', ') }})
+      }
+
+- name: Set DNS suffix
+  ansible.windows.win_powershell:
+    script: |
+      Set-DnsClient -InterfaceAlias (Get-NetAdapter | Where-Object Status -eq 'Up').Name `
+          -ConnectionSpecificSuffix "{{ metabaseos_dns_suffix }}"
+      Set-DnsClientGlobalSetting -SuffixSearchList @("{{ metabaseos_dns_suffix }}")

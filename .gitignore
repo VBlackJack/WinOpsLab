@@ -25,6 +25,10 @@ GEMINI.md
 # Vagrant
 .vagrant/
 
+# Ansible
+*.retry
+infrastructure/ansible/collections/
+
 # OS
 Thumbs.db
 Desktop.ini

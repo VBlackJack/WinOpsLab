@@ -1,0 +1,42 @@
+# Copyright 2026 Julien Bombled
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+---
+- name: Set telemetry level to minimum
+  ansible.windows.win_regedit:
+    path: HKLM:\SOFTWARE\Policies\Microsoft\Windows\DataCollection
+    name: AllowTelemetry
+    data: "{{ metabaseos_telemetry_level }}"
+    type: dword
+
+- name: Set visual effects to best performance
+  ansible.windows.win_regedit:
+    path: HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects
+    name: VisualFXSetting
+    data: 2
+    type: dword
+  when: metabaseos_visual_effects_best_perf
+
+- name: Configure automatic pagefile management
+  ansible.windows.win_powershell:
+    script: |
+      $cs = Get-WmiObject -Class Win32_ComputerSystem
+      if ($cs.AutomaticManagedPagefile -ne $true) {
+          $cs.AutomaticManagedPagefile = $true
+          $cs.Put() | Out-Null
+          $Ansible.Changed = $true
+      } else {
+          $Ansible.Changed = $false
+      }
+  when: metabaseos_pagefile_auto

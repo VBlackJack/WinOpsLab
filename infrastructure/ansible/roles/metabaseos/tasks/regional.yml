@@ -1,0 +1,39 @@
+# Copyright 2026 Julien Bombled
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+---
+- name: Set timezone
+  community.windows.win_timezone:
+    timezone: "{{ metabaseos_timezone }}"
+
+- name: Configure NTP servers
+  ansible.windows.win_powershell:
+    script: |
+      $peers = "{{ metabaseos_ntp_servers | join(' ') }}"
+      w32tm /config /manualpeerlist:"$peers" /syncfromflags:manual /reliable:yes /update
+  notify: Restart W32Time
+
+- name: Set system locale
+  community.windows.win_region:
+    location: 84
+    unicode_language: "{{ metabaseos_locale }}"
+    format: "{{ metabaseos_locale }}"
+
+- name: Set keyboard layout
+  ansible.windows.win_powershell:
+    script: |
+      $langList = New-WinUserLanguageList "{{ metabaseos_locale }}"
+      $langList[0].InputMethodTips.Clear()
+      $langList[0].InputMethodTips.Add("{{ metabaseos_keyboard_layout }}")
+      Set-WinUserLanguageList $langList -Force

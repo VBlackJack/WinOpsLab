@@ -15,7 +15,7 @@
 -->
 ---
 title: Infrastructure as Code
-description: Infrastructure as Code - ARM, Bicep et Packer.
+description: Infrastructure as Code - ARM, Bicep, Packer et Ansible.
 ---
 
 # Infrastructure as Code
@@ -39,6 +39,14 @@ description: Infrastructure as Code - ARM, Bicep et Packer.
     Automatisation de la creation d'images systeme avec Packer.
 
     [:octicons-arrow-right-24: Lire](packer-images.md)
+
+- :material-ansible: **Ansible pour Windows**
+
+    ---
+
+    Automatisation de la configuration de serveurs Windows avec Ansible et WinRM.
+
+    [:octicons-arrow-right-24: Lire](ansible-windows.md)
 
 </div>
 

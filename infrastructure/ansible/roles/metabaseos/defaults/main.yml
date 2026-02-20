@@ -1,0 +1,74 @@
+# Copyright 2026 Julien Bombled
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+---
+# ── Hostname ────────────────────────────────────────────────────────────────────
+metabaseos_hostname: "{{ inventory_hostname }}"
+
+# ── Network ─────────────────────────────────────────────────────────────────────
+metabaseos_dns_servers:
+  - 10.0.0.10
+  - 127.0.0.1
+metabaseos_dns_suffix: "{{ domain_name | default('winopslab.local') }}"
+
+# ── Regional ────────────────────────────────────────────────────────────────────
+metabaseos_timezone: "Romance Standard Time"
+metabaseos_ntp_servers:
+  - fr.pool.ntp.org
+  - 0.fr.pool.ntp.org
+metabaseos_locale: fr-FR
+metabaseos_keyboard_layout: "0000040C"
+
+# ── Updates ─────────────────────────────────────────────────────────────────────
+metabaseos_wsus_enabled: false
+metabaseos_wsus_server: ""
+metabaseos_wu_auto_install: true
+metabaseos_wu_scheduled_day: 0
+metabaseos_wu_scheduled_hour: 3
+
+# ── Security ────────────────────────────────────────────────────────────────────
+metabaseos_firewall_enabled: true
+metabaseos_firewall_allowed_ports:
+  - { port: 5985, protocol: tcp, name: "WinRM-HTTP" }
+  - { port: 5986, protocol: tcp, name: "WinRM-HTTPS" }
+  - { port: 3389, protocol: tcp, name: "RDP" }
+metabaseos_firewall_allow_icmp: true
+metabaseos_smbv1_disabled: true
+metabaseos_audit_logon_events: true
+metabaseos_audit_object_access: true
+
+# ── WinRM ───────────────────────────────────────────────────────────────────────
+metabaseos_winrm_https_enabled: true
+metabaseos_winrm_cert_validity_days: 1095
+metabaseos_winrm_max_memory_mb: 1024
+metabaseos_winrm_max_timeout_ms: 1800000
+
+# ── RDP ─────────────────────────────────────────────────────────────────────────
+metabaseos_rdp_enabled: true
+metabaseos_rdp_nla_required: true
+
+# ── PowerShell ──────────────────────────────────────────────────────────────────
+metabaseos_ps_execution_policy: RemoteSigned
+
+# ── Features ────────────────────────────────────────────────────────────────────
+metabaseos_windows_features:
+  - RSAT-AD-Tools
+  - RSAT-DNS-Server
+  - RSAT-DHCP
+  - NET-Framework-Core
+
+# ── Performance ─────────────────────────────────────────────────────────────────
+metabaseos_telemetry_level: 0
+metabaseos_visual_effects_best_perf: true
+metabaseos_pagefile_auto: true

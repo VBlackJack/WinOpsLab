@@ -1,0 +1,74 @@
+# Copyright 2026 Julien Bombled
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+---
+- name: Enable firewall profiles
+  community.windows.win_firewall:
+    state: enabled
+    profiles:
+      - Domain
+      - Private
+      - Public
+  when: metabaseos_firewall_enabled
+
+- name: Allow firewall ports
+  community.windows.win_firewall_rule:
+    name: "{{ item.name }}"
+    localport: "{{ item.port }}"
+    protocol: "{{ item.protocol }}"
+    direction: in
+    action: allow
+    enabled: true
+    profiles:
+      - Domain
+      - Private
+  loop: "{{ metabaseos_firewall_allowed_ports }}"
+
+- name: Allow ICMP (ping)
+  community.windows.win_firewall_rule:
+    name: Allow-ICMPv4-In
+    protocol: icmpv4
+    direction: in
+    action: allow
+    enabled: true
+    profiles:
+      - Domain
+      - Private
+  when: metabaseos_firewall_allow_icmp
+
+- name: Disable SMBv1 server
+  ansible.windows.win_powershell:
+    script: |
+      Set-SmbServerConfiguration -EnableSMB1Protocol $false -Force
+  when: metabaseos_smbv1_disabled
+
+- name: Disable SMBv1 client feature
+  ansible.windows.win_optional_feature:
+    name: SMB1Protocol
+    state: absent
+  when: metabaseos_smbv1_disabled
+
+- name: Enable logon event auditing
+  ansible.windows.win_powershell:
+    script: |
+      auditpol /set /subcategory:"Logon" /success:enable /failure:enable
+      auditpol /set /subcategory:"Logoff" /success:enable
+  when: metabaseos_audit_logon_events
+
+- name: Enable object access auditing
+  ansible.windows.win_powershell:
+    script: |
+      auditpol /set /subcategory:"File System" /success:enable /failure:enable
+      auditpol /set /subcategory:"Registry" /success:enable /failure:enable
+  when: metabaseos_audit_object_access
